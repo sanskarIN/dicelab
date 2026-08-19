@@ -1,0 +1,33 @@
+name: Release lockfile consistency
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-lockfile-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Verify dependency lock consistency
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Self-test lockfile auditor
+        run: node --test scripts/check-lockfile-consistency.test.mjs
+
+      - name: Audit committed manifest and lockfile state
+        run: node scripts/check-lockfile-consistency.mjs
