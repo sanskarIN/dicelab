@@ -51,6 +51,24 @@ Commits:
 - `b1a1424b` — `test: reject forged persisted keep drop masks`
 - `3ac4c496` — `test: reject forged backup selection masks`
 
+### Backup size rejection before file read
+
+The backup parser already enforced the 5,000,000-byte UTF-8 contract, but the application previously called `File.text()` before that validation. An oversized selected file could therefore be loaded into memory before DiceLab rejected it.
+
+Now:
+
+- `parseBackupFile()` checks `File.size` before any file read;
+- files above 5,000,000 bytes fail with the existing stable `backup-too-large` error/context;
+- `parseBackupJson()` still performs the UTF-8 `TextEncoder` byte check after reading, so the size contract remains exact even when file metadata and decoded text differ;
+- `App.importBackup()` routes through the new pre-read boundary;
+- regression coverage proves an oversized file's `text()` method is never called.
+
+Commits:
+
+- `b065ea8b` — `fix: reject oversized backups before file read`
+- `09f239ef` — `fix: gate backup size before reading file`
+- `8e777cb7` — `test: reject oversized backup files before reading`
+
 ### Spreadsheet-safe CSV without breaking numeric columns
 
 CSV formula neutralization was hardened in two stages:
@@ -78,6 +96,16 @@ Commits:
 - `86cb41cd` — `fix: keep history limit integer bounded`
 - `6d2cb32a` — `test: normalize fractional history limits`
 
+### Cross-platform command shortcut hint
+
+The application handler accepts both Ctrl+K and Command+K, but the persistent shell previously displayed only `Ctrl K`.
+
+The visible hint now reads `Ctrl/⌘ K`, matching the actual Windows/Linux/macOS keyboard behavior.
+
+Commit:
+
+- `8707f009` — `fix: show cross platform command shortcut`
+
 ### Dependency-lock workflow hardening
 
 `.github/workflows/lockfiles.yml` now:
@@ -94,6 +122,12 @@ Commits:
 
 - `0a4507e8` — `ci: verify generated dependency lockfiles`
 - `99680f5c` — `ci: revalidate direct lockfile edits`
+
+### Seeded sequence contract reviewed and preserved
+
+The final audit explicitly rechecked whether a failed roll request should reuse its seeded sequence value. The canonical application-flow contract already defines the sequence counter as incrementing for **each roll request**, with reset on backup restore/clear and no durable persistence.
+
+A tentative success-only increment change was therefore reverted rather than silently changing deterministic semantics. The current code remains aligned with the documented contract.
 
 ## Documentation state
 
