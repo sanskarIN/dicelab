@@ -12,7 +12,7 @@ export function extractFrontendVersion(source) {
 }
 
 export function extractCargoPackageVersion(source) {
-  const packageSection = /^\[package\]\s*$([\s\S]*?)(?=^\[|$)/m.exec(source)?.[1];
+  const packageSection = /^\[package\]\s*$([\s\S]*?)(?=^\[|(?![\s\S]))/m.exec(source)?.[1];
   if (!packageSection) throw new Error('Could not find [package] in src-tauri/Cargo.toml.');
   const match = /^version\s*=\s*['"]([^'"]+)['"]\s*$/m.exec(packageSection);
   if (!match) throw new Error('Could not find package version in src-tauri/Cargo.toml.');
