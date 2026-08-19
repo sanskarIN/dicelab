@@ -1,6 +1,7 @@
 import { AlertTriangle, RotateCcw } from 'lucide-react';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { messages } from '../i18n';
+import { logger } from '../services/logger';
 
 interface AppErrorBoundaryProps {
   children: ReactNode;
@@ -18,8 +19,7 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
   }
 
   componentDidCatch(_error: Error, _info: ErrorInfo): void {
-    // Do not emit raw exception contents: application state may contain user-controlled text.
-    console.error('DiceLab interface recovery boundary activated.');
+    logger.error('ui.recovery_boundary_activated', { surface: 'application-root' });
   }
 
   render() {
