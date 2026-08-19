@@ -2,6 +2,7 @@ import { BookmarkPlus, Dices, Play, RotateCcw, Sparkles, Trash2 } from 'lucide-r
 import { useMemo, useState, type FormEvent } from 'react';
 import { parseDiceExpression } from '../domain/parser';
 import type { DicePreset, RandomMode, RollResult } from '../domain/types';
+import { copy } from '../i18n';
 
 interface RollWorkspaceProps {
   expression: string;
@@ -35,7 +36,7 @@ export function RollWorkspace({
     try {
       return { parsed: parseDiceExpression(expression), error: null };
     } catch (cause) {
-      return { parsed: null, error: cause instanceof Error ? cause.message : 'Invalid expression.' };
+      return { parsed: null, error: cause instanceof Error ? cause.message : copy.errors.invalidExpression };
     }
   }, [expression]);
 
@@ -55,16 +56,19 @@ export function RollWorkspace({
     <section className="view-stack" aria-labelledby="roll-heading">
       <header className="view-header">
         <div>
-          <p className="eyebrow">Dice studio</p>
-          <h1 id="roll-heading">Roll with confidence.</h1>
-          <p>Use standard dice, custom sides, modifiers, and keep/drop expressions without going online.</p>
+          <p className="eyebrow">{copy.roll.eyebrow}</p>
+          <h1 id="roll-heading">{copy.roll.title}</h1>
+          <p>{copy.roll.description}</p>
         </div>
-        <span className="status-pill"><span className="status-dot" />{randomMode === 'secure' ? 'Secure random' : 'Seeded mode'}</span>
+        <span className="status-pill">
+          <span className="status-dot" />
+          {randomMode === 'secure' ? copy.roll.secureRandom : copy.roll.seededMode}
+        </span>
       </header>
 
       <div className="roll-grid">
         <div className="panel roll-panel">
-          <div className="quick-dice" aria-label="Quick dice">
+          <div className="quick-dice" aria-label={copy.roll.quickDice}>
             {quickDice.map((sides) => (
               <button key={sides} type="button" onClick={() => onExpressionChange(`1d${sides}`)}>
                 d{sides}
@@ -73,14 +77,14 @@ export function RollWorkspace({
           </div>
 
           <form onSubmit={submit} className="expression-form">
-            <label htmlFor="dice-expression">Dice expression</label>
+            <label htmlFor="dice-expression">{copy.roll.expressionLabel}</label>
             <div className={validation.error ? 'expression-control invalid' : 'expression-control'}>
               <Dices size={21} aria-hidden="true" />
               <input
                 id="dice-expression"
                 value={expression}
                 onChange={(event) => onExpressionChange(event.target.value)}
-                placeholder="4d6kh3+2"
+                placeholder={copy.roll.expressionPlaceholder}
                 spellCheck={false}
                 autoComplete="off"
                 aria-describedby="expression-help expression-error"
@@ -88,23 +92,28 @@ export function RollWorkspace({
               />
               <button className="primary-button" type="submit" disabled={Boolean(validation.error) || busy}>
                 <Play size={17} aria-hidden="true" />
-                {busy ? 'Rolling…' : 'Roll'}
+                {busy ? copy.roll.rolling : copy.roll.rollButton}
               </button>
             </div>
-            <p id="expression-help" className="field-help">Examples: 2d6+3 · 4d6kh3 · 2d20kl1 · 6d10dh2</p>
+            <p id="expression-help" className="field-help">{copy.roll.expressionHelp}</p>
             <p id="expression-error" className="field-error" role="alert">{validation.error ?? error ?? ''}</p>
           </form>
 
           <div className="preset-save-row">
             <input
-              aria-label="Preset name"
+              aria-label={copy.roll.presetNameLabel}
               value={presetName}
               onChange={(event) => setPresetName(event.target.value)}
-              placeholder="Preset name"
+              placeholder={copy.roll.presetNamePlaceholder}
               maxLength={48}
             />
-            <button type="button" className="secondary-button" onClick={savePreset} disabled={!presetName.trim() || Boolean(validation.error)}>
-              <BookmarkPlus size={17} aria-hidden="true" /> Save preset
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={savePreset}
+              disabled={!presetName.trim() || Boolean(validation.error)}
+            >
+              <BookmarkPlus size={17} aria-hidden="true" /> {copy.roll.savePreset}
             </button>
           </div>
         </div>
@@ -117,7 +126,7 @@ export function RollWorkspace({
                 <span>{new Date(lastRoll.rolledAt).toLocaleTimeString()}</span>
               </div>
               <div className="roll-total">{lastRoll.total}</div>
-              <div className="dice-results" aria-label="Individual dice results">
+              <div className="dice-results" aria-label={copy.roll.diceResults}>
                 {lastRoll.dice.map((die) => (
                   <span key={`${lastRoll.id}-${die.index}`} className={die.kept ? 'die-result' : 'die-result dropped'}>
                     {die.value}
@@ -125,15 +134,15 @@ export function RollWorkspace({
                 ))}
               </div>
               <p className="result-note">
-                {lastRoll.modifier === 0 ? 'No modifier' : `Modifier ${lastRoll.modifier > 0 ? '+' : ''}${lastRoll.modifier}`}
-                {lastRoll.seed ? ` · Seed ${lastRoll.seed}` : ''}
+                {lastRoll.modifier === 0 ? copy.roll.noModifier : copy.roll.modifier(lastRoll.modifier)}
+                {lastRoll.seed ? ` · ${copy.roll.seed(lastRoll.seed)}` : ''}
               </p>
             </>
           ) : (
             <div className="empty-state">
               <Sparkles size={32} aria-hidden="true" />
-              <h2>Your next roll appears here</h2>
-              <p>Choose a quick die or enter an expression, then roll.</p>
+              <h2>{copy.roll.emptyTitle}</h2>
+              <p>{copy.roll.emptyDescription}</p>
             </div>
           )}
         </div>
@@ -142,11 +151,11 @@ export function RollWorkspace({
       <section className="panel presets-panel" aria-labelledby="presets-heading">
         <div className="panel-heading">
           <div>
-            <p className="eyebrow">Reusable setups</p>
-            <h2 id="presets-heading">Tabletop presets</h2>
+            <p className="eyebrow">{copy.roll.presetsEyebrow}</p>
+            <h2 id="presets-heading">{copy.roll.presetsTitle}</h2>
           </div>
           <button className="icon-text-button" type="button" onClick={() => onExpressionChange('1d20')}>
-            <RotateCcw size={16} aria-hidden="true" /> Reset
+            <RotateCcw size={16} aria-hidden="true" /> {copy.roll.reset}
           </button>
         </div>
         <div className="preset-grid">
@@ -158,7 +167,12 @@ export function RollWorkspace({
                 {preset.description ? <span>{preset.description}</span> : null}
               </button>
               {!preset.id.startsWith('builtin-') ? (
-                <button className="preset-delete" type="button" aria-label={`Delete ${preset.name}`} onClick={() => onDeletePreset(preset.id)}>
+                <button
+                  className="preset-delete"
+                  type="button"
+                  aria-label={copy.roll.deletePreset(preset.name)}
+                  onClick={() => onDeletePreset(preset.id)}
+                >
                   <Trash2 size={16} aria-hidden="true" />
                 </button>
               ) : null}
