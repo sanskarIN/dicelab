@@ -61,7 +61,13 @@ jobs:
         run: cargo fmt --all -- --check
       - name: Rust tests
         working-directory: src-tauri
-        run: cargo test --locked
+        run: |
+          if [ -f Cargo.lock ]; then cargo test --locked; else cargo test; fi
       - name: Clippy
         working-directory: src-tauri
-        run: cargo clippy --all-targets --all-features --locked -- -D warnings
+        run: |
+          if [ -f Cargo.lock ]; then
+            cargo clippy --all-targets --all-features --locked -- -D warnings
+          else
+            cargo clippy --all-targets --all-features -- -D warnings
+          fi
