@@ -47,6 +47,39 @@ describe('DiceLab backups', () => {
     expect(restored.settings).toEqual(DEFAULT_SETTINGS);
   });
 
+  it('round trips the Hindi locale preference', () => {
+    const settings = { ...DEFAULT_SETTINGS, locale: 'hi' as const };
+    const restored = parseBackupJson(backupToJson(createBackup([], [], settings)));
+    expect(restored.settings.locale).toBe('hi');
+  });
+
+  it('keeps schema-v1 backups without locale compatible by defaulting to English', () => {
+    const { locale: _locale, ...legacySettings } = DEFAULT_SETTINGS;
+    const restored = parseBackupJson(
+      JSON.stringify({
+        schemaVersion: 1,
+        exportedAt: '2026-08-19T00:00:00.000Z',
+        history: [],
+        presets: [],
+        settings: legacySettings,
+      }),
+    );
+    expect(restored.settings.locale).toBe('en');
+  });
+
+  it('falls back to English when a backup contains an unsupported locale', () => {
+    const restored = parseBackupJson(
+      JSON.stringify({
+        schemaVersion: 1,
+        exportedAt: '2026-08-19T00:00:00.000Z',
+        history: [],
+        presets: [],
+        settings: { ...DEFAULT_SETTINGS, locale: 'xx' },
+      }),
+    );
+    expect(restored.settings.locale).toBe('en');
+  });
+
   it('round trips a seeded roll created from the maximum-length user seed', () => {
     const userSeed = 's'.repeat(120);
     const seededRoll: RollResult = {
