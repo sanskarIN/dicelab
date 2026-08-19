@@ -33,6 +33,8 @@ jobs:
         run: npm run test
       - name: Production web build
         run: npm run build
+      - name: Real browser end-to-end smoke
+        run: npm run test:e2e
       - uses: actions/upload-artifact@v4
         with:
           name: dicelab-web-${{ github.ref_name }}
