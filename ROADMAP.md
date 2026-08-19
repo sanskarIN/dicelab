@@ -62,12 +62,15 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Component keyboard/accessibility smoke tests for modal and settings surfaces.
 - [x] Browser-state integration tests for roll/history/export, backup restore, and About navigation.
 - [x] Generated parser normalization/case/whitespace invariants.
+- [x] Native Rust generated normalization corpus and adversarial malformed-input regression corpus.
 - [x] Large-history progressive-rendering regression coverage.
 - [x] Domain history-filter regression coverage.
 - [x] Structured logger/storage-degradation security regression coverage.
 - [x] Executable Vitest benchmarks for parser, RNG, probability, 5,000-record filtering, and 5,000-record statistics.
-- [ ] Add a dedicated Rust fuzz target for expression parsing.
-- [ ] Add real-browser E2E tests for rendering/download/reload journeys.
+- [x] Dependency-free real-browser E2E runner for onboarding, roll/history, downloads, reload persistence, keyboard commands, probability, clear-data, and backup restore.
+- [x] Dependency-free CDP transport tests and E2E syntax self-check.
+- [ ] Observe the full real-browser E2E journey green on CI/release-candidate infrastructure.
+- [ ] Add a coverage-guided Rust fuzz target (`cargo-fuzz` or equivalent) from a network-enabled tooling environment.
 - [ ] Record release-candidate benchmark evidence on a documented machine/runtime.
 
 ## Phase 5 — Release engineering
@@ -76,7 +79,9 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Enforce locked dependencies in main CI and tagged release verification.
 - [x] Configure tagged Windows/macOS/Linux/web artifact builds.
 - [x] Package verified artifacts into draft GitHub releases with SHA-256 checksums.
+- [x] Add release provenance metadata (tag/source commit/workflow run) and checksum it with packaged artifacts.
 - [x] Add dependency-free repository secret audit and self-tests to CI/tagged verification.
+- [x] Add synchronized application-version audit and release-tag/version agreement gate.
 - [x] Document branch protection, labels, milestones, Discussions, security settings, and release governance.
 - [ ] Verify clean builds on Windows, macOS, and Linux from the current release candidate.
 - [ ] Capture real screenshots from release-candidate builds.
@@ -86,12 +91,14 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 ## Phase 6 — Final audit
 
 - [ ] Clean-checkout setup verification.
-- [ ] Full lint/format/type/test/build suite observed green on the release commit.
+- [ ] Full pre-install/security/version/E2E-infrastructure checks observed green on the release commit.
+- [ ] Full lint/format/type/test/build/browser-E2E suite observed green on the release commit.
+- [ ] Rust format/test/Clippy observed green on the release commit.
 - [ ] Dependency, CodeQL, repository security settings, and secret-scan results reviewed.
 - [ ] Documentation-link audit observed green on the release commit.
 - [ ] Network-enabled external-link audit.
 - [ ] Manual keyboard and screen-reader smoke review.
-- [ ] Release-candidate artifact verification.
+- [ ] Release-candidate artifact/provenance/checksum verification.
 - [ ] Confirm screenshots and release notes match the actual candidate build.
 
 ## Post-1.0 candidates
