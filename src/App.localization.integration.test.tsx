@@ -48,7 +48,7 @@ describe('live localization and user-created presets', () => {
 
     fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('त्वरित क्रियाएँ')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'त्वरित क्रियाएँ' })).toBeInTheDocument();
     expect(screen.getByText('पासे रोल करें')).toBeInTheDocument();
     expect(screen.getByText('प्रायिकता कैलकुलेटर')).toBeInTheDocument();
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
