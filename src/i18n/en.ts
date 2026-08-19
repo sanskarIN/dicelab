@@ -16,6 +16,21 @@ export const en = {
     body: 'Your local DiceLab data has not been cleared. Reload the app to recover this interface.',
     reload: 'Reload DiceLab',
   },
+  domainErrors: {
+    invalidDiceFormat: 'Use an expression such as 2d6+3, 4d6kh3, or 1d20.',
+    diceCountRange: (min: number, max: number) => `Dice count must be between ${min} and ${max}.`,
+    sideCountRange: (min: number, max: number) =>
+      `Sides must be between ${min} and ${max.toLocaleString('en-US')}.`,
+    modifierRange: (max: number) => `Modifier magnitude must not exceed ${max.toLocaleString('en-US')}.`,
+    selectionCountTooSmall: (min: number) => `Keep/drop count must be at least ${min}.`,
+    keepCountExceedsDice: 'Keep count cannot exceed the number of dice.',
+    dropCountRemovesAll: 'Drop count must leave at least one die.',
+    probabilityDistributionTooLarge: 'This distribution is too large for the interactive exact calculator.',
+    probabilityUnsafeOutcomes: 'This expression has too many raw outcomes to preserve exact integer counts safely.',
+    probabilityKeepDropLimit: (limit: number) =>
+      `Exact keep/drop calculation is limited to ${limit.toLocaleString('en-US')} raw outcomes.`,
+    probabilityEmpty: 'Probability calculation produced no outcomes.',
+  },
   navigation: {
     roll: 'Roll',
     history: 'History',
