@@ -7,6 +7,7 @@ DiceLab releases should be reproducible, reviewed, and based on a clean commit w
 Keep the version aligned in:
 
 - `package.json`
+- `src/config/app.ts`
 - `src-tauri/Cargo.toml`
 - `src-tauri/tauri.conf.json`
 - `CHANGELOG.md`
@@ -17,15 +18,16 @@ Use semantic-versioning principles. During pre-1.0 development, minor releases m
 
 Before tagging a release:
 
-1. Ensure dependency lockfiles are committed and current.
+1. Ensure `package-lock.json` and `src-tauri/Cargo.lock` are committed and current.
 2. Verify CI is green on the exact release commit.
 3. Run the clean-checkout quality suite.
 4. Review dependency/security findings.
 5. Complete the accessibility smoke checklist.
 6. Capture real screenshots from the release candidate.
 7. Update `CHANGELOG.md`, `ROADMAP.md`, and `what_changed.md`.
-8. Verify version strings match.
+8. Verify every version location matches.
 9. Confirm the repository contains no credentials or generated signing secrets.
+10. Confirm seeded web/desktop compatibility reference-vector tests pass.
 
 ## Clean-checkout verification
 
@@ -70,7 +72,29 @@ git tag -a v0.1.0 -m "DiceLab v0.1.0"
 git push origin v0.1.0
 ```
 
-The release workflow is tag-driven. It builds supported platform artifacts and uploads them for the GitHub release process.
+The tag-driven release workflow then:
+
+1. runs the frontend format, lint, test, and production-build checks with `npm ci`;
+2. builds Windows, macOS, and Linux desktop bundles after locked Rust tests/Clippy checks;
+3. uploads each platform artifact to the workflow run;
+4. downloads only artifacts produced by successful prerequisite jobs;
+5. creates a ZIP per artifact set;
+6. generates `SHA256SUMS.txt` for the ZIP files;
+7. creates or updates a **draft** GitHub release for the tag and uploads the packages/checksums.
+
+The workflow deliberately leaves the release as a draft. A human maintainer must still install/smoke-test the produced bundles and review generated notes before publishing.
+
+## Draft release review
+
+Before publishing the draft:
+
+- download each uploaded ZIP and compare its SHA-256 digest with `SHA256SUMS.txt`;
+- extract and inspect expected platform files;
+- complete the artifact smoke matrix below;
+- replace or edit generated notes so they accurately match `CHANGELOG.md`;
+- clearly state whether artifacts are unsigned, signed, notarized, or otherwise platform-verified;
+- attach release screenshots only if they come from the candidate build;
+- keep the release draft if any blocker remains.
 
 ## Release notes
 
@@ -79,6 +103,7 @@ Release notes should contain:
 - user-visible additions and fixes;
 - security/privacy changes;
 - accessibility changes;
+- deterministic RNG compatibility changes;
 - known limitations;
 - upgrade or backup-schema notes;
 - platform-specific caveats;
@@ -91,12 +116,15 @@ Do not describe planned functionality as shipped functionality.
 For each produced bundle:
 
 1. Confirm the expected file exists and is non-empty.
-2. Install or launch it on the intended platform.
-3. Complete a secure roll and a seeded roll.
-4. Verify settings persist after restart.
-5. Export a backup and restore it.
-6. Verify About/version/contact information.
-7. Confirm the build contains no development server references.
+2. Verify the ZIP digest against `SHA256SUMS.txt`.
+3. Install or launch it on the intended platform.
+4. Complete a secure roll and a seeded roll.
+5. Compare a documented seeded reference case with the web companion.
+6. Verify settings persist after restart.
+7. Export a backup and restore it.
+8. Verify About/version/contact information.
+9. Confirm the build contains no development server references.
+10. Verify reduced-motion and keyboard navigation behavior.
 
 ## Rollback
 
