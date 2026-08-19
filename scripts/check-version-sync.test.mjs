@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { extractCargoPackageVersion, extractFrontendVersion, validateVersions } from './check-version-sync.mjs';
+import {
+  extractCargoPackageVersion,
+  extractFrontendVersion,
+  normalizeExpectedVersion,
+  validateVersions,
+} from './check-version-sync.mjs';
 
 test('extracts frontend version metadata', () => {
   assert.equal(extractFrontendVersion("export const APP_VERSION = '1.2.3';\n"), '1.2.3');
@@ -20,6 +25,39 @@ test('accepts matching semantic versions including prerelease metadata', () => {
       { source: 'c', version },
     ]),
     version,
+  );
+});
+
+test('normalizes a conventional v-prefixed release tag', () => {
+  assert.equal(normalizeExpectedVersion('v1.2.3'), '1.2.3');
+  assert.equal(normalizeExpectedVersion('1.2.3'), '1.2.3');
+  assert.equal(normalizeExpectedVersion(undefined), undefined);
+});
+
+test('accepts a release tag that matches the synchronized application version', () => {
+  assert.equal(
+    validateVersions(
+      [
+        { source: 'package.json', version: '1.2.3' },
+        { source: 'tauri.conf.json', version: '1.2.3' },
+      ],
+      'v1.2.3',
+    ),
+    '1.2.3',
+  );
+});
+
+test('rejects a release tag that does not match the application version', () => {
+  assert.throws(
+    () => validateVersions([{ source: 'package.json', version: '1.2.3' }], 'v1.2.4'),
+    /Release tag\/version mismatch: tag=v1\.2\.4, application=1\.2\.3/,
+  );
+});
+
+test('rejects an invalid expected release tag version', () => {
+  assert.throws(
+    () => validateVersions([{ source: 'package.json', version: '1.2.3' }], 'release-one'),
+    /Expected release version is not valid SemVer/,
   );
 });
 
