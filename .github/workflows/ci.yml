@@ -39,6 +39,8 @@ jobs:
         run: npm run test
       - name: Production web build
         run: npm run build
+      - name: Real browser end-to-end smoke
+        run: npm run test:e2e
 
   rust:
     name: Rust quality
