@@ -1,5 +1,5 @@
 import { BarChart3, Dices, History, Info, Search, Settings, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { messages } from '../i18n';
 import type { AppView } from './AppShell';
 
@@ -10,67 +10,75 @@ interface CommandPaletteProps {
   onSetExpression: (expression: string) => void;
 }
 
-const commands: Array<{ label: string; detail: string; icon: typeof Dices; run: (props: CommandPaletteProps) => void }> = [
-  {
-    label: messages.commands.rollDice,
-    detail: messages.commands.rollDiceDetail,
-    icon: Dices,
-    run: (props) => props.onNavigate('roll'),
-  },
-  {
-    label: messages.commands.history,
-    detail: messages.commands.historyDetail,
-    icon: History,
-    run: (props) => props.onNavigate('history'),
-  },
-  {
-    label: messages.commands.probability,
-    detail: messages.commands.probabilityDetail,
-    icon: BarChart3,
-    run: (props) => props.onNavigate('probability'),
-  },
-  {
-    label: messages.commands.settings,
-    detail: messages.commands.settingsDetail,
-    icon: Settings,
-    run: (props) => props.onNavigate('settings'),
-  },
-  {
-    label: messages.commands.about,
-    detail: messages.commands.aboutDetail,
-    icon: Info,
-    run: (props) => props.onNavigate('about'),
-  },
-  {
-    label: messages.commands.advantage,
-    detail: messages.commands.advantageDetail,
-    icon: Dices,
-    run: (props) => {
-      props.onSetExpression('2d20kh1');
-      props.onNavigate('roll');
+type Command = {
+  label: string;
+  detail: string;
+  icon: typeof Dices;
+  run: (props: CommandPaletteProps) => void;
+};
+
+function getCommands(): Command[] {
+  return [
+    {
+      label: messages.commands.rollDice,
+      detail: messages.commands.rollDiceDetail,
+      icon: Dices,
+      run: (props) => props.onNavigate('roll'),
     },
-  },
-  {
-    label: messages.commands.ability,
-    detail: messages.commands.abilityDetail,
-    icon: Dices,
-    run: (props) => {
-      props.onSetExpression('4d6kh3');
-      props.onNavigate('roll');
+    {
+      label: messages.commands.history,
+      detail: messages.commands.historyDetail,
+      icon: History,
+      run: (props) => props.onNavigate('history'),
     },
-  },
-];
+    {
+      label: messages.commands.probability,
+      detail: messages.commands.probabilityDetail,
+      icon: BarChart3,
+      run: (props) => props.onNavigate('probability'),
+    },
+    {
+      label: messages.commands.settings,
+      detail: messages.commands.settingsDetail,
+      icon: Settings,
+      run: (props) => props.onNavigate('settings'),
+    },
+    {
+      label: messages.commands.about,
+      detail: messages.commands.aboutDetail,
+      icon: Info,
+      run: (props) => props.onNavigate('about'),
+    },
+    {
+      label: messages.commands.advantage,
+      detail: messages.commands.advantageDetail,
+      icon: Dices,
+      run: (props) => {
+        props.onSetExpression('2d20kh1');
+        props.onNavigate('roll');
+      },
+    },
+    {
+      label: messages.commands.ability,
+      detail: messages.commands.abilityDetail,
+      icon: Dices,
+      run: (props) => {
+        props.onSetExpression('4d6kh3');
+        props.onNavigate('roll');
+      },
+    },
+  ];
+}
 
 export function CommandPalette(props: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
-  const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    return commands.filter(
-      (command) => !normalized || `${command.label} ${command.detail}`.toLowerCase().includes(normalized),
-    );
-  }, [query]);
+  const commands = getCommands();
+  const normalized = query.trim().toLowerCase();
+  const filtered = commands.filter(
+    (command) => !normalized || `${command.label} ${command.detail}`.toLowerCase().includes(normalized),
+  );
 
   useEffect(() => {
     if (!props.open) return undefined;
@@ -85,7 +93,7 @@ export function CommandPalette(props: CommandPaletteProps) {
 
   if (!props.open) return null;
 
-  const run = (command: (typeof commands)[number]) => {
+  const run = (command: Command) => {
     command.run(props);
     props.onClose();
   };
