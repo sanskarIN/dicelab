@@ -34,6 +34,26 @@ describe('SettingsPanel localized backup failures', () => {
     expect(screen.queryByText(/developer-only size detail/i)).not.toBeInTheDocument();
   });
 
+  it('shows the safe Hindi size limit when backup export exceeds the restore contract', async () => {
+    setLocale('hi');
+    render(
+      <SettingsPanel
+        settings={{ ...DEFAULT_SETTINGS, locale: 'hi' }}
+        onChange={vi.fn()}
+        onExportBackup={vi.fn().mockRejectedValue(
+          new BackupValidationError('backup-too-large', 'private serialization detail', { limit: 5_000_000 }),
+        )}
+        onImportBackup={vi.fn().mockResolvedValue(undefined)}
+        onClearData={vi.fn()}
+        onOpenAbout={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'बैकअप निर्यात करें' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('बैकअप समर्थित 5 MB सीमा से बड़ा है।');
+    expect(screen.queryByText(/private serialization detail/i)).not.toBeInTheDocument();
+  });
+
   it('shows a generic Hindi message for an unknown backup export failure', async () => {
     setLocale('hi');
     render(
