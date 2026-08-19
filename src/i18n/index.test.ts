@@ -1,5 +1,9 @@
-import { describe, expect, it } from 'vitest';
-import { getMessages, messages, type SupportedLocale } from './index';
+import { afterEach, describe, expect, it } from 'vitest';
+import { getMessages, messages, setLocale, type SupportedLocale } from './index';
+
+afterEach(() => {
+  setLocale('en');
+});
 
 describe('message catalogs', () => {
   it('uses English as the default locale', () => {
@@ -30,5 +34,12 @@ describe('message catalogs', () => {
     expect(hindi.history.distinctTotals(3)).toBe('3 अलग कुल');
     expect(hindi.domainErrors.diceCountRange(1, 1000)).toBe('पासों की संख्या 1 से 1000 के बीच होनी चाहिए।');
     expect(hindi.history.histogramTitle(7, 6, 16.666)).toBe('7: 6 रोल (16.7%)');
+  });
+
+  it('updates the exported live catalog when locale changes', () => {
+    setLocale('hi');
+    expect(messages.settings.heading).toBe('सेटिंग्स');
+    setLocale('en');
+    expect(messages.settings.heading).toBe('Settings');
   });
 });
