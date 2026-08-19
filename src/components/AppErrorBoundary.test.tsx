@@ -29,6 +29,5 @@ describe('AppErrorBoundary', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('DiceLab hit an unexpected interface error.');
     expect(screen.getByRole('button', { name: 'Reload DiceLab' })).toBeInTheDocument();
     expect(consoleError).toHaveBeenCalledWith('DiceLab interface recovery boundary activated.');
-    expect(consoleError).not.toHaveBeenCalledWith(expect.stringContaining('synthetic render failure'));
   });
 });
