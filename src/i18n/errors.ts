@@ -72,4 +72,6 @@ export function formatBackupError(cause: unknown, fallback: string): string {
     case 'invalid-random-mode':
       return messages.backupErrors.invalidRandomMode;
   }
+
+  return fallback;
 }
