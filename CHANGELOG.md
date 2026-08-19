@@ -22,16 +22,18 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - About/privacy/support surfaces and **Made by the Sanskar** credit.
 - Localized application-level recovery UI for unexpected React render failures without clearing local data.
 - Typed English message catalog and locale boundary for migrated user-facing React/preset copy.
+- Reviewed Hindi message catalog with persisted English/Hindi language selection, localized built-in presets, document-language metadata, and backup compatibility.
 - Stable parser, probability, and backup validation error codes with localized presentation mappings.
 - Localization contributor guide and locale/error-contract tests.
 - Structured local application logger with recursive sensitive-key redaction, bounded context, and raw-error omission.
 - Safe operational events for storage degradation and root UI recovery.
-- Browser integration coverage for roll → history → export, backup restore, and Settings → About journeys.
+- Browser integration coverage for roll → history → export, backup restore, Settings → About, and live Hindi switching journeys.
 - Dependency-free real-browser production-bundle E2E smoke covering onboarding, rolling, history, real CSV download, reload persistence, keyboard command palette, probability, real backup download, clear-data flow, real file-input restore, and restored history.
 - Extracted dependency-free CDP transport with Node tests for command routing, protocol errors, event waits/timeouts, and socket closure.
 - Component keyboard/accessibility regression tests for command palette, onboarding, settings, large-history behavior, and root error recovery.
 - Generated TypeScript parser normalization/case/whitespace invariants.
 - Generated native Rust parser normalization corpus plus adversarial malformed-input corpus.
+- Coverage-guided native parser fuzz target with documented local workflow and a bounded scheduled/manual GitHub Actions campaign.
 - Corrupted local-storage recovery tests and persisted-data validation.
 - Rust/TypeScript cross-runtime deterministic RNG reference-vector tests.
 - Progressive history rendering in 200-entry windows while full filtered statistics/exports remain available.
@@ -54,6 +56,7 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - Backup import validation rejects internally inconsistent roll totals, duplicate IDs, duplicate/out-of-range die indices, impossible die values, malformed timestamps, missing deterministic seeds, mismatched modifiers, and invalid keep/drop state.
 - Parser/probability/backup UI feedback now resolves from stable error codes and catalog entries rather than raw exception messages.
 - Imported and locally persisted settings normalize contradictory reduced-motion/animation state.
+- Locale preferences are normalized to the reviewed English/Hindi set; missing or unsupported schema-v1 backup locale values fall back to English.
 - Local history and custom presets are validated, bounded, and deduplicated before use or persistence.
 - History query logic is centralized in the domain layer so UI filtering, tests, and performance benchmarks share one implementation.
 - Normal CI and tagged web release verification now self-test the browser automation infrastructure and require the real-browser smoke after the production build.
