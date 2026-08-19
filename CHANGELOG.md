@@ -27,8 +27,11 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - Structured local application logger with recursive sensitive-key redaction, bounded context, and raw-error omission.
 - Safe operational events for storage degradation and root UI recovery.
 - Browser integration coverage for roll → history → export, backup restore, and Settings → About journeys.
+- Dependency-free real-browser production-bundle E2E smoke covering onboarding, rolling, history, real CSV download, reload persistence, keyboard command palette, probability, real backup download, clear-data flow, real file-input restore, and restored history.
+- Extracted dependency-free CDP transport with Node tests for command routing, protocol errors, event waits/timeouts, and socket closure.
 - Component keyboard/accessibility regression tests for command palette, onboarding, settings, large-history behavior, and root error recovery.
-- Generated parser normalization/case/whitespace invariants.
+- Generated TypeScript parser normalization/case/whitespace invariants.
+- Generated native Rust parser normalization corpus plus adversarial malformed-input corpus.
 - Corrupted local-storage recovery tests and persisted-data validation.
 - Rust/TypeScript cross-runtime deterministic RNG reference-vector tests.
 - Progressive history rendering in 200-entry windows while full filtered statistics/exports remain available.
@@ -36,9 +39,11 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - Executable Vitest benchmark suites for parser, RNG, probability, 5,000-record history filtering, and 5,000-record statistics.
 - Dependency-free Markdown link audit wired into normal CI and tagged release checks.
 - Dependency-free high-confidence secret audit plus built-in Node self-tests, wired into CI and tagged release verification before dependency installation.
+- Application version consistency audit across npm/frontend/Cargo/Tauri metadata plus release-tag/version agreement checks.
+- Release provenance manifest containing repository/tag/source commit/workflow identifiers, included in SHA-256 checksum verification.
 - Repository-governance guide covering branch protection rollout, labels, milestones, Discussions, security settings, and release review.
 - GitHub CI with locked npm/Cargo dependency verification.
-- Tag-driven cross-platform draft release packaging with ZIP archives and `SHA256SUMS.txt`.
+- Tag-driven cross-platform draft release packaging with ZIP archives, `RELEASE-METADATA.json`, and `SHA256SUMS.txt`.
 - Tauri CSP and least-privilege capability configuration.
 - Professional project documentation baseline.
 
@@ -51,6 +56,8 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - Imported and locally persisted settings normalize contradictory reduced-motion/animation state.
 - Local history and custom presets are validated, bounded, and deduplicated before use or persistence.
 - History query logic is centralized in the domain layer so UI filtering, tests, and performance benchmarks share one implementation.
+- Normal CI and tagged web release verification now self-test the browser automation infrastructure and require the real-browser smoke after the production build.
+- Release tags must match the synchronized declared application version before release dependencies/builds proceed.
 - Release tags now produce a draft GitHub release only after the web and all desktop build jobs succeed; publication remains a deliberate maintainer action.
 - Core product metadata is centralized for Settings/About consistency.
 
@@ -62,6 +69,7 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - Unexpected React render failures now show a recovery surface instead of leaving the product with an unhandled blank interface.
 - Backup-error localization now always returns the caller-provided safe fallback if a future/unrecognized code reaches the mapper.
 - History filter tests no longer use a query that ambiguously matches both a total and an expression suffix.
+- Browser E2E navigation/reload synchronization now waits for DevTools page-load events and surfaces `Page.navigate` network/policy errors explicitly instead of racing the previous document.
 
 ### Security
 
@@ -74,9 +82,10 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - Storage/recovery diagnostics emit only stable event names and bounded safe metadata.
 - CI/tagged builds run a self-tested high-confidence secret scanner that never prints matched credential values.
 - The application recovery boundary logs only a fixed structured event from DiceLab rather than serializing raw exception contents.
+- Release provenance/checksum metadata ties packaged files to a tag/source commit/workflow run for draft review.
 - Desktop content is constrained by a restrictive CSP.
 - No broad filesystem, shell, or network plugin permissions are granted.
 
 ## [0.1.0] - planned
 
-The first release candidate will be tagged only after clean-checkout verification, platform builds, real screenshots, dependency/security review, and release-candidate smoke checks satisfy the Definition of Done.
+The first release candidate will be tagged only after clean-checkout verification, platform builds, real screenshots, dependency/security review, real-browser/desktop smoke checks, and release-candidate verification satisfy the Definition of Done.
