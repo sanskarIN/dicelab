@@ -71,9 +71,11 @@ export const en = {
     noRolls: 'No rolls yet',
     noMatchesBody: 'Try a different expression or total.',
     noRollsBody: 'Roll some dice and your local history will appear here.',
+    showMore: 'Show more rolls',
     distinctTotals: (count: number) => `${count} distinct totals`,
     histogramTitle: (total: number, count: number, percentage: number) =>
       `${total}: ${count} rolls (${percentage.toFixed(1)}%)`,
+    showingEntries: (visible: number, total: number) => `Showing ${visible} of ${total} matching rolls.`,
   },
   probability: {
     eyebrow: 'Exact outcomes',
