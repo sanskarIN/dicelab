@@ -227,7 +227,7 @@ function hasDuplicateIds(items: Array<{ id: string }>): boolean {
 }
 
 function csvCell(value: string): string {
-  const safeValue = /^[=+\-@]/.test(value) ? `'${value}` : value;
+  const safeValue = /^\s*[=+\-@]/u.test(value) ? `'${value}` : value;
   if (!/[",\r\n]/.test(safeValue)) return safeValue;
   return `"${safeValue.replaceAll('"', '""')}"`;
 }
