@@ -48,7 +48,10 @@ Real release screenshots will be captured from a verified release-candidate buil
 - Typed English message catalog and locale boundary for future localization.
 - Structured local diagnostic logging with sensitive-key redaction, bounded context, and raw-error omission.
 - Dependency-free high-confidence secret audit in normal CI and tagged release verification.
+- Dependency-free Node 22 + Chromium CDP real-browser E2E smoke for the production bundle.
 - Executable benchmark suites for parser, RNG, probability, history filtering, and statistics.
+- Automated version synchronization checks across npm/frontend/Cargo/Tauri metadata and tag/version agreement on releases.
+- Release provenance metadata and SHA-256 checksums for draft artifact review.
 - No required sign-in, analytics service, advertising SDK, remote telemetry, or donation gate.
 
 ## Supported platforms
@@ -65,9 +68,9 @@ Real release screenshots will be captured from a verified release-candidate buil
 - **Native core:** Rust + Tauri 2
 - **Frontend:** TypeScript + React + Vite
 - **Localization:** typed in-repository English catalog with stable error-code mappings and an extensible locale boundary
-- **Tests:** Vitest, Testing Library, Node built-in security-script tests, Rust unit tests, generated parser invariants, integration journeys
+- **Tests:** Vitest, Testing Library, Node built-in quality/security/CDP tests, dependency-free real-browser CDP E2E, Rust unit/generated/adversarial parser tests
 - **Benchmarks:** Vitest benchmark suites using the existing locked toolchain
-- **Quality:** ESLint, Prettier, rustfmt, Clippy, Markdown link audit, secret audit, GitHub Actions
+- **Quality:** ESLint, Prettier, rustfmt, Clippy, Markdown link audit, secret audit, version audit, GitHub Actions
 - **Security:** restrictive Tauri CSP, minimal capabilities, CodeQL/dependency update configuration, validated persistence/import boundaries, redacted local logging
 - **Persistence:** browser/webview local storage; no remote database is required
 
@@ -98,11 +101,15 @@ npm run tauri:dev
 ```bash
 npm run security:secrets:test
 npm run security:secrets
+npm run test:e2e:infra
+npm run version:check:test
+npm run version:check
 npm run docs:check
 npm run format
 npm run lint
 npm run test
 npm run build
+npm run test:e2e
 
 cd src-tauri
 cargo fmt --all -- --check
@@ -111,6 +118,8 @@ cargo clippy --all-targets --all-features --locked -- -D warnings
 ```
 
 The local secret audit reports only file/line/rule metadata and intentionally does not print matched credential values. GitHub CodeQL runs separately, and repository-level secret scanning/push protection should be enabled where available.
+
+The real-browser E2E test requires the production build and a Chromium-compatible browser; set `CHROME_BIN` if auto-discovery cannot find one. It covers onboarding, roll/history, actual browser downloads, reload persistence, keyboard command navigation, probability, clear-data, and actual backup file restore. See [`docs/e2e.md`](docs/e2e.md).
 
 See [`docs/testing.md`](docs/testing.md) for the complete strategy and CI expectations.
 
@@ -138,7 +147,7 @@ Desktop bundle:
 npm run tauri:build
 ```
 
-Version tags run the release workflow, verify web quality/security checks, build web plus Windows/macOS/Linux desktop artifacts, package successful artifacts into ZIP files, generate `SHA256SUMS.txt`, and create/update a **draft** GitHub release for manual artifact verification. Platform-specific prerequisites, signing expectations, versioning, and release verification are documented in [`docs/release.md`](docs/release.md).
+Version tags run the release workflow, require the tag to match the synchronized application version, verify web quality/security/browser checks, build web plus Windows/macOS/Linux desktop artifacts, package successful artifacts into ZIP files, generate `RELEASE-METADATA.json` plus `SHA256SUMS.txt`, and create/update a **draft** GitHub release for manual artifact verification. Platform-specific prerequisites, signing expectations, versioning, and release verification are documented in [`docs/release.md`](docs/release.md).
 
 ## Architecture
 
@@ -152,6 +161,13 @@ src/
 ├── i18n/            # typed locale catalogs and stable error-to-copy mapping
 ├── services/        # persistence, export/backup, logging, native/web adapters
 └── test/            # shared browser test setup
+
+scripts/
+├── cdp-session*              # dependency-free browser protocol transport + tests
+├── e2e-browser.mjs           # production-bundle real-browser journey
+├── check-doc-links.mjs       # repository-relative Markdown audit
+├── check-secrets*            # high-confidence credential audit + self-test
+└── check-version-sync*       # application/tag version audit + self-test
 
 src-tauri/
 ├── capabilities/    # least-privilege desktop permissions
@@ -200,6 +216,7 @@ Contributions are welcome. Start with [`CONTRIBUTING.md`](CONTRIBUTING.md), foll
 - [Development](docs/development.md)
 - [Architecture](docs/architecture.md)
 - [Testing](docs/testing.md)
+- [Real-browser E2E](docs/e2e.md)
 - [Accessibility](docs/accessibility.md)
 - [Localization](docs/localization.md)
 - [Structured logging](docs/logging.md)
