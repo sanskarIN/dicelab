@@ -18,8 +18,15 @@ describe('calculateProbability', () => {
     expect(distribution.expectedValue).toBeCloseTo(70, 10);
   });
 
-  it('rejects sum distributions whose exact integer counts would exceed safe precision', () => {
-    expect(() => calculateProbability('21d6')).toThrow(ProbabilityComplexityError);
+  it('uses a stable code when exact integer counts would exceed safe precision', () => {
+    try {
+      calculateProbability('21d6');
+      throw new Error('expected probability calculation to reject unsafe outcome count');
+    } catch (cause) {
+      expect(cause).toBeInstanceOf(ProbabilityComplexityError);
+      expect((cause as ProbabilityComplexityError).code).toBe('unsafe-outcome-count');
+      expect((cause as ProbabilityComplexityError).context.limit).toBe(Number.MAX_SAFE_INTEGER);
+    }
   });
 
   it('enumerates manageable keep-highest expressions exactly', () => {
@@ -37,7 +44,14 @@ describe('calculateProbability', () => {
     expect(distribution.maximum).toBe(18);
   });
 
-  it('protects the UI from intractable keep/drop enumeration', () => {
-    expect(() => calculateProbability('20d20kh10')).toThrow(ProbabilityComplexityError);
+  it('uses a stable code for intractable keep/drop enumeration', () => {
+    try {
+      calculateProbability('20d20kh10');
+      throw new Error('expected probability calculation to reject complex keep/drop expression');
+    } catch (cause) {
+      expect(cause).toBeInstanceOf(ProbabilityComplexityError);
+      expect((cause as ProbabilityComplexityError).code).toBe('keep-drop-too-complex');
+      expect((cause as ProbabilityComplexityError).context.limit).toBe(2_000_000);
+    }
   });
 });
