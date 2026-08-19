@@ -18,7 +18,7 @@ describe('AppErrorBoundary', () => {
     expect(screen.getByText('Healthy view')).toBeInTheDocument();
   });
 
-  it('replaces a failed interface with a localized recovery action', () => {
+  it('replaces a failed interface with a localized recovery action and safe structured event', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     render(
       <AppErrorBoundary>
@@ -28,6 +28,13 @@ describe('AppErrorBoundary', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('DiceLab hit an unexpected interface error.');
     expect(screen.getByRole('button', { name: 'Reload DiceLab' })).toBeInTheDocument();
-    expect(consoleError).toHaveBeenCalledWith('DiceLab interface recovery boundary activated.');
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'error',
+        event: 'ui.recovery_boundary_activated',
+        context: { surface: 'application-root' },
+      }),
+    );
+    expect(JSON.stringify(consoleError.mock.calls)).not.toContain('synthetic render failure');
   });
 });
