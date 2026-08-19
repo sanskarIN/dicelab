@@ -72,6 +72,77 @@ The audit compares `git ls-files -z` with exact first-column paths in `docs/repo
 
 `.github/workflows/repository-audit.yml` now includes both the inventory self-test and exhaustive tracked-file audit.
 
+## Correctness fixes discovered by the documentation audit
+
+Writing the application flows/data/security contracts exposed implementation/policy mismatches that were fixed rather than documented as if they were correct.
+
+### Backup export/restore size parity
+
+Previously the importer rejected backups above 5,000,000 UTF-8 bytes but browser export could still create a larger backup.
+
+Now:
+
+- `backupToJson()` enforces the same 5,000,000-byte `TextEncoder` limit as `parseBackupJson()`;
+- oversized output fails before browser/native save rather than being silently truncated;
+- the stable `backup-too-large` error/context is reused;
+- Settings renders the existing localized 5 MB backup error for known oversized exports;
+- the generic native text transport remains separately capped at 6,000,000 bytes;
+- tests cover oversized serialization and Hindi export failure feedback without raw private/developer error details.
+
+Relevant commits include:
+
+- `3595652f` — `fix: keep exported backups within restore size limit`
+- `c57a2dc0` — `fix: show localized backup export size errors`
+- `b4d3fa1c` — `test: reject backups too large to restore before export`
+- `825ab06e` — `test: localize oversized backup export feedback`
+
+### Live shell and command-palette localization
+
+Persistent shell navigation and command definitions previously captured translated strings at module evaluation, so a live English/Hindi switch could leave those surfaces in the previous language until reload.
+
+Now:
+
+- `AppShell` builds navigation labels during render;
+- `CommandPalette` builds command labels/details during render through `getCommands()`;
+- the shell brand accessible name no longer appends a hardcoded English word;
+- the live application integration test verifies Hindi shell navigation, command-palette heading/commands, built-in presets, and document language while preserving user-created preset text;
+- localization documentation explicitly forbids module-level capture of translated primitive values that need live switching.
+
+Relevant commits include:
+
+- `c506ff79` — `fix: refresh navigation labels after locale changes`
+- `0dd6fcef` — `fix: refresh command labels after locale changes`
+- `e38f4864` — `test: cover live shell and command palette localization`
+- `f4850483` — `fix: remove hardcoded English from brand accessible name`
+- `269c7261` — `test: target localized command dialog semantically`
+- `12a2b904` — `docs: prevent stale module captured locale strings`
+
+### Production CSP versus local development loopback
+
+The Tauri security/offline-network audits originally treated `devCsp` exactly like packaged production CSP and therefore could falsely reject the legitimate Vite/Tauri development sources `http://localhost:1420` and `ws://localhost:1421`.
+
+Now:
+
+- packaged production CSP remains strict;
+- explicit loopback URLs are allowed only while auditing `devCsp`;
+- supported loopback forms are `localhost`, `127.0.0.1`, and `[::1]`;
+- scheme-wide `http:` / `https:` / `ws:` / `wss:` sources remain forbidden;
+- non-loopback remote development origins remain forbidden;
+- localhost remains forbidden as a packaged production dependency;
+- tests cover development loopback acceptance plus production/non-loopback/broad-scheme rejection;
+- `docs/tauri-security-policy.md` and `docs/offline-network-policy.md` document the distinction.
+
+Relevant commits include:
+
+- `d6739ff4` — `fix: allow loopback development origins in Tauri CSP audit`
+- `20b81e25` — `test: distinguish dev loopback from remote Tauri origins`
+- `98c64a74` — `fix: allow loopback development sources in offline CSP audit`
+- `f8b72bb2` — `test: distinguish dev loopback from production network sources`
+- `430d920f` — `docs: document loopback only development CSP exception`
+- `e55ad9cc` — `docs: document development loopback network exception`
+
+The canonical application/data docs were also updated after these fixes so documentation describes the actual corrected behavior rather than the earlier mismatch.
+
 ## Current repository policy commands
 
 `package.json` exposes stable dependency-free audit commands:
@@ -101,6 +172,12 @@ release:verify:test
 ```
 
 Normal frontend and Rust checks remain separate from these repository-level audits.
+
+## Execution-environment limitation
+
+A clean-checkout verification was attempted from the available execution container after the documentation/policy changes. The container still cannot resolve `github.com`, so it cannot clone the repository or regenerate Cargo dependencies locally.
+
+Therefore no local Node/Rust pass is being claimed from that container. Repository tooling/configuration/tests are committed, but execution evidence remains separate until an environment with repository/network access actually runs them.
 
 ## Current first release blocker — still open
 
