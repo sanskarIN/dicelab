@@ -1,0 +1,99 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+import { DEFAULT_SETTINGS, type DicePreset, type RollResult } from '../domain/types';
+import { BUILTIN_PRESETS, loadHistory, loadPresets, loadSettings, saveCustomPresets, saveHistory } from './storage';
+
+const HISTORY_KEY = 'dicelab.history.v1';
+const PRESETS_KEY = 'dicelab.presets.v1';
+const SETTINGS_KEY = 'dicelab.settings.v1';
+
+const validRoll: RollResult = {
+  id: 'roll-1',
+  expression: '2d6+1',
+  total: 8,
+  dice: [
+    { value: 3, kept: true, index: 0 },
+    { value: 4, kept: true, index: 1 },
+  ],
+  modifier: 1,
+  mode: 'seeded',
+  seed: 'storage-test:0',
+  rolledAt: '2026-08-19T04:00:00.000Z',
+};
+
+const customPreset: DicePreset = {
+  id: 'custom-1',
+  name: 'Custom check',
+  expression: '3d8+2',
+  description: 'Storage fixture',
+  createdAt: '2026-08-19T04:00:00.000Z',
+};
+
+describe('local storage recovery', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('falls back to default settings when persisted JSON is malformed', () => {
+    localStorage.setItem(SETTINGS_KEY, '{not-json');
+    expect(loadSettings()).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('normalizes unsafe settings and enforces reduced-motion consistency', () => {
+    localStorage.setItem(
+      SETTINGS_KEY,
+      JSON.stringify({
+        theme: 'neon',
+        reducedMotion: true,
+        animations: true,
+        randomMode: 'predictable',
+        seed: 's'.repeat(200),
+        historyLimit: 10_000,
+      }),
+    );
+
+    expect(loadSettings()).toEqual({
+      ...DEFAULT_SETTINGS,
+      reducedMotion: true,
+      animations: false,
+      seed: 's'.repeat(120),
+      historyLimit: 5_000,
+    });
+  });
+
+  it('drops inconsistent rolls and duplicate ids from persisted history', () => {
+    localStorage.setItem(
+      HISTORY_KEY,
+      JSON.stringify([
+        validRoll,
+        { ...validRoll },
+        { ...validRoll, id: 'broken-total', total: 999 },
+        { ...validRoll, id: 'broken-expression', expression: 'not-dice' },
+      ]),
+    );
+
+    expect(loadHistory()).toEqual([validRoll]);
+  });
+
+  it('ignores forged built-in presets and duplicate custom ids', () => {
+    localStorage.setItem(
+      PRESETS_KEY,
+      JSON.stringify([
+        customPreset,
+        { ...customPreset },
+        { ...customPreset, id: 'builtin-d20', name: 'Forged', expression: '1d6' },
+        { ...customPreset, id: 'invalid', expression: '1d1' },
+      ]),
+    );
+
+    const loaded = loadPresets();
+    expect(loaded).toHaveLength(BUILTIN_PRESETS.length + 1);
+    expect(loaded.slice(0, BUILTIN_PRESETS.length)).toEqual(BUILTIN_PRESETS);
+    expect(loaded.at(-1)).toEqual(customPreset);
+  });
+
+  it('sanitizes persisted history and presets before writing them back', () => {
+    saveHistory([validRoll, { ...validRoll }], 500);
+    saveCustomPresets([customPreset, { ...customPreset }, ...BUILTIN_PRESETS]);
+
+    expect(JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]')).toEqual([validRoll]);
+    expect(JSON.parse(localStorage.getItem(PRESETS_KEY) ?? '[]')).toEqual([customPreset]);
+  });
+});
