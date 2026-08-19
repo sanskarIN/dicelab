@@ -547,16 +547,25 @@ Logging does not define a remote telemetry contract.
 
 ## 19. Version contract
 
-Executable/configuration version metadata is synchronized across:
+The current candidate application version is `2.0.12`.
+
+Machine-readable version agreement spans:
 
 ```text
 package.json
+package-lock.json (top-level version)
+package-lock.json packages[""] (root package version)
 src/config/app.ts
 src-tauri/Cargo.toml
+src-tauri/Cargo.lock (the [[package]] entry whose name is "dicelab")
 src-tauri/tauri.conf.json
 ```
 
-`npm run version:check` verifies agreement. Version tags must also agree with the declared application version during release verification.
+`npm run version:check` parses all of those locations and requires exact SemVer agreement. When `DICELAB_EXPECT_VERSION` is supplied (for example `v2.0.12` on a release tag), the normalized tag must also equal the synchronized application version.
+
+This intentionally makes generated lock metadata part of the release version contract. Bumping a manifest/config value without regenerating its lockfile must fail the version gate rather than presenting a partially updated candidate as synchronized.
+
+`CHANGELOG.md` is the human-reviewed release record and is not parsed as a machine version source because it can contain both unreleased and candidate/released versions.
 
 ## 20. Dependency-lock contract
 
@@ -567,9 +576,13 @@ package.json            -> package-lock.json
 src-tauri/Cargo.toml    -> src-tauri/Cargo.lock
 ```
 
-Manifest changes are not considered reproducibly verified until generated lockfiles are committed and locked package-manager checks succeed.
+Manifest, dependency, or application-version changes are not considered reproducibly verified until generated lockfiles are committed and locked package-manager checks succeed.
 
-`npm run policy:lockfiles` performs an early structural direct-dependency consistency check; it does not replace normal lockfile generation/resolution.
+The npm lock must carry the same application version in both its top-level `version` and `packages[""]` root package metadata. The Cargo lock must contain the DiceLab package entry at the same application version and must include every direct crate dependency resolved from the current manifest, including `tauri-plugin-dialog` for the 2.0.12 candidate.
+
+`npm run policy:lockfiles` performs an early structural direct-dependency consistency check. `npm run version:check` performs the cross-file package-version agreement check. Neither command replaces normal package-manager lockfile generation/resolution or locked Rust/npm installation/testing.
+
+Do not manually synthesize Cargo's transitive graph; use Cargo to regenerate it.
 
 ## 21. Compatibility-change checklist
 
@@ -584,6 +597,7 @@ When changing a contract above, review all relevant layers:
 - browser/native service adapters;
 - Rust command input/output/validation;
 - seeded parity vectors;
+- package/Cargo/Tauri/generated-lock version metadata;
 - unit/component/integration/E2E/fuzz tests;
 - policy audits;
 - architecture/ADR/release documentation;
