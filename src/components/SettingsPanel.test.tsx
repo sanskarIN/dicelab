@@ -30,6 +30,12 @@ describe('SettingsPanel', () => {
     });
   });
 
+  it('emits the selected locale through the normal settings update path', () => {
+    const props = renderSettings();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Language' }), { target: { value: 'hi' } });
+    expect(props.onChange).toHaveBeenCalledWith({ ...DEFAULT_SETTINGS, locale: 'hi' });
+  });
+
   it('exposes version, release notes, and the About view', () => {
     const props = renderSettings();
     expect(screen.getByText(`DiceLab ${APP_VERSION}`)).toBeInTheDocument();
