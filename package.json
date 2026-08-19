@@ -20,7 +20,7 @@
     "docs:check": "node scripts/check-doc-links.mjs",
     "docs:check:test": "node --test scripts/check-doc-links.test.mjs",
     "docs:inventory": "node scripts/check-file-reference.mjs",
-    "docs:inventory:test": "node --test scripts/check-file-reference.test.mjs",
+    "docs:inventory:test": "node --test scripts/check-file-reference.test.mjs scripts/check-file-reference.integration.test.mjs",
     "security:secrets": "node scripts/check-secrets.mjs",
     "security:secrets:test": "node --test scripts/check-secrets.test.mjs",
     "policy:capabilities": "node scripts/check-capabilities.mjs",
