@@ -1,5 +1,5 @@
 import { BarChart3, Dices, ShieldCheck } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type KeyboardEvent } from 'react';
 import { messages } from '../i18n';
 
 interface OnboardingProps {
@@ -14,6 +14,12 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     return () => cancelAnimationFrame(frame);
   }, []);
 
+  const containFocus = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'Tab') return;
+    event.preventDefault();
+    startButtonRef.current?.focus();
+  };
+
   return (
     <div className="dialog-backdrop onboarding-backdrop">
       <section
@@ -22,6 +28,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         aria-modal="true"
         aria-labelledby="onboarding-title"
         aria-describedby="onboarding-description"
+        onKeyDown={containFocus}
       >
         <div className="about-logo" aria-hidden="true">
           ◆
