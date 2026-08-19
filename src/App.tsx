@@ -18,6 +18,7 @@ import {
   completeOnboarding,
   getBuiltinPresets,
   hasCompletedOnboarding,
+  limitPresetCollection,
   loadHistory,
   loadPresets,
   loadSettings,
@@ -83,7 +84,12 @@ export default function App() {
     setRollError(null);
     try {
       parseDiceExpression(expression);
-      const result = await rollDice(expression, settings.randomMode, settings.seed || 'dicelab', sequenceRef.current++);
+      const result = await rollDice(
+        expression,
+        settings.randomMode,
+        settings.seed || 'dicelab',
+        sequenceRef.current++,
+      );
       setHistory((current) => [result, ...current].slice(0, settings.historyLimit));
     } catch (cause) {
       setRollError(formatDomainError(cause, messages.roll.genericRollError));
@@ -98,16 +104,18 @@ export default function App() {
       typeof globalThis.crypto.randomUUID === 'function'
         ? globalThis.crypto.randomUUID()
         : `preset-${Date.now()}`;
-    setPresets((current) => [
-      ...current,
-      {
-        id,
-        name,
-        expression: parsed.normalized,
-        description: messages.common.customPresetDescription,
-        createdAt: new Date().toISOString(),
-      },
-    ]);
+    setPresets((current) =>
+      limitPresetCollection([
+        ...current,
+        {
+          id,
+          name,
+          expression: parsed.normalized,
+          description: messages.common.customPresetDescription,
+          createdAt: new Date().toISOString(),
+        },
+      ]),
+    );
   };
 
   const deletePreset = (id: string) => {
