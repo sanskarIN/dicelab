@@ -18,6 +18,11 @@ test('extracts only the Cargo package version', () => {
   assert.equal(extractCargoPackageVersion(cargo), '1.2.3');
 });
 
+test('extracts Cargo package version when package is the final section', () => {
+  const cargo = `[workspace]\nmembers = []\n\n[package]\nname = "dicelab"\nversion = "2.0.12"\n`;
+  assert.equal(extractCargoPackageVersion(cargo), '2.0.12');
+});
+
 test('extracts both npm lockfile version locations', () => {
   const lock = JSON.stringify({
     name: 'dicelab',
