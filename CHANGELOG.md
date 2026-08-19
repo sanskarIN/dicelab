@@ -20,10 +20,15 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - First-run onboarding, responsive navigation, and keyboard command palette.
 - Settings surface for release/version information and direct About navigation.
 - About/privacy/support surfaces and **Made by the Sanskar** credit.
+- Typed English message catalog and locale boundary for migrated user-facing React/preset copy.
+- Localization contributor guide and locale-contract tests.
 - Browser integration coverage for roll → history → export, backup restore, and Settings → About journeys.
-- Component keyboard/accessibility regression tests for command palette, onboarding, and settings behavior.
+- Component keyboard/accessibility regression tests for command palette, onboarding, settings, and large-history behavior.
+- Generated parser normalization/case/whitespace invariants.
 - Corrupted local-storage recovery tests and persisted-data validation.
 - Rust/TypeScript cross-runtime deterministic RNG reference-vector tests.
+- Progressive history rendering in 200-entry windows while full filtered statistics/exports remain available.
+- Dependency-free Markdown link audit wired into normal CI and tagged release checks.
 - GitHub CI with locked npm/Cargo dependency verification.
 - Tag-driven cross-platform draft release packaging with ZIP archives and `SHA256SUMS.txt`.
 - Tauri CSP and least-privilege capability configuration.
@@ -37,6 +42,7 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - Imported and locally persisted settings normalize contradictory reduced-motion/animation state.
 - Local history and custom presets are validated, bounded, and deduplicated before use or persistence.
 - Release tags now produce a draft GitHub release only after the web and all desktop build jobs succeed; publication remains a deliberate maintainer action.
+- Core product metadata is centralized for Settings/About consistency.
 
 ### Fixed
 
