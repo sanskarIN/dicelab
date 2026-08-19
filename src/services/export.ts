@@ -131,34 +131,58 @@ function isRollResult(value: unknown): value is RollResult {
   const roll = value as Partial<RollResult>;
   if (
     typeof roll.id !== 'string' ||
+    roll.id.length < 1 ||
     roll.id.length > 200 ||
     typeof roll.expression !== 'string' ||
     typeof roll.total !== 'number' ||
-    !Number.isFinite(roll.total) ||
+    !Number.isSafeInteger(roll.total) ||
     typeof roll.modifier !== 'number' ||
-    !Number.isFinite(roll.modifier) ||
+    !Number.isSafeInteger(roll.modifier) ||
     !Array.isArray(roll.dice) ||
     roll.dice.length > 1_000 ||
     typeof roll.rolledAt !== 'string' ||
+    !isIsoDate(roll.rolledAt) ||
     (roll.mode !== 'secure' && roll.mode !== 'seeded') ||
-    (roll.seed !== undefined && typeof roll.seed !== 'string')
+    (roll.seed !== undefined && (typeof roll.seed !== 'string' || roll.seed.length > 120)) ||
+    (roll.mode === 'seeded' && typeof roll.seed !== 'string')
   ) return false;
+
+  let parsed;
   try {
-    parseDiceExpression(roll.expression);
+    parsed = parseDiceExpression(roll.expression);
   } catch {
     return false;
   }
-  return roll.dice.every((die) =>
-    Boolean(die) &&
-    typeof die === 'object' &&
-    typeof die.value === 'number' &&
-    Number.isSafeInteger(die.value) &&
-    die.value >= 1 &&
-    typeof die.kept === 'boolean' &&
-    typeof die.index === 'number' &&
-    Number.isSafeInteger(die.index) &&
-    die.index >= 0,
-  );
+  if (roll.modifier !== parsed.modifier || roll.dice.length !== parsed.count) return false;
+
+  const seenIndices = new Set<number>();
+  for (const die of roll.dice) {
+    if (
+      !die ||
+      typeof die !== 'object' ||
+      typeof die.value !== 'number' ||
+      !Number.isSafeInteger(die.value) ||
+      die.value < 1 ||
+      die.value > parsed.sides ||
+      typeof die.kept !== 'boolean' ||
+      typeof die.index !== 'number' ||
+      !Number.isSafeInteger(die.index) ||
+      die.index < 0 ||
+      die.index >= parsed.count ||
+      seenIndices.has(die.index)
+    ) return false;
+    seenIndices.add(die.index);
+  }
+
+  const expectedKept = parsed.selection
+    ? parsed.selection.kind.startsWith('keep')
+      ? parsed.selection.count
+      : parsed.count - parsed.selection.count
+    : parsed.count;
+  if (roll.dice.filter((die) => die.kept).length !== expectedKept) return false;
+
+  const computedTotal = roll.dice.reduce((sum, die) => sum + (die.kept ? die.value : 0), parsed.modifier);
+  return computedTotal === roll.total;
 }
 
 function isPreset(value: unknown): value is DicePreset {
@@ -172,6 +196,7 @@ function isPreset(value: unknown): value is DicePreset {
     preset.name.length > 80 ||
     typeof preset.expression !== 'string' ||
     typeof preset.createdAt !== 'string' ||
+    !isIsoDate(preset.createdAt) ||
     (preset.description !== undefined && (typeof preset.description !== 'string' || preset.description.length > 240))
   ) return false;
   try {
@@ -180,6 +205,11 @@ function isPreset(value: unknown): value is DicePreset {
   } catch {
     return false;
   }
+}
+
+function isIsoDate(value: string): boolean {
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) && new Date(timestamp).toISOString() === value;
 }
 
 function csvCell(value: string): string {
