@@ -1,0 +1,15 @@
+# Default review routing for DiceLab.
+* @sanskarIN
+
+# Security/release automation and native trust boundary.
+/.github/workflows/ @sanskarIN
+/SECURITY.md @sanskarIN
+/src-tauri/ @sanskarIN
+/src/domain/persistence.ts @sanskarIN
+/src/services/export.ts @sanskarIN
+/src/services/logger.ts @sanskarIN
+
+# Release/process documentation.
+/docs/release.md @sanskarIN
+/docs/repository-governance.md @sanskarIN
+/what_changed.md @sanskarIN
