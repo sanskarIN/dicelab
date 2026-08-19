@@ -1,5 +1,16 @@
-import { Accessibility, Database, Download, MoonStar, ShieldCheck, Trash2, Upload } from 'lucide-react';
+import {
+  Accessibility,
+  Database,
+  Download,
+  ExternalLink,
+  Info,
+  MoonStar,
+  ShieldCheck,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { useState, type ChangeEvent } from 'react';
+import { APP_NAME, APP_VERSION, RELEASES_URL } from '../config/app';
 import type { DiceLabSettings } from '../domain/types';
 
 interface SettingsPanelProps {
@@ -8,9 +19,17 @@ interface SettingsPanelProps {
   onExportBackup: () => void;
   onImportBackup: (file: File) => Promise<void>;
   onClearData: () => void;
+  onOpenAbout: () => void;
 }
 
-export function SettingsPanel({ settings, onChange, onExportBackup, onImportBackup, onClearData }: SettingsPanelProps) {
+export function SettingsPanel({
+  settings,
+  onChange,
+  onExportBackup,
+  onImportBackup,
+  onClearData,
+  onOpenAbout,
+}: SettingsPanelProps) {
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const patch = (changes: Partial<DiceLabSettings>) => onChange({ ...settings, ...changes });
@@ -50,11 +69,20 @@ export function SettingsPanel({ settings, onChange, onExportBackup, onImportBack
       <section className="settings-section panel" aria-labelledby="appearance-heading">
         <div className="settings-section-title">
           <MoonStar size={20} aria-hidden="true" />
-          <div><h2 id="appearance-heading">Appearance</h2><p>Choose how DiceLab fits your system.</p></div>
+          <div>
+            <h2 id="appearance-heading">Appearance</h2>
+            <p>Choose how DiceLab fits your system.</p>
+          </div>
         </div>
         <label className="setting-row">
-          <span><strong>Theme</strong><small>Light, dark, or follow your operating system.</small></span>
-          <select value={settings.theme} onChange={(event) => patch({ theme: event.target.value as DiceLabSettings['theme'] })}>
+          <span>
+            <strong>Theme</strong>
+            <small>Light, dark, or follow your operating system.</small>
+          </span>
+          <select
+            value={settings.theme}
+            onChange={(event) => patch({ theme: event.target.value as DiceLabSettings['theme'] })}
+          >
             <option value="system">System</option>
             <option value="light">Light</option>
             <option value="dark">Dark</option>
@@ -65,7 +93,10 @@ export function SettingsPanel({ settings, onChange, onExportBackup, onImportBack
       <section className="settings-section panel" aria-labelledby="accessibility-heading">
         <div className="settings-section-title">
           <Accessibility size={20} aria-hidden="true" />
-          <div><h2 id="accessibility-heading">Accessibility</h2><p>Control motion without losing information.</p></div>
+          <div>
+            <h2 id="accessibility-heading">Accessibility</h2>
+            <p>Control motion without losing information.</p>
+          </div>
         </div>
         <ToggleRow
           label="Reduced motion"
@@ -85,19 +116,35 @@ export function SettingsPanel({ settings, onChange, onExportBackup, onImportBack
       <section className="settings-section panel" aria-labelledby="random-heading">
         <div className="settings-section-title">
           <ShieldCheck size={20} aria-hidden="true" />
-          <div><h2 id="random-heading">Randomness</h2><p>Secure mode is the default; seeded mode makes testing reproducible.</p></div>
+          <div>
+            <h2 id="random-heading">Randomness</h2>
+            <p>Secure mode is the default; seeded mode makes testing reproducible.</p>
+          </div>
         </div>
         <label className="setting-row">
-          <span><strong>Random mode</strong><small>Seeded mode is deterministic and is not intended for security-sensitive draws.</small></span>
-          <select value={settings.randomMode} onChange={(event) => patch({ randomMode: event.target.value as DiceLabSettings['randomMode'] })}>
+          <span>
+            <strong>Random mode</strong>
+            <small>Seeded mode is deterministic and is not intended for security-sensitive draws.</small>
+          </span>
+          <select
+            value={settings.randomMode}
+            onChange={(event) => patch({ randomMode: event.target.value as DiceLabSettings['randomMode'] })}
+          >
             <option value="secure">Secure</option>
             <option value="seeded">Seeded</option>
           </select>
         </label>
         {settings.randomMode === 'seeded' ? (
           <label className="setting-row stacked">
-            <span><strong>Seed</strong><small>Each roll combines this value with a local sequence number.</small></span>
-            <input value={settings.seed} onChange={(event) => patch({ seed: event.target.value.slice(0, 120) })} maxLength={120} />
+            <span>
+              <strong>Seed</strong>
+              <small>Each roll combines this value with a local sequence number.</small>
+            </span>
+            <input
+              value={settings.seed}
+              onChange={(event) => patch({ seed: event.target.value.slice(0, 120) })}
+              maxLength={120}
+            />
           </label>
         ) : null}
       </section>
@@ -105,10 +152,16 @@ export function SettingsPanel({ settings, onChange, onExportBackup, onImportBack
       <section className="settings-section panel" aria-labelledby="data-heading">
         <div className="settings-section-title">
           <Database size={20} aria-hidden="true" />
-          <div><h2 id="data-heading">Data & privacy</h2><p>History, presets, and settings are stored locally.</p></div>
+          <div>
+            <h2 id="data-heading">Data & privacy</h2>
+            <p>History, presets, and settings are stored locally.</p>
+          </div>
         </div>
         <label className="setting-row">
-          <span><strong>History limit</strong><small>Keep between 10 and 5,000 recent rolls.</small></span>
+          <span>
+            <strong>History limit</strong>
+            <small>Keep between 10 and 5,000 recent rolls.</small>
+          </span>
           <input
             className="number-input"
             type="number"
@@ -120,16 +173,56 @@ export function SettingsPanel({ settings, onChange, onExportBackup, onImportBack
           />
         </label>
         <div className="setting-actions">
-          <button type="button" className="secondary-button" onClick={onExportBackup}><Download size={16} aria-hidden="true" /> Export backup</button>
+          <button type="button" className="secondary-button" onClick={onExportBackup}>
+            <Download size={16} aria-hidden="true" /> Export backup
+          </button>
           <label className="secondary-button file-button">
             <Upload size={16} aria-hidden="true" /> Import backup
-            <input className="sr-only" type="file" accept="application/json,.json" onChange={(event) => void importBackup(event)} />
+            <input
+              className="sr-only"
+              type="file"
+              accept="application/json,.json"
+              onChange={(event) => void importBackup(event)}
+            />
           </label>
-          <button type="button" className={confirmClear ? 'danger-button confirm' : 'danger-button'} onClick={clearData} onBlur={() => setConfirmClear(false)}>
+          <button
+            type="button"
+            className={confirmClear ? 'danger-button confirm' : 'danger-button'}
+            onClick={clearData}
+            onBlur={() => setConfirmClear(false)}
+          >
             <Trash2 size={16} aria-hidden="true" /> {confirmClear ? 'Click again to clear' : 'Clear local data'}
           </button>
         </div>
-        {importStatus ? <p className="panel-note" role="status">{importStatus}</p> : null}
+        {importStatus ? (
+          <p className="panel-note" role="status">
+            {importStatus}
+          </p>
+        ) : null}
+      </section>
+
+      <section className="settings-section panel" aria-labelledby="updates-heading">
+        <div className="settings-section-title">
+          <Info size={20} aria-hidden="true" />
+          <div>
+            <h2 id="updates-heading">Updates & About</h2>
+            <p>Review the installed version, release notes, license, support, and project credits.</p>
+          </div>
+        </div>
+        <div className="setting-row">
+          <span>
+            <strong>{APP_NAME} {APP_VERSION}</strong>
+            <small>Desktop update packages and release notes are published through the project releases page.</small>
+          </span>
+          <a className="secondary-button" href={RELEASES_URL} target="_blank" rel="noreferrer">
+            Releases <ExternalLink size={15} aria-hidden="true" />
+          </a>
+        </div>
+        <div className="setting-actions">
+          <button type="button" className="secondary-button" onClick={onOpenAbout}>
+            <Info size={16} aria-hidden="true" /> Open About
+          </button>
+        </div>
       </section>
     </section>
   );
@@ -150,8 +243,17 @@ function ToggleRow({
 }) {
   return (
     <label className={disabled ? 'setting-row disabled' : 'setting-row'}>
-      <span><strong>{label}</strong><small>{detail}</small></span>
-      <input className="switch" type="checkbox" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} />
+      <span>
+        <strong>{label}</strong>
+        <small>{detail}</small>
+      </span>
+      <input
+        className="switch"
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.checked)}
+      />
     </label>
   );
 }
