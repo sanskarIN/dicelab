@@ -90,6 +90,20 @@ export function SettingsPanel({
             <option value="dark">{messages.settings.dark}</option>
           </select>
         </label>
+        <label className="setting-row">
+          <span>
+            <strong>{messages.settings.language}</strong>
+            <small>{messages.settings.languageBody}</small>
+          </span>
+          <select
+            aria-label={messages.settings.language}
+            value={settings.locale}
+            onChange={(event) => patch({ locale: event.target.value as DiceLabSettings['locale'] })}
+          >
+            <option value="en">{messages.settings.english}</option>
+            <option value="hi">{messages.settings.hindi}</option>
+          </select>
+        </label>
       </section>
 
       <section className="settings-section panel" aria-labelledby="accessibility-heading">
