@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-08-19
 
-This file separates **implemented product/repository work** from **release evidence that still must be observed**. It should be updated when a blocker is actually resolved on the intended candidate commit.
+This file separates **implemented product/repository work** from **release evidence that still must be observed**. It should be updated only when a blocker is actually resolved on the intended candidate commit.
 
 ## Blocker 1 — Rust dependency lockfile
 
@@ -12,9 +12,17 @@ Current manifest requirement introduced by native desktop save dialogs:
 tauri-plugin-dialog = "2.7.2"
 ```
 
-The last observed repository state did not yet contain that new direct dependency in `src-tauri/Cargo.lock`.
+The latest observed `main` branch still does **not** contain `tauri-plugin-dialog` in `src-tauri/Cargo.lock`. The dependency is used by `src-tauri/src/lib.rs`, so the committed Rust dependency graph is not yet reproducibly complete.
 
-Until the generated lockfile is committed, do not claim the new Rust dependency graph passes locked verification.
+The lockfile workflow has been hardened to:
+
+- trigger on `package.json`, `package-lock.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, and its own workflow definition;
+- regenerate npm and Cargo lockfiles with the package managers;
+- verify the generated Cargo lock with `cargo metadata --locked --no-deps --format-version 1`;
+- run `git diff --check` before committing generated lockfiles;
+- attempt a direct `main` update and otherwise publish the generated commit on `automation/lockfiles`.
+
+No generated lockfile commit or fallback `automation/lockfiles` branch has been observed yet in the current audit, so this blocker remains open.
 
 Required sequence on a network-enabled runner:
 
@@ -101,7 +109,7 @@ Still required:
 
 ## Blocker 7 — Repository/security evidence
 
-The repository now contains policy audits for:
+The repository contains executable policy audits for:
 
 - desktop capabilities;
 - Tauri CSP/remote IPC;
@@ -147,6 +155,19 @@ Before publishing the draft release:
 - verify `RELEASE-METADATA.json` source/tag/run identity;
 - confirm release notes match `CHANGELOG.md`;
 - confirm signing claims match reality.
+
+## Final code-audit findings closed before candidate verification
+
+The final source audit on 2026-08-19 closed additional issues before release evidence is collected:
+
+- persisted keep/drop history now validates the **exact expected kept indices**, not only the number of kept dice;
+- backup imports inherit the same semantic keep/drop integrity check and have dedicated regression coverage;
+- CSV formula-injection protection now catches whitespace-prefixed formula markers in untrusted text fields;
+- CSV numeric total/modifier fields remain numeric instead of being unnecessarily apostrophe-prefixed when negative;
+- the history-limit UI now emits a bounded integer immediately instead of allowing a fractional live value that would normalize differently after reload;
+- lockfile automation now validates its generated diff and generated locked Cargo metadata before committing.
+
+These fixes are implementation work, not substitutes for the candidate evidence listed above.
 
 ## Final publication gate
 
