@@ -18,7 +18,7 @@ import { formatBackupError } from '../i18n/errors';
 interface SettingsPanelProps {
   settings: DiceLabSettings;
   onChange: (settings: DiceLabSettings) => void;
-  onExportBackup: () => void;
+  onExportBackup: () => Promise<boolean>;
   onImportBackup: (file: File) => Promise<void>;
   onClearData: () => void;
   onOpenAbout: () => void;
@@ -32,20 +32,30 @@ export function SettingsPanel({
   onClearData,
   onOpenAbout,
 }: SettingsPanelProps) {
-  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [dataStatus, setDataStatus] = useState<string | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const patch = (changes: Partial<DiceLabSettings>) => onChange({ ...settings, ...changes });
+
+  const exportBackup = async () => {
+    setDataStatus(null);
+    try {
+      const saved = await onExportBackup();
+      if (saved) setDataStatus(messages.settings.exportSuccess);
+    } catch {
+      setDataStatus(messages.settings.exportFailed);
+    }
+  };
 
   const importBackup = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
     try {
-      setImportStatus(messages.settings.importing);
+      setDataStatus(messages.settings.importing);
       await onImportBackup(file);
-      setImportStatus(messages.settings.importSuccess);
+      setDataStatus(messages.settings.importSuccess);
     } catch (cause) {
-      setImportStatus(formatBackupError(cause, messages.settings.importFailed));
+      setDataStatus(formatBackupError(cause, messages.settings.importFailed));
     }
   };
 
@@ -189,7 +199,7 @@ export function SettingsPanel({
           />
         </label>
         <div className="setting-actions">
-          <button type="button" className="secondary-button" onClick={onExportBackup}>
+          <button type="button" className="secondary-button" onClick={() => void exportBackup()}>
             <Download size={16} aria-hidden="true" /> {messages.settings.exportBackup}
           </button>
           <label className="secondary-button file-button">
@@ -212,9 +222,9 @@ export function SettingsPanel({
             {confirmClear ? messages.settings.confirmClear : messages.settings.clearData}
           </button>
         </div>
-        {importStatus ? (
+        {dataStatus ? (
           <p className="panel-note" role="status">
-            {importStatus}
+            {dataStatus}
           </p>
         ) : null}
       </section>
