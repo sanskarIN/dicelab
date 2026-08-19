@@ -1,0 +1,43 @@
+name: Desktop capability policy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src-tauri/capabilities/**'
+      - 'scripts/check-capabilities.mjs'
+      - 'scripts/check-capabilities.test.mjs'
+      - '.github/workflows/capability-audit.yml'
+  pull_request:
+    paths:
+      - 'src-tauri/capabilities/**'
+      - 'scripts/check-capabilities.mjs'
+      - 'scripts/check-capabilities.test.mjs'
+      - '.github/workflows/capability-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: capability-policy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Audit desktop capabilities
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Self-test capability auditor
+        run: node --test scripts/check-capabilities.test.mjs
+
+      - name: Audit declared desktop capabilities
+        run: node scripts/check-capabilities.mjs
