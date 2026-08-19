@@ -3,6 +3,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { parseDiceExpression } from '../domain/parser';
 import type { DicePreset, RandomMode, RollResult } from '../domain/types';
 import { messages } from '../i18n';
+import { formatInteger, formatTime } from '../i18n/format';
 import { formatDomainError } from '../i18n/errors';
 
 interface RollWorkspaceProps {
@@ -124,23 +125,23 @@ export function RollWorkspace({
             <>
               <div className="result-topline">
                 <span>{lastRoll.expression}</span>
-                <span>{new Date(lastRoll.rolledAt).toLocaleTimeString()}</span>
+                <span>{formatTime(lastRoll.rolledAt)}</span>
               </div>
-              <div className="roll-total">{lastRoll.total}</div>
+              <div className="roll-total">{formatInteger(lastRoll.total)}</div>
               <div className="dice-results" aria-label={messages.roll.individualResults}>
                 {lastRoll.dice.map((die) => (
                   <span
                     key={`${lastRoll.id}-${die.index}`}
                     className={die.kept ? 'die-result' : 'die-result dropped'}
                   >
-                    {die.value}
+                    {formatInteger(die.value)}
                   </span>
                 ))}
               </div>
               <p className="result-note">
                 {lastRoll.modifier === 0
                   ? messages.roll.noModifier
-                  : `${messages.roll.modifier} ${lastRoll.modifier > 0 ? '+' : ''}${lastRoll.modifier}`}
+                  : `${messages.roll.modifier} ${lastRoll.modifier > 0 ? '+' : ''}${formatInteger(lastRoll.modifier)}`}
                 {lastRoll.seed ? ` · ${messages.roll.seed} ${lastRoll.seed}` : ''}
               </p>
             </>
