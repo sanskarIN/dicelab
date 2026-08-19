@@ -12,6 +12,7 @@ jobs:
   web:
     name: Web artifact
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,6 +22,14 @@ jobs:
         run: npm run security:secrets:test
       - name: High-confidence secret audit
         run: npm run security:secrets
+      - name: Documentation audit self-tests
+        run: npm run docs:check:test && npm run docs:inventory:test
+      - name: Documentation integrity
+        run: npm run docs:check && npm run docs:inventory
+      - name: Repository policy self-tests
+        run: npm run policy:test
+      - name: Repository policy boundaries
+        run: npm run policy:all
       - name: Browser E2E infrastructure self-test
         run: npm run test:e2e:infra
       - name: Version audit self-test
@@ -29,10 +38,10 @@ jobs:
         env:
           DICELAB_EXPECT_VERSION: ${{ github.ref_name }}
         run: npm run version:check
+      - name: Release verifier self-test
+        run: npm run release:verify:test
       - name: Install dependencies
         run: npm ci
-      - name: Documentation links
-        run: npm run docs:check
       - name: Format check
         run: npm run format
       - name: Lint
@@ -56,6 +65,7 @@ jobs:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -102,6 +112,7 @@ jobs:
     name: Draft GitHub release
     needs: [web, desktop]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
