@@ -28,4 +28,14 @@ describe('history exports', () => {
     expect(output).toContain('"example,seed"');
     expect(output.split('\n')[0]).toBe('id,rolled_at,expression,total,modifier,mode,seed,dice');
   });
+
+  it.each(['=1+1', '+SUM(A1:A2)', '-10+20', '@danger'])('neutralizes formula-like seed %s', (seed) => {
+    const output = historyToCsv([{ ...roll, seed }]);
+    expect(output).toContain(`'${seed}`);
+  });
+
+  it('neutralizes formula prefixes before applying normal CSV quoting', () => {
+    const output = historyToCsv([{ ...roll, seed: '=HYPERLINK("https://example.invalid","click")' }]);
+    expect(output).toContain('"\'=HYPERLINK(""https://example.invalid"",""click"")"');
+  });
 });
