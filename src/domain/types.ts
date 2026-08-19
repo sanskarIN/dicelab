@@ -57,9 +57,11 @@ export interface ProbabilityDistribution {
 }
 
 export type ThemePreference = 'system' | 'light' | 'dark';
+export type LocalePreference = 'en' | 'hi';
 
 export interface DiceLabSettings {
   theme: ThemePreference;
+  locale: LocalePreference;
   reducedMotion: boolean;
   animations: boolean;
   randomMode: RandomMode;
@@ -69,6 +71,7 @@ export interface DiceLabSettings {
 
 export const DEFAULT_SETTINGS: DiceLabSettings = {
   theme: 'system',
+  locale: 'en',
   reducedMotion: false,
   animations: true,
   randomMode: 'secure',
