@@ -41,9 +41,19 @@ Maintainers will review reports, reproduce the issue where possible, assess seve
 - Parser, probability, and backup failures expose stable internal error codes to presentation code instead of requiring UI components to trust raw exception prose.
 - CSV export neutralizes cells beginning with common spreadsheet formula prefixes (`=`, `+`, `-`, `@`) before normal CSV quoting.
 - Exported files are created only after an explicit user action.
+- Desktop CSV/JSON exports use a dedicated Rust save command: the webview supplies no destination path, the operating-system dialog chooses the path, and the command validates format, filename, payload size, and the final selected extension before writing.
+- Native export failures returned to the interface do not include private selected filesystem paths.
 - Structured application logging redacts sensitive key families, bounds nested context, and never serializes raw error messages/stacks.
 - Tagged builds package artifacts only after prerequisite quality jobs succeed and generate SHA-256 checksum metadata for draft-release review.
 - The repository must not contain credentials, signing keys, access tokens, or private production data.
+
+## Native export trust boundary
+
+Browser builds use the browser's ordinary download mechanism and request no native filesystem capability.
+
+Desktop builds expose only the purpose-built `save_text_export` Tauri command for current text exports. The frontend may request a bounded CSV or JSON payload and a safe suggested filename, but it cannot pass an arbitrary output path. The native command opens the system save dialog and writes only to the user-selected path after rechecking the selected extension.
+
+This design intentionally avoids granting the webview broad filesystem-write access. Adding another native export format requires extending the native allowlist and regression coverage rather than exposing a general write primitive. See [`docs/native-exports.md`](docs/native-exports.md).
 
 ## Local data trust boundary
 
