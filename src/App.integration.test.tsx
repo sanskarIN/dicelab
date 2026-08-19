@@ -1,8 +1,11 @@
+import { invoke } from '@tauri-apps/api/core';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import { DEFAULT_SETTINGS } from './domain/types';
 import { setLocale } from './i18n';
+
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
 
 const HISTORY_KEY = 'dicelab.history.v1';
 const SETTINGS_KEY = 'dicelab.settings.v1';
@@ -23,6 +26,8 @@ describe('DiceLab primary journeys', () => {
   });
 
   afterEach(() => {
+    Reflect.deleteProperty(window, '__TAURI_INTERNALS__');
+    vi.mocked(invoke).mockReset();
     setLocale('en');
     document.documentElement.lang = 'en';
     vi.restoreAllMocks();
@@ -50,6 +55,40 @@ describe('DiceLab primary journeys', () => {
     fireEvent.click(screen.getByRole('button', { name: 'CSV' }));
     expect(createObjectUrl).toHaveBeenCalledTimes(1);
     expect(revokeObjectUrl).toHaveBeenCalledWith('blob:dicelab-export');
+  });
+
+  it('does not consume a seeded sequence value when a native roll fails', async () => {
+    Object.defineProperty(window, '__TAURI_INTERNALS__', { configurable: true, value: {} });
+    vi.mocked(invoke)
+      .mockRejectedValueOnce(new Error('native roll failed'))
+      .mockResolvedValueOnce({
+        expression: '1d20',
+        total: 12,
+        dice: [{ value: 12, kept: true, index: 0 }],
+        modifier: 0,
+      });
+
+    render(<App />);
+    const rollButton = screen.getByRole('button', { name: 'Roll' });
+
+    fireEvent.click(rollButton);
+    await waitFor(() => expect(invoke).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(rollButton).not.toBeDisabled());
+
+    fireEvent.click(rollButton);
+    await waitFor(() => expect(invoke).toHaveBeenCalledTimes(2));
+
+    expect(invoke).toHaveBeenNthCalledWith(1, 'roll_expression', {
+      expression: '1d20',
+      mode: 'seeded',
+      seed: 'integration-test:0',
+    });
+    expect(invoke).toHaveBeenNthCalledWith(2, 'roll_expression', {
+      expression: '1d20',
+      mode: 'seeded',
+      seed: 'integration-test:0',
+    });
+    expect(await screen.findByText(/Seed integration-test:0/)).toBeInTheDocument();
   });
 
   it('enforces the configured history limit during initial storage recovery', async () => {
