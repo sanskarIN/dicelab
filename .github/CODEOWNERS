@@ -1,15 +1,40 @@
 # Default review routing for DiceLab.
 * @sanskarIN
 
-# Security/release automation and native trust boundary.
-/.github/workflows/ @sanskarIN
-/SECURITY.md @sanskarIN
+# Security-sensitive desktop boundaries and native commands.
 /src-tauri/ @sanskarIN
-/src/domain/persistence.ts @sanskarIN
 /src/services/export.ts @sanskarIN
+/src/services/roll-service.ts @sanskarIN
+/src/services/runtime.ts @sanskarIN
 /src/services/logger.ts @sanskarIN
+/src/domain/persistence.ts @sanskarIN
 
-# Release/process documentation.
+# Repository policy and release automation.
+/.github/workflows/ @sanskarIN
+/scripts/check-capabilities.mjs @sanskarIN
+/scripts/check-tauri-security.mjs @sanskarIN
+/scripts/check-offline-csp.mjs @sanskarIN
+/scripts/check-runtime-boundaries.mjs @sanskarIN
+/scripts/check-native-command-contract.mjs @sanskarIN
+/scripts/check-lockfile-consistency.mjs @sanskarIN
+/scripts/check-secrets.mjs @sanskarIN
+/scripts/check-version-sync.mjs @sanskarIN
+/SECURITY.md @sanskarIN
+
+# Dependency/version/release metadata.
+/package.json @sanskarIN
+/package-lock.json @sanskarIN
+/src-tauri/Cargo.toml @sanskarIN
+/src-tauri/Cargo.lock @sanskarIN
+/src-tauri/tauri.conf.json @sanskarIN
+/CHANGELOG.md @sanskarIN
+/ROADMAP.md @sanskarIN
+
+# Durable architecture/process documentation and handoffs.
+/docs/adr/ @sanskarIN
 /docs/release.md @sanskarIN
 /docs/repository-governance.md @sanskarIN
+/docs/repository-policy-gates.md @sanskarIN
+/docs/release-blockers-current.md @sanskarIN
+/docs/handoffs/ @sanskarIN
 /what_changed.md @sanskarIN
