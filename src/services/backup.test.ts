@@ -43,10 +43,38 @@ describe('DiceLab backups', () => {
     expect(restored.settings.seed).toBe(userSeed);
   });
 
+  it('normalizes animations off when restored settings request reduced motion', () => {
+    const restored = parseBackupJson(
+      JSON.stringify({
+        schemaVersion: 1,
+        exportedAt: '2026-08-19T00:00:00.000Z',
+        history: [],
+        presets: [],
+        settings: { ...DEFAULT_SETTINGS, reducedMotion: true, animations: true },
+      }),
+    );
+    expect(restored.settings.reducedMotion).toBe(true);
+    expect(restored.settings.animations).toBe(false);
+  });
+
   it('rejects unsupported schemas', () => {
     expect(() => parseBackupJson('{"schemaVersion":99,"history":[],"presets":[],"settings":{}}')).toThrow(
       BackupValidationError,
     );
+  });
+
+  it('rejects malformed export timestamps when present', () => {
+    expect(() =>
+      parseBackupJson(
+        JSON.stringify({
+          schemaVersion: 1,
+          exportedAt: 'yesterday',
+          history: [],
+          presets: [],
+          settings: DEFAULT_SETTINGS,
+        }),
+      ),
+    ).toThrow(/export timestamp is invalid/i);
   });
 
   it('rejects malformed roll expressions in imported history', () => {
