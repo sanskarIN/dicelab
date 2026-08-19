@@ -13,6 +13,7 @@ npm run test
 Current automated coverage includes:
 
 - expression parsing and validation boundaries;
+- 500 generated parser normalization invariants plus case/whitespace equivalence;
 - keep/drop selection and modifier totals;
 - deterministic seeded random sequences and fixed cross-runtime reference vectors;
 - probability distributions, complexity limits, and exact-number precision boundaries;
@@ -23,7 +24,9 @@ Current automated coverage includes:
 - primary app integration journeys for rolling, history, CSV export, backup restore, and Settings → About navigation;
 - command-palette keyboard focus trapping/restoration;
 - onboarding dialog semantics and initial focus;
-- Settings reduced-motion behavior and release/About actions.
+- Settings reduced-motion behavior and release/About actions;
+- typed locale catalog defaults/dynamic helper behavior;
+- progressive large-history rendering and filter-window resets.
 
 Use `npm run test:watch` during development and `npm run test:coverage` when reviewing coverage gaps.
 
@@ -43,12 +46,15 @@ Native tests cover parsing, invalid selection rules, keep/drop selection, determ
 Frontend:
 
 ```bash
+npm run docs:check
 npm run format
 npm run lint
 npm run build
 ```
 
 The production build is also the TypeScript type check because the build script runs `tsc -b` before Vite.
+
+`npm run docs:check` scans repository Markdown files and fails on missing relative link targets or malformed percent-encoding. External URLs are intentionally outside this local existence check and should still be reviewed during release preparation when network access is available.
 
 Rust:
 
@@ -61,6 +67,8 @@ cargo clippy --all-targets --all-features --locked -- -D warnings
 
 Every fixed correctness bug should receive a test that fails before the fix and passes after it. Security-boundary fixes should include malformed/untrusted input cases. Cross-runtime deterministic changes must update both TypeScript and Rust reference-vector tests in the same release.
 
+Generated/parser-property tests should remain deterministic: they should exercise many valid shapes without relying on nondeterministic fuzz input inside the normal CI suite.
+
 ## Manual smoke matrix
 
 Before a release, verify at least:
@@ -72,13 +80,15 @@ Before a release, verify at least:
 5. The same effective seeded expression produces identical deterministic values in web and desktop builds.
 6. Keep/drop dice are visually and textually identifiable.
 7. History search, clear confirmation, CSV, and JSON export work.
-8. A valid backup restores settings/history/presets.
-9. An invalid, duplicate-ID, inconsistent, or oversized backup is rejected safely.
-10. Probability calculator handles common expressions and rejects calculations whose exactness/performance budgets would be exceeded.
-11. Theme and reduced-motion preferences apply immediately.
-12. Command palette opens with `Ctrl/Cmd + K`, traps focus while open, restores focus on close, and closes with Escape.
-13. Settings exposes version/releases/About information.
-14. About links and support details are correct.
+8. Histories above 200 matching rows progressively reveal additional entries without changing summary statistics or exports.
+9. A valid backup restores settings/history/presets.
+10. An invalid, duplicate-ID, inconsistent, or oversized backup is rejected safely.
+11. Probability calculator handles common expressions and rejects calculations whose exactness/performance budgets would be exceeded.
+12. Theme and reduced-motion preferences apply immediately.
+13. Command palette opens with `Ctrl/Cmd + K`, traps focus while open, restores focus on close, and closes with Escape.
+14. Settings exposes version/releases/About information.
+15. About links and support details are correct.
+16. English catalog-backed labels remain readable at narrow widths and 200% zoom.
 
 ## Accessibility checks
 
@@ -101,11 +111,11 @@ Desktop smoke coverage must verify the native Tauri command separately from the 
 
 ## Performance tests
 
-Probability and large-history workflows are the first benchmark targets. See [`performance.md`](performance.md).
+Probability and large-history workflows are the first benchmark targets. Progressive history rendering is covered behaviorally; executable timing benchmarks still need a stable runner and thresholds. See [`performance.md`](performance.md).
 
 ## CI expectations
 
-CI installs the committed npm and Cargo lockfiles with `npm ci` and Cargo `--locked` checks. Pull requests should not merge while required build, lint, test, format, Clippy, or security checks are failing. A CI failure caused by an unavailable external service must be documented rather than silently ignored.
+CI installs the committed npm and Cargo lockfiles with `npm ci` and Cargo `--locked` checks. It also runs the local documentation-link audit before frontend format/lint/test/build checks. Pull requests should not merge while required build, lint, test, format, documentation, Clippy, or security checks are failing. A CI failure caused by an unavailable external service must be documented rather than silently ignored.
 
 ## Determinism
 
