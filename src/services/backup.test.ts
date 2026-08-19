@@ -76,6 +76,34 @@ describe('DiceLab backups', () => {
     expect(() => parseBackupJson(backupWith(duplicated))).toThrow(BackupValidationError);
   });
 
+  it('rejects duplicate roll ids', () => {
+    const duplicateHistory = JSON.stringify({
+      schemaVersion: 1,
+      exportedAt: '2026-08-19T00:00:00.000Z',
+      history: [roll, { ...roll }],
+      presets: [],
+      settings: DEFAULT_SETTINGS,
+    });
+    expect(() => parseBackupJson(duplicateHistory)).toThrow(/duplicate roll ids/i);
+  });
+
+  it('rejects duplicate custom preset ids', () => {
+    const preset = {
+      id: 'preset-1',
+      name: 'Initiative',
+      expression: '1d20+3',
+      createdAt: '2026-08-19T00:00:00.000Z',
+    };
+    const duplicatePresets = JSON.stringify({
+      schemaVersion: 1,
+      exportedAt: '2026-08-19T00:00:00.000Z',
+      history: [],
+      presets: [preset, { ...preset }],
+      settings: DEFAULT_SETTINGS,
+    });
+    expect(() => parseBackupJson(duplicatePresets)).toThrow(/duplicate ids/i);
+  });
+
   it('rejects incorrect keep/drop state', () => {
     const invalidSelection = {
       ...roll,
