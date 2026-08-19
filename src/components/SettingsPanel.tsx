@@ -13,6 +13,7 @@ import { useState, type ChangeEvent } from 'react';
 import { APP_NAME, APP_VERSION, RELEASES_URL } from '../config/app';
 import type { DiceLabSettings } from '../domain/types';
 import { messages } from '../i18n';
+import { formatBackupError } from '../i18n/errors';
 
 interface SettingsPanelProps {
   settings: DiceLabSettings;
@@ -44,7 +45,7 @@ export function SettingsPanel({
       await onImportBackup(file);
       setImportStatus(messages.settings.importSuccess);
     } catch (cause) {
-      setImportStatus(cause instanceof Error ? cause.message : messages.settings.importFailed);
+      setImportStatus(formatBackupError(cause, messages.settings.importFailed));
     }
   };
 
