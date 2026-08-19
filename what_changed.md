@@ -1,591 +1,551 @@
-# DiceLab — Work Handoff
+# DiceLab — Current Work Handoff
+
+Last updated: 2026-08-19
+
+This file is the current continuation ledger for DiceLab. The previous full implementation handoff was preserved byte-for-byte before this refresh at:
+
+- [`docs/handoffs/2026-08-19-pre-native-exports.md`](docs/handoffs/2026-08-19-pre-native-exports.md)
+
+That archive contains the earlier Phase 4/5 hardening record, verification limitations, and 86-commit ledger. Do not delete it when continuing work.
 
 ## Current milestone
 
-Phase 4 verification/hardening is substantially implemented in code and automated tests. Phase 5 release engineering is also substantially implemented, including locked dependency checks, tagged cross-platform builds, draft GitHub release packaging, and checksums.
+The main code-completable gaps that remained in the previous roadmap have now been implemented:
 
-The project must **not** be called fully complete yet because the current environment cannot observe a clean full repository CI run or install/smoke-test the generated Windows/macOS/Linux release artifacts. Phase 6 remains an evidence/verification milestone rather than a code-completeness claim.
+- reviewed Hindi locale;
+- persisted English/Hindi language selection;
+- active-locale number/date/time formatting;
+- localized built-in presets without rewriting user content;
+- locale persistence and backup compatibility;
+- native desktop save-dialog exports through a bounded Rust command;
+- browser export fallback preservation;
+- native export security validation and safe failure handling;
+- coverage-guided Rust parser fuzzing;
+- scheduled/manual fuzz workflow;
+- expanded localization/native-export/fuzz testing and documentation.
+
+The project is **not** being called release-ready yet. Evidence-gated work remains open, especially the Rust lockfile refresh required by the newly added native dialog dependency and the final release-candidate verification matrix.
 
 ## Repository identity
 
-- Repository: `sanskarIN/dicelab`
+- Repository: `https://github.com/sanskarIN/dicelab`
 - Default branch: `main`
-- Visibility: public
 - License: MIT
-- Stack: Rust + Tauri 2 + TypeScript + React + Vite
-- Web companion: supported
-- Desktop targets: Windows, macOS, Linux
+- Application version: `0.1.0`
+- Primary business email: `sanskarin@outlook.in`
+- Support email: `supportramsandesh@gmail.com`
 - Product credit: **Made by the Sanskar**
-- Preferred Git author email: `sanskarin@outlook.in`
-- Current version: `0.1.0`
-- Version values were inspected and are aligned in `package.json`, `src/config/app.ts`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`.
 
-## Continuation baseline
+## Previous handoff archive
 
-This continuation started after the previous Phase 4 handoff had already delivered:
+Commit:
 
-- spreadsheet-formula-safe CSV export;
-- stricter backup record validation;
-- statistics and deterministic RNG tests;
-- documentation of the initial import/export hardening.
+- `73938697` — `docs: archive previous implementation handoff`
 
-The previous baseline commit referenced by the prior handoff was `1d891d0fc7f552e6c9da86b343c9b8a9842b14c3` — `docs: record import and export hardening`.
+The archive reuses the exact previous `what_changed.md` Git blob rather than manually copying/reformatting it, so the older implementation history is preserved exactly.
 
-## Completed work in this continuation
+## Temporary handoff cleanup
 
-### 1. Browser integration coverage
+The temporary continuation marker was consumed and removed:
 
-Added application-level integration coverage with Testing Library for important offline workflows:
+- `6971f069` — `chore: remove continuation handoff marker`
 
-- seeded roll → visible result → History;
-- History statistics after rolling;
-- CSV export invocation;
-- valid backup restore through Settings;
-- restored history visibility;
-- Settings → About navigation.
+## Hindi localization
 
-Shared jsdom/browser test setup now supplies stable `matchMedia`, animation-frame, and object-URL behavior without introducing fake production code paths.
+### Reviewed catalog
 
-### 2. Persistence trust-boundary hardening
+Added `src/i18n/hi.ts` as the first reviewed non-English catalog.
 
-Added `src/domain/persistence.ts` as the shared runtime-validation boundary for persisted data.
+The Hindi catalog covers:
 
-Persisted roll validation now checks:
-
-- non-empty/bounded IDs;
-- valid dice expressions;
-- safe-integer totals and modifiers;
-- die-count consistency with the parsed expression;
-- die values within the expression side range;
-- bounded, unique die indices;
-- correct keep/drop retained count;
-- computed total consistency;
-- canonical ISO timestamps;
-- valid random mode;
-- deterministic seed presence when required;
-- bounded stored effective seed length.
-
-Persisted preset validation now checks IDs, names, expressions, descriptions, and canonical timestamps.
-
-Local-storage recovery now:
-
-- treats stored JSON as untrusted input;
-- safely falls back when JSON is malformed;
-- bounds history/custom-preset counts;
-- filters malformed records;
-- deduplicates record IDs;
-- ignores forged entries using reserved built-in preset IDs;
-- normalizes invalid settings;
-- forces animations off when reduced motion is enabled;
-- remains usable when browser storage is blocked or full.
-
-### 3. Backup restore integrity hardening
-
-Backup schema remains version `1`, but restore validation is stricter.
-
-Backup import now rejects:
-
-- malformed history/preset records;
-- inconsistent totals/modifiers/dice counts;
-- impossible die values;
-- duplicate or out-of-range die indices;
-- invalid keep/drop state;
-- missing deterministic seeds;
-- malformed canonical timestamps;
-- duplicate roll IDs;
-- duplicate preset IDs;
-- malformed explicit export timestamps;
-- oversized histories/preset sets/files.
-
-A compatibility defect was found and fixed: a maximum-length 120-character configured seed receives a per-roll sequence suffix, so stored effective roll seeds can legitimately exceed 120 characters. Imported stored effective seeds now allow a safe bounded length of 200 while configured settings remain capped at 120.
-
-Imported settings also normalize reduced-motion/animation contradictions.
-
-### 4. Cross-runtime deterministic RNG parity
-
-Fixed a major reproducibility defect: web and Rust desktop seeded modes previously used different deterministic algorithms, so identical seeds could produce different sequences.
-
-Both runtimes now use the same explicitly documented algorithm:
-
-- UTF-8 FNV-1a 32-bit seed hash;
-- xorshift32 state transition;
-- identical bounded integer conversion;
-- identical effective-seed behavior.
-
-TypeScript and Rust tests pin matching reference vectors, including Unicode hashing, so future algorithm drift becomes a visible compatibility failure.
-
-Secure mode remains separate:
-
-- desktop secure mode: Rust `OsRng`;
-- browser secure mode: Web Crypto bounded generation.
-
-Seeded mode remains explicitly non-cryptographic.
-
-### 5. Exact probability numeric correctness
-
-The ordinary-sum probability engine previously could label a result `exact: true` even when the raw number of outcomes exceeded JavaScript safe-integer precision.
-
-The engine now rejects ordinary-sum expressions whose raw outcome count cannot be represented as a safe integer while preserving exact integer `ways` counts.
-
-Regression coverage includes:
-
-- `20d6` exact safe-integer behavior;
-- `21d6` rejection through `ProbabilityComplexityError`;
-- expected-value consistency;
-- existing keep/drop complexity limits.
-
-### 6. Modal and onboarding accessibility
-
-Command palette now:
-
-- focuses its search field on open;
-- traps Tab/Shift+Tab within the dialog;
-- closes with Escape;
-- restores focus to the invoking element on close;
-- retains Enter activation of the first filtered command.
-
-Onboarding now:
-
-- has an accessible description;
-- has modal semantics;
-- moves initial focus to the primary “Start rolling” action.
-
-Regression tests cover these keyboard/focus behaviors.
-
-### 7. Settings/About product completeness
-
-Added centralized product metadata in `src/config/app.ts` for:
-
-- app name/version/credit;
-- repository URL;
-- releases URL;
-- privacy URL;
-- BMC URL;
-- business/support emails.
-
-Settings now contains a real **Updates & About** section with:
-
-- installed version;
-- releases link;
-- direct About navigation.
-
-About reuses centralized metadata so contact/version/project information cannot drift independently.
-
-Settings tests cover reduced-motion behavior, version/releases visibility, and About action wiring.
-
-### 8. Internationalization-ready architecture
-
-Added a typed English message-catalog boundary without introducing a runtime translation dependency.
-
-New architecture:
-
-- `src/i18n/en.ts` — English catalog;
-- `src/i18n/index.ts` — supported-locale boundary;
-- `MessageCatalog` — widened structural catalog type for future locales;
-- dynamic messages represented as typed functions where sentence structure depends on values.
-
-Migrated user-facing copy from the main React surfaces into the catalog:
-
-- application-level skip/error/custom-preset strings;
-- desktop/mobile navigation;
+- navigation;
+- roll workspace;
+- history/statistics;
+- probability calculator;
+- settings;
 - onboarding;
 - command palette;
-- roll workspace;
-- history;
-- probability;
-- settings;
-- About;
-- built-in preset names/descriptions;
-- user-facing accessibility labels and dynamic notices;
-- application recovery/fatal-interface messages.
+- About/privacy/support copy;
+- parser/probability/backup errors;
+- import/export status feedback;
+- built-in presets.
 
-Added `docs/localization.md` with the exact second-locale workflow and catalog requirements.
+Important design rule: technical identifiers and dice syntax remain unchanged where translating them would reduce clarity or invalidate examples.
 
-English remains the only shipped locale, which matches the master requirement to ship English first while keeping strings externalized. No fake language selector was added before a second complete locale exists.
+Representative commits:
 
-### 9. Generated parser invariants
+- `4400f620` — `feat: add reviewed Hindi message catalog`
+- `d104d6ab` — `feat: register Hindi locale catalog`
+- `58557310` — `test: cover Hindi locale registry and helpers`
+- `ef118cd0` — `docs: add Hindi localization review record`
 
-Expanded parser tests with 500 deterministic generated valid expressions to verify normalization idempotence.
+## Persisted language preference
 
-Also added case/whitespace-equivalence checks so equivalent input forms normalize to identical domain values.
+`DiceLabSettings` now stores:
 
-This provides property-style coverage without adding a new dependency or nondeterministic CI behavior.
-
-### 10. Large-history rendering performance
-
-History retention remains capped at 5,000 records, but the UI no longer mounts every matching row immediately.
-
-History now:
-
-- renders the first 200 matching roll rows;
-- reveals additional rows in explicit 200-entry increments;
-- resets the visible window when filtering changes;
-- still calculates statistics/histograms across the complete filtered set;
-- still exports the complete filtered set rather than only visible rows.
-
-Regression tests verify a 220-entry history renders 200 rows first, then all 220 after “Show more rolls,” while summary statistics remain complete.
-
-### 11. Release workflow hardening
-
-Tagged release workflow now:
-
-1. verifies frontend dependencies with `npm ci`;
-2. runs documentation-link audit, format, lint, tests, and production web build;
-3. verifies Rust formatting, locked tests, and locked Clippy checks;
-4. builds Tauri artifacts on Windows, macOS, and Linux;
-5. uploads successful workflow artifacts;
-6. downloads only artifacts from successful prerequisite jobs;
-7. packages each artifact set into ZIP files;
-8. creates `SHA256SUMS.txt`;
-9. creates/updates a **draft** GitHub release;
-10. uploads packages/checksums to the draft.
-
-The release deliberately remains a draft until a maintainer performs real artifact installation/smoke testing. Signing/notarization is not falsely claimed when credentials are unavailable.
-
-### 12. Main CI reproducibility
-
-Main CI now uses:
-
-- `npm ci` only;
-- committed npm lockfile;
-- Cargo `--locked` tests/Clippy;
-- documentation-link audit;
-- format check;
-- lint;
-- unit/integration tests;
-- production TypeScript/Vite build;
-- Rust format/test/Clippy quality gates.
-
-Fallback installation behavior that could hide lockfile drift was removed.
-
-### 13. Documentation-link audit
-
-Added dependency-free `scripts/check-doc-links.mjs` and exposed:
-
-```bash
-npm run docs:check
+```ts
+locale: 'en' | 'hi'
 ```
 
-It scans repository Markdown files and fails on missing relative targets or malformed percent-encoding while intentionally leaving external URL reachability to network-enabled release review.
+English remains the default.
 
-The check is wired into normal CI and the tagged release workflow.
+Changing language in Settings now:
 
-### 14. Documentation consistency
+- switches the live catalog;
+- persists locally;
+- updates `document.documentElement.lang`;
+- regenerates built-in preset copy from the selected locale;
+- leaves user-created preset names, expressions, seeds, identifiers, history records, and exports unchanged.
 
-Updated documentation to match the real implementation:
+Backup compatibility:
 
-- README now reflects seeded parity, persistence hardening, progressive history, typed i18n, exactness guards, quality commands, and draft-release/checksum workflow;
-- architecture docs now describe `config/`, `i18n/`, persistence validation, backup trust boundaries, and cross-runtime seeded compatibility;
-- testing docs now list integration, storage, i18n, parser-invariant, accessibility, progressive-history, and root-recovery coverage;
-- accessibility docs now document modal focus guarantees and reduced-motion normalization;
-- performance docs now describe progressive history rendering and numeric exactness safeguards;
-- release docs now document version locations, clean-checkout commands, checksum review, draft publication, and artifact smoke tests;
-- security docs now document persistence/backup/CSV/release trust boundaries;
-- contributing/development docs now use locked commands, i18n rules, docs checks, seeded parity rules, and the preferred commit email;
-- roadmap/changelog now distinguish implemented work from external verification still required.
+- supported locale is preserved on backup round trip;
+- legacy schema-v1 backups with no locale default safely to English;
+- unsupported locale values default safely to English.
 
-A repository-tree typo introduced during the development-guide edit was detected in the same pass and corrected immediately in a separate `fix:` commit.
+Representative commits:
 
-### 15. Application-level render recovery
+- `412253b3` — `feat: persist locale in DiceLab settings`
+- `ee6aa887` — `feat: allow switching the active message catalog`
+- `cfa4d556` — `feat: add language preference copy`
+- `2cb22ac8` — `feat: translate language preference copy`
+- `2ca81a50` — `feat: localize built in presets and stored locale`
+- `0a9b8cb2` — `feat: preserve locale across backup restore`
+- `e5478b3f` — `feat: add persisted language selector`
+- `71e1b625` — `feat: apply locale across the live application`
+- `efdac10b` — `test: cover live locale switching`
+- `5f37feae` — `test: cover localized presets and stored locale`
+- `485dd451` — `test: cover locale backup compatibility`
+- `babae0ab` — `test: cover language preference changes`
+- `72f65956` — `test: cover live Hindi application switching`
 
-Added a root React error boundary so an unexpected render failure no longer leaves DiceLab with an unhandled blank interface.
+## Active-locale presentation formatting
 
-The recovery boundary:
+The language selector now controls application-generated presentation formatting as well as words.
 
-- wraps the entire `<App />` at the React root;
-- shows a localized recovery surface with `role="alert"`;
-- tells the user that DiceLab local data has not been cleared;
-- provides an explicit reload action;
-- logs only a fixed DiceLab recovery event from the boundary rather than serializing raw exception contents into the project’s own logging call.
+Added `src/i18n/format.ts` with explicit locale mapping:
 
-Regression tests verify healthy children render normally and a synthetic render failure is replaced by the recovery UI.
+- `en` → `en-US`
+- `hi` → `hi-IN`
 
-## Files added in this continuation
+Shared formatting helpers now cover:
 
-- `src/App.integration.test.tsx`
-- `src/config/app.ts`
-- `src/domain/persistence.ts`
-- `src/i18n/en.ts`
-- `src/i18n/index.ts`
-- `src/i18n/index.test.ts`
-- `src/services/storage.test.ts`
-- `src/components/AppErrorBoundary.tsx`
-- `src/components/AppErrorBoundary.test.tsx`
-- `src/components/CommandPalette.test.tsx`
-- `src/components/Onboarding.test.tsx`
-- `src/components/SettingsPanel.test.tsx`
-- `src/components/HistoryPanel.test.tsx`
+- integer formatting;
+- bounded decimals;
+- fixed decimals;
+- date/time formatting;
+- time-only formatting.
+
+Applied to the Roll surface:
+
+- result time;
+- total;
+- die values;
+- modifier values.
+
+Applied to History:
+
+- roll count;
+- mean;
+- median;
+- range;
+- histogram counts/totals;
+- individual roll totals;
+- die values;
+- timestamps.
+
+Applied to Probability:
+
+- expected value;
+- range;
+- finite outcome counts;
+- chart totals;
+- percentage labels.
+
+This fixes the case where Hindi UI copy could previously coexist with unrelated host-locale numeric/date formatting.
+
+Commits:
+
+- `ce3dda10` — `feat: expose active locale for formatting`
+- `45601aaf` — `test: cover active locale state`
+- `51c38f1d` — `feat: add locale aware number and date formatters`
+- `914bd653` — `test: cover locale aware formatting helpers`
+- `d751e376` — `feat: format history timestamps with active locale`
+- `e7e5c091` — `feat: localize probability number formatting`
+- `614e9da6` — `test: cover localized probability presentation`
+- `c0c1bd69` — `feat: localize history statistic formatting`
+- `4548c4a5` — `feat: add locale aware time formatter`
+- `f4c28fb9` — `feat: localize roll result presentation`
+- `df25cffc` — `test: cover localized roll result presentation`
+
+## Localization documentation
+
+Updated:
+
 - `docs/localization.md`
-- `scripts/check-doc-links.mjs`
-
-## Existing files changed in this continuation
-
-- `src/test/setup.ts`
-- `src/main.tsx`
-- `src/App.tsx`
-- `src/domain/parser.test.ts`
-- `src/domain/probability.ts`
-- `src/domain/probability.test.ts`
-- `src/domain/random.test.ts`
-- `src/services/export.ts`
-- `src/services/backup.test.ts`
-- `src/services/storage.ts`
-- `src/components/AppShell.tsx`
-- `src/components/AboutPanel.tsx`
-- `src/components/CommandPalette.tsx`
-- `src/components/HistoryPanel.tsx`
-- `src/components/Onboarding.tsx`
-- `src/components/ProbabilityPanel.tsx`
-- `src/components/RollWorkspace.tsx`
-- `src/components/SettingsPanel.tsx`
-- `src-tauri/src/lib.rs`
-- `.github/workflows/ci.yml`
-- `.github/workflows/release.yml`
-- `package.json`
+- `docs/localization/HINDI_REVIEW.md`
 - `README.md`
 - `CHANGELOG.md`
 - `ROADMAP.md`
-- `SECURITY.md`
-- `CONTRIBUTING.md`
-- `docs/architecture.md`
-- `docs/adr/0002-randomness-modes.md`
-- `docs/accessibility.md`
-- `docs/development.md`
-- `docs/performance.md`
-- `docs/release.md`
 - `docs/testing.md`
-- `what_changed.md`
+- `docs/release.md`
 
-## Tests added or expanded
+The contributor rules now explicitly require new locale-sensitive display values to use the shared formatting boundary rather than default-host-locale `Intl`/`toLocaleString` calls.
 
-- full app integration: seeded roll → History → CSV export;
-- full app integration: backup restore → History;
-- full app integration: Settings → About;
-- local-storage malformed JSON recovery;
-- local-storage settings normalization;
-- malformed persisted roll filtering;
-- forged built-in preset filtering;
-- persistence deduplication on load/write;
-- backup maximum-length configured-seed round trip;
-- backup duplicate roll IDs;
-- backup duplicate preset IDs;
-- backup malformed export timestamp;
-- backup reduced-motion normalization;
-- command-palette focus entry/trap/restore/Escape;
-- command-palette filtering + Enter activation;
-- onboarding dialog accessibility and initial focus;
-- Settings reduced-motion invariant;
-- Settings releases/About actions;
-- TypeScript/Rust deterministic RNG cross-runtime vectors;
-- Unicode seed-hash compatibility vectors;
-- probability safe-integer exactness boundary;
-- generated parser normalization invariants;
-- parser case/whitespace equivalence;
-- locale catalog default/dynamic-message behavior;
-- progressive history rendering and filter-window reset;
-- application root error recovery boundary.
+Recent documentation commits:
 
-## Verification/checks performed in this continuation
+- `2637d357` — `docs: record locale aware presentation formatting`
+- `859fac6e` — `docs: update localization workflow for Hindi and Intl formatting`
+- `86be60fb` — `docs: record native exports and locale formatting`
 
-### Repository/API checks
+## Native desktop save dialogs
 
-- GitHub repository metadata lookup: succeeded.
-- GitHub repository tree/file inspection: succeeded.
-- GitHub commit-history inspection: succeeded.
-- Authenticated GitHub connector retains push/admin access.
-- Current version locations were inspected and are aligned at `0.1.0`.
+### Runtime architecture
 
-### GitHub status visibility
+Browser builds retain the existing Blob/download flow.
 
-The connector’s combined-status endpoint returned an empty status list for the checked current commits, including `bc08b04cdd0dc80c1b83611f34461bd6b332defe` before the final recovery-boundary commits.
-
-This means **CI is not being claimed green** from this environment. An empty connector response is treated as “status not observable,” not as a passing result. Re-check the final handoff commit in the next continuation or through the GitHub Actions UI.
-
-### Local isolated verification
-
-The repository could not be cloned into the execution sandbox because outbound DNS access to `github.com` is unavailable. Therefore a full repository `npm ci`/Cargo build was not run locally.
-
-Two isolated checks were still performed using the exact implementation patterns committed:
-
-1. `scripts/check-doc-links.mjs`
-   - `node --check` passed;
-   - synthetic Markdown repository smoke test passed and correctly resolved relative/external link handling.
-2. `MessageCatalog` TypeScript widening pattern
-   - compiled with global TypeScript `5.8.3` using `tsc --noEmit --strict --target ES2022` against a representative second-locale structure;
-   - validated that translated string literals can satisfy the widened catalog type while preserving dynamic-function parameter types.
-
-These are narrow implementation checks, **not substitutes** for the repository CI suite.
-
-## Git author email limitation
-
-The GitHub connector’s file create/update functions allow commit messages but do not expose commit author/email fields. Therefore the requested `sanskarin@outlook.in` cannot be forced on connector-generated commits.
-
-The repository itself documents the preferred email and `src-tauri/Cargo.toml` already includes:
+Tauri desktop builds now route CSV/JSON exports through a purpose-built Rust command:
 
 ```text
-Sanskar <sanskarin@outlook.in>
+save_text_export
 ```
 
-When committing through normal Git, use:
+The frontend supplies:
+
+- a bounded suggested filename;
+- text contents;
+- the requested `csv` or `json` format.
+
+The frontend does **not** supply an arbitrary filesystem destination path.
+
+The Rust command opens the operating-system save dialog and writes only to the path chosen there.
+
+### Native validation
+
+Before opening/writing, the native command validates:
+
+- suggested filename is non-empty;
+- suggested filename length is bounded;
+- no control characters;
+- no `/` or `\\` path separators;
+- format is exactly `csv` or `json`;
+- suggested filename extension matches the format;
+- payload is bounded;
+- the final selected path extension still matches the requested format.
+
+Current native export payload limit:
+
+```text
+6,000,000 bytes
+```
+
+Suggested filename limit:
+
+```text
+160 bytes
+```
+
+Cancellation returns `false` and does not silently fall back to a browser download.
+
+Native save failures shown to the user are localized generic messages. Private selected filesystem paths and raw OS error text are not surfaced by the UI.
+
+### Export flows using the native boundary
+
+- filtered History CSV;
+- filtered History JSON;
+- full DiceLab JSON backup.
+
+### Runtime adapter
+
+Added `src/services/runtime.ts` so rolling/export code uses one consistent Tauri/browser detection boundary.
+
+### Relevant commits
+
+- `ca3776c4` — `build: add native dialog dependency`
+- `43cb4b07` — `feat: add native scoped export save command`
+- `cd045f03` — `refactor: centralize runtime detection`
+- `76c65614` — `refactor: reuse shared runtime detection`
+- `0a75f0d1` — `feat: route desktop exports through native save dialog`
+- `1efd2c37` — `feat: add localized export status messages`
+- `ebed4fb6` — `feat: translate export status messages`
+- `c3a976d0` — `feat: add resilient history export feedback`
+- `f9ae29ae` — `feat: use native save flow for backup exports`
+- `e198ad3e` — `feat: surface backup export save status`
+- `b084fc53` — `test: cover browser and native export routing`
+- `8190f82b` — `test: cover backup export status handling`
+- `556950a8` — `test: cover history export feedback`
+- `86291723` — `security: validate selected native export extension`
+- `c94bc0b0` — `test: cover browser and Tauri runtime detection`
+
+## Native export security documentation
+
+Added:
+
+- `docs/native-exports.md`
+
+Updated:
+
+- `SECURITY.md`
+- `README.md`
+- `docs/testing.md`
+- `docs/release.md`
+- `CHANGELOG.md`
+
+The webview still has no broad arbitrary filesystem-write capability. Future export formats must extend the dedicated native allowlist and tests rather than replacing the bounded command with a general write primitive.
+
+Commits:
+
+- `9f221e5a` — `docs: document native export trust boundary`
+- `dc14bb01` — `docs: define native export security boundary`
+- `57ab93af` — `docs: expose localization and native export features`
+- `1b0054ac` — `docs: add native export locale and fuzz verification guidance`
+- `0958ea05` — `docs: require lock refresh and native export release smoke`
+
+## Rust parser fuzzing
+
+Added coverage-guided native parser fuzzing.
+
+Files:
+
+- `src-tauri/fuzz/Cargo.toml`
+- `src-tauri/fuzz/fuzz_targets/parser.rs`
+- `src-tauri/fuzz/README.md`
+- `.github/workflows/fuzz.yml`
+
+The parent crate exposes `fuzz_parse_expression()` only under the `fuzzing` feature.
+
+Invariant checked after arbitrary UTF-8 input:
+
+- if parsing succeeds, normalized output must parse again;
+- count must remain equal;
+- sides must remain equal;
+- modifier must remain equal;
+- normalized representation must remain equal.
+
+The GitHub Actions fuzz workflow supports:
+
+- manual dispatch;
+- weekly bounded execution;
+- Rust nightly;
+- `cargo-fuzz`;
+- 60-second parser campaign.
+
+Generated corpus/build/crash output stays ignored. Actionable minimized cases should become deterministic Rust regression tests.
+
+Commits:
+
+- `16aa9895` — `build: add parser fuzzing feature gate`
+- `0a35b51d` — `test: expose parser invariant fuzz hook`
+- `f4ffc621` — `test: add cargo fuzz harness manifest`
+- `1ff4a8dc` — `test: add coverage guided parser fuzz target`
+- `251866cd` — `docs: document parser fuzzing workflow`
+- `e05fdbed` — `chore: ignore cargo fuzz generated artifacts`
+- `49e36b1e` — `ci: add scheduled Rust parser fuzz campaign`
+
+Important: the workflow exists, but a green fuzz campaign has not been observed through the available repository execution evidence, so that release evidence remains open.
+
+## Dependency lockfile state — release blocker
+
+Adding native dialog support changed `src-tauri/Cargo.toml`:
+
+```toml
+tauri-plugin-dialog = "2.7.2"
+```
+
+The currently observed `src-tauri/Cargo.lock` is still the previous dependency graph and does not contain the new dialog plugin.
+
+The existing lock already resolves current Tauri 2.11.x dependencies, so the source-level Tauri/plugin major-version relationship is compatible. However, the plugin introduces additional Cargo dependencies and the lockfile must be generated normally rather than hand-edited.
+
+Because normal Rust CI uses `--locked`, this is a real verification blocker.
+
+### Lockfile workflow improvements
+
+Updated `.github/workflows/lockfiles.yml` to:
+
+- support `workflow_dispatch`;
+- generate both npm and Cargo lockfiles;
+- retain the configured repository commit identity in the workflow;
+- try a normal direct `main` update;
+- if protected `main` rejects the update, publish the exact generated commit to `automation/lockfiles` for review/application.
+
+Commits:
+
+- `aef6ddae` — `ci: allow manual dependency lockfile refresh`
+- `c17ece11` — `ci: preserve generated lockfiles when main is protected`
+
+### Current observed state
+
+At this handoff:
+
+- the Cargo manifest contains `tauri-plugin-dialog = "2.7.2"`;
+- the Cargo lockfile has not yet regenerated in the repository;
+- `automation/lockfiles` has not been observed;
+- locked Rust tests/Clippy for the new dependency graph cannot honestly be claimed green yet.
+
+The execution container used for this continuation cannot resolve GitHub DNS, so it cannot generate the exact lock from a clean local clone. Do **not** hand-construct transitive Cargo lock entries.
+
+Required next action when a network-enabled runner is available:
 
 ```bash
-git config user.email sanskarin@outlook.in
+cd src-tauri
+cargo generate-lockfile
+cargo test --locked
+cargo clippy --all-targets --all-features --locked -- -D warnings
 ```
 
-## Known limitations / external blockers
+Commit the generated `src-tauri/Cargo.lock`, then re-run the full repository checks.
 
-These are intentionally not hidden or marked complete:
+## Test coverage added/expanded in this continuation
 
-1. Full clean-checkout `npm ci`, `npm run docs:check`, format, lint, Vitest, TypeScript/Vite build, Cargo format/test/Clippy have not been observed green for the latest commit from this environment.
-2. Windows, macOS, and Linux Tauri release artifacts have not been installed/smoke-tested here.
-3. Real release-candidate screenshots have not been captured; README intentionally describes the views instead of using fabricated screenshots.
-4. Signing/notarization credentials are not available through this session; the project does not claim signed/notarized artifacts.
-5. Real-browser E2E coverage is still pending. Current integration tests use jsdom/Testing Library.
-6. Dedicated Rust fuzz infrastructure is still pending.
-7. Executable wall-clock performance benchmarks are still pending; performance-oriented behavior is covered by deterministic regression tests and documented budgets.
-8. A second locale is intentionally not shipped yet. The typed English catalog and contributor contract are ready for one.
-9. Manual keyboard + screen-reader review on actual release artifacts is still required before Phase 6 can be closed.
-10. External URL reachability still requires a network-enabled release audit; `docs:check` validates repository-relative Markdown targets only.
+Coverage now includes:
 
-## Next exact tasks
+- Hindi catalog lookup;
+- English default behavior;
+- live catalog switching;
+- active locale state;
+- Hindi dynamic message helpers;
+- `en-US`/`hi-IN` number grouping;
+- persisted locale normalization;
+- localized built-in presets;
+- backup locale round trip;
+- schema-v1 backups without locale;
+- unsupported backup locale fallback;
+- Settings language selector;
+- live app Hindi switching;
+- document `lang` metadata;
+- localized probability presentation;
+- localized roll result presentation;
+- browser/Tauri runtime detection;
+- browser export fallback;
+- native save-command routing;
+- native save cancellation;
+- safe filename/format checks;
+- native payload bounds;
+- final selected-extension validation;
+- safe localized History export feedback;
+- safe localized backup export feedback;
+- generated/adversarial Rust parser cases;
+- coverage-guided parser fuzz entry point.
 
-Resume in this order:
+## Documentation state
 
-1. Obtain/observe a clean network-enabled CI run on latest `main` and fix every format/lint/type/test/Rust/docs failure reported. Do not mark Phase 6 complete from an empty status response.
-2. Run the tagged release workflow on a release-candidate tag only after normal CI is green; keep the generated GitHub release as a draft.
-3. Download each draft artifact package, verify it against `SHA256SUMS.txt`, and install/smoke-test Windows, macOS, and Linux builds.
-4. Capture **real** screenshots from the verified release candidate and replace the README screenshot-description table only when genuine captures exist.
-5. Add a real-browser E2E suite for onboarding → roll → history, persistence across reload, actual file download/import, probability calculation, command palette, keyboard behavior, and controlled recovery-page reload behavior.
-6. Add executable benchmarks for parser, probability, 5,000-record search/statistics, progressive rendering, and Rust roll throughput with documented machine/runtime metadata.
-7. Add a dedicated Rust parser fuzz target if the chosen fuzz tooling can be introduced with generated lockfile changes from a network-enabled environment.
-8. Migrate remaining translatable parser/domain error prose to stable error codes before shipping a second locale.
-9. Add and review a complete second locale, then expose locale selection/persistence only after catalog completeness and layout/accessibility review.
-10. Run a network-enabled external-link audit, secret/dependency/CodeQL review, manual keyboard/screen-reader smoke pass, and final release-candidate checklist.
-11. Update `CHANGELOG.md`, `ROADMAP.md`, `README.md`, `docs/release.md`, and this file with actual CI/artifact evidence before publishing `v0.1.0`.
+The following current docs were updated or added during this continuation:
 
-## Migration notes
+- `README.md`
+- `SECURITY.md`
+- `CHANGELOG.md`
+- `ROADMAP.md`
+- `docs/localization.md`
+- `docs/localization/HINDI_REVIEW.md`
+- `docs/native-exports.md`
+- `docs/testing.md`
+- `docs/release.md`
+- `src-tauri/fuzz/README.md`
+- `what_changed.md`
 
-- No local-storage key migration is required by this continuation.
-- Backup schema remains `1`.
-- Backup validation is stricter; malformed/ambiguous schema-1 backups may now be rejected instead of silently loading inconsistent state.
-- Seeded deterministic output is now intentionally standardized across TypeScript and Rust. Any future seeded-algorithm change is a compatibility change and must update both reference-vector suites plus release notes.
-- No database migration exists because DiceLab still intentionally uses bounded local storage for its current data model.
-- The root error boundary does not clear, rewrite, or migrate local user data.
+## Current roadmap state
 
-## Release notes draft
+### Code-complete items
 
-### Unreleased — Added
+The roadmap now records as implemented:
 
-- Browser-level integration coverage for primary offline workflows.
-- Runtime persistence validation and corrupted-storage recovery.
-- Typed English locale catalog and localization contributor architecture.
-- Progressive rendering for large roll histories.
-- Settings version/releases/About surface.
-- Documentation-link audit in CI/release workflows.
-- Draft-release ZIP/checksum packaging.
-- Cross-runtime seeded RNG reference-vector coverage.
-- Localized root application recovery surface for unexpected React render failures.
+- reviewed second locale;
+- persisted English/Hindi preference;
+- document-language metadata;
+- locale-aware presentation formatting;
+- native desktop save dialog route with browser fallback;
+- parser fuzz target and scheduled/manual workflow;
+- supporting unit/component/integration regression coverage.
 
-### Unreleased — Changed
+### Evidence-gated open items
 
-- Web and Rust seeded mode now share one deterministic algorithm for portable reproduction.
-- Probability results advertised as exact now refuse unsafe integer-outcome ranges.
-- Main CI/release checks use committed lockfiles and locked package-manager behavior.
-- Backup/local-persistence handling now treats stored data as untrusted runtime input.
-- User-facing React/preset/recovery copy is externalized through the English message catalog.
+Still deliberately open:
 
-### Unreleased — Fixed
+- regenerate/commit Cargo lockfile for native dialog dependency;
+- observe locked Rust test/Clippy on that dependency graph;
+- observe full production real-browser E2E green on unrestricted infrastructure;
+- observe a parser fuzz campaign green;
+- record release-candidate benchmark evidence;
+- clean-checkout verification;
+- clean Windows/macOS/Linux candidate builds;
+- native save-dialog smoke on each desktop platform;
+- manual English/Hindi visual/accessibility review on candidate builds;
+- real release screenshots;
+- signing/notarization where credentials exist;
+- dependency/CodeQL/repository-security review;
+- manual keyboard/screen-reader smoke;
+- artifact/provenance/checksum verification;
+- draft release smoke checks;
+- `v0.1.0` publication.
 
-- Maximum-length configured deterministic seeds now survive backup round trips after sequence suffixes are appended.
-- Duplicate/ambiguous backup identifiers are rejected.
-- Reduced-motion state cannot restore with contradictory animations enabled.
-- Command-palette focus no longer escapes the modal and returns to the trigger when closed.
-- Large histories no longer mount all retained rows immediately.
-- Unexpected React render failures now show a recovery action instead of leaving an unhandled blank UI.
+## Recent continuation commit ledger
 
-### Unreleased — Security
+Newest continuation commits include:
 
-- Backup restore integrity validation was expanded substantially.
-- Corrupted local persistence is filtered/normalized before use.
-- Existing spreadsheet-safe CSV export remains enforced.
-- Draft releases are generated only after prerequisite jobs and include SHA-256 checksum metadata.
-- The DiceLab error boundary records only a fixed redacted recovery event instead of logging raw exception contents from its own handler.
+| Commit | Message |
+| --- | --- |
+| `73938697` | `docs: archive previous implementation handoff` |
+| `0958ea05` | `docs: require lock refresh and native export release smoke` |
+| `1b0054ac` | `docs: add native export locale and fuzz verification guidance` |
+| `859fac6e` | `docs: update localization workflow for Hindi and Intl formatting` |
+| `2637d357` | `docs: record locale aware presentation formatting` |
+| `86be60fb` | `docs: record native exports and locale formatting` |
+| `47adca9e` | `docs: separate native export completion from lock verification` |
+| `df25cffc` | `test: cover localized roll result presentation` |
+| `f4c28fb9` | `feat: localize roll result presentation` |
+| `4548c4a5` | `feat: add locale aware time formatter` |
+| `c0c1bd69` | `feat: localize history statistic formatting` |
+| `c17ece11` | `ci: preserve generated lockfiles when main is protected` |
+| `614e9da6` | `test: cover localized probability presentation` |
+| `e7e5c091` | `feat: localize probability number formatting` |
+| `d751e376` | `feat: format history timestamps with active locale` |
+| `914bd653` | `test: cover locale aware formatting helpers` |
+| `51c38f1d` | `feat: add locale aware number and date formatters` |
+| `45601aaf` | `test: cover active locale state` |
+| `ce3dda10` | `feat: expose active locale for formatting` |
+| `57ab93af` | `docs: expose localization and native export features` |
+| `dc14bb01` | `docs: define native export security boundary` |
+| `9f221e5a` | `docs: document native export trust boundary` |
+| `aef6ddae` | `ci: allow manual dependency lockfile refresh` |
+| `c94bc0b0` | `test: cover browser and Tauri runtime detection` |
+| `86291723` | `security: validate selected native export extension` |
+| `556950a8` | `test: cover history export feedback` |
+| `8190f82b` | `test: cover backup export status handling` |
+| `b084fc53` | `test: cover browser and native export routing` |
+| `e198ad3e` | `feat: surface backup export save status` |
+| `f9ae29ae` | `feat: use native save flow for backup exports` |
+| `c3a976d0` | `feat: add resilient history export feedback` |
+| `ebed4fb6` | `feat: translate export status messages` |
+| `1efd2c37` | `feat: add localized export status messages` |
+| `0a75f0d1` | `feat: route desktop exports through native save dialog` |
+| `76c65614` | `refactor: reuse shared runtime detection` |
+| `cd045f03` | `refactor: centralize runtime detection` |
+| `43cb4b07` | `feat: add native scoped export save command` |
+| `ca3776c4` | `build: add native dialog dependency` |
 
-## Recent meaningful commits from this continuation
+The full earlier commit/history ledger remains in the archived handoff linked at the top of this file.
 
-This continuation intentionally used many small, atomic commits. It produced **86 meaningful commits before this final handoff update**, rather than combining unrelated features into a few large commits.
+## Verification honesty
 
-Most recent/current examples:
+Repository tooling was used to inspect and modify the current GitHub state. The execution environment did not provide a network-enabled clean checkout capable of running Cargo dependency resolution, and the available GitHub connector did not expose an observed successful Actions run for the new dependency graph.
 
-- `0ff74bc03c9402d7a48227ba8de8c71ec0ad722c` — `docs: add application recovery test coverage`
-- `58986a68ee91e7762817aed05eb731f0e59ab4d9` — `docs: record application recovery boundary`
-- `005f6896c762ac504406da43793c003893966eca` — `test: avoid depending on react internal error logging`
-- `080b0907eecaabd6baffca9d7324dfcdfb41ad7c` — `feat: protect root with recovery boundary`
-- `b7386e09368fa57f50054129dc132d09460a5fcb` — `test: cover application recovery boundary`
-- `68e8a994a4cab66b3b22754e7a22bde950ff529f` — `feat: add application error recovery boundary`
-- `6ea79d72fbe5b2d149211d0363a33d1904840314` — `feat: add application recovery messages`
-- `bc08b04cdd0dc80c1b83611f34461bd6b332defe` — `docs: align contribution quality gates`
-- `08ba12d544a5a8486dbf6a98f3e8989e7ba4aaea` — `fix: correct development guide repository tree`
-- `34d757870a906b2094c8b85226d9b624e9f3fd0d` — `docs: align contributor development workflow`
-- `dbeef3798a49b09d5f180cfc007f0c1559749962` — `docs: document progressive history performance guard`
-- `e447f59c086533078c720dc444caaa43255dc4b5` — `docs: refresh readme for hardened release candidate`
-- `8176a646...` — `docs: record i18n and large history improvements`
-- `7725fa17...` — `docs: add parser i18n and history test coverage`
-- `6c1fec39...` — `ci: gate release builds on documentation links`
-- `3106ea32...` — `ci: verify documentation links on every change`
-- `3e0bc998...` — `build: expose documentation link audit`
-- `db44030b...` — `build: add documentation link checker`
-- `c49710b7...` — `docs: mark i18n history and parser hardening complete`
-- `bbe7a40d...` — `test: cover progressive history rendering`
-- `c48b7ceb...` — `perf: progressively render large roll histories`
-- `1c414d91...` — `refactor: enforce locale catalog compatibility`
-- `1a03e238...` — `refactor: define extensible locale catalog type`
-- `8f59f0bc...` — `test: enforce locale catalog contract`
-- `0b80a9b6...` — `docs: add localization contributor guide`
-- `36059111...` — `docs: align architecture with parity and i18n`
-- `ac2ddf37...` — `refactor: localize built-in preset content`
-- `1414c15b...` — `refactor: externalize app-level interface strings`
-- `d66b8488...` — `refactor: externalize settings screen strings`
-- `708f1cf3...` — `refactor: externalize probability screen strings`
-- `e2cdb567...` — `refactor: externalize history screen strings`
-- `cfa2f648...` — `refactor: externalize roll workspace strings`
-- `e899eafe...` — `refactor: externalize command palette strings`
-- `9d0179dd...` — `refactor: externalize onboarding strings`
-- `c2f02c5d...` — `refactor: externalize navigation strings`
-- `2829d376...` — `feat: add locale catalog boundary`
-- `1ec1c7ce...` — `feat: add externalized English message catalog`
-- `0b604a76...` — `test: add generated parser normalization invariants`
-- `7f8af566...` — `ci: enforce locked reproducible quality checks`
-- `a34903ec...` — `test: cover settings to about navigation`
-- `1dce1fce...` — `feat: add updates and about settings section`
-- `63a8c539...` — `refactor: centralize application metadata`
-- `5ae97161...` — `test: guard exact probability numeric limits`
-- `2180a65a...` — `fix: preserve exact probability outcome counts`
-- `0160a038...` — `docs: guarantee seeded cross-runtime parity`
-- `57902363...` — `test: pin cross-runtime seeded reference vectors`
-- `ce6743c1...` — `fix: align desktop seeded rng with web`
-- `1fcc0945...` — `ci: publish verified draft release bundles`
-- `deebf16b...` — `test: cover onboarding keyboard entry`
-- `9d2928fb...` — `a11y: focus onboarding primary action`
-- `8855f414...` — `test: cover command palette keyboard focus`
-- `6064be8a...` — `a11y: trap and restore command palette focus`
-- `1ae9993d...` — `test: cover corrupted local storage recovery`
-- `83878818...` — `fix: recover safely from corrupted local storage`
-- `11f53928...` — `refactor: centralize persisted data validation`
-- `d0043417...` — `test: cover maximum user seed backup round trip`
-- `f0123852...` — `fix: accept valid sequenced deterministic seeds`
-- `8ae76b9e...` — `test: cover roll history and export journey`
-- `af4d259e...` — `test: provide stable browser environment stubs`
+Therefore:
 
-The GitHub connector does not expose commit-email selection, so these connector commits cannot be guaranteed to carry the requested author email even though repository guidance/configuration records it.
+- code/config/test/docs changes are committed;
+- configured CI/fuzz/lock workflows are documented;
+- unobserved workflow success is **not** claimed;
+- stale Cargo lock state is explicitly tracked as a blocker;
+- release-only/manual evidence remains unchecked until observed on the intended candidate.
 
-## Continuation rule
+## Next continuation rule
 
-On the next continuation:
+Start with the first unresolved blocker rather than repeating completed work:
 
-1. read this file first;
-2. inspect latest `main` and current CI/check evidence;
-3. do not reimplement completed Phase 0–5 features unless a failing check or real defect requires it;
-4. prioritize observable clean-checkout/release evidence and fix every reported defect;
-5. keep creating small meaningful commits;
-6. update this file after meaningful work and before ending the continuation.
+1. regenerate and commit `src-tauri/Cargo.lock` from the current manifest;
+2. observe locked Rust test/Clippy;
+3. run/observe the full quality/browser/fuzz checks;
+4. perform platform-native export/localization smoke checks;
+5. record benchmark/release-candidate evidence;
+6. only then advance artifact/signing/screenshots/release publication.
+
+Keep future meaningful changes granular and update this file as the handoff evolves.
