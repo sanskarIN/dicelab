@@ -84,17 +84,13 @@ export function createBackup(
 }
 
 export function backupToJson(backup: DiceLabBackup): string {
-  return `${JSON.stringify(backup, null, 2)}\n`;
+  const contents = `${JSON.stringify(backup, null, 2)}\n`;
+  assertBackupSize(contents);
+  return contents;
 }
 
 export function parseBackupJson(contents: string): DiceLabBackup {
-  if (new Blob([contents]).size > MAX_BACKUP_BYTES) {
-    throw new BackupValidationError(
-      'backup-too-large',
-      'Backup is larger than the supported 5 MB limit.',
-      { limit: MAX_BACKUP_BYTES },
-    );
-  }
+  assertBackupSize(contents);
 
   let parsed: unknown;
   try {
@@ -209,6 +205,16 @@ function normalizeSettings(value: unknown): DiceLabSettings {
     seed: typeof settings.seed === 'string' ? settings.seed.slice(0, 120) : DEFAULT_SETTINGS.seed,
     historyLimit,
   };
+}
+
+function assertBackupSize(contents: string): void {
+  if (new TextEncoder().encode(contents).byteLength > MAX_BACKUP_BYTES) {
+    throw new BackupValidationError(
+      'backup-too-large',
+      'Backup is larger than the supported 5 MB limit.',
+      { limit: MAX_BACKUP_BYTES },
+    );
+  }
 }
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
