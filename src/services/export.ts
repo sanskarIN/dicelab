@@ -147,13 +147,13 @@ function isRollResult(value: unknown): value is RollResult {
     (roll.mode === 'seeded' && typeof roll.seed !== 'string')
   ) return false;
 
-  let parsed;
+  let expression: ReturnType<typeof parseDiceExpression>;
   try {
-    parsed = parseDiceExpression(roll.expression);
+    expression = parseDiceExpression(roll.expression);
   } catch {
     return false;
   }
-  if (roll.modifier !== parsed.modifier || roll.dice.length !== parsed.count) return false;
+  if (roll.modifier !== expression.modifier || roll.dice.length !== expression.count) return false;
 
   const seenIndices = new Set<number>();
   for (const die of roll.dice) {
@@ -163,25 +163,25 @@ function isRollResult(value: unknown): value is RollResult {
       typeof die.value !== 'number' ||
       !Number.isSafeInteger(die.value) ||
       die.value < 1 ||
-      die.value > parsed.sides ||
+      die.value > expression.sides ||
       typeof die.kept !== 'boolean' ||
       typeof die.index !== 'number' ||
       !Number.isSafeInteger(die.index) ||
       die.index < 0 ||
-      die.index >= parsed.count ||
+      die.index >= expression.count ||
       seenIndices.has(die.index)
     ) return false;
     seenIndices.add(die.index);
   }
 
-  const expectedKept = parsed.selection
-    ? parsed.selection.kind.startsWith('keep')
-      ? parsed.selection.count
-      : parsed.count - parsed.selection.count
-    : parsed.count;
+  const expectedKept = expression.selection
+    ? expression.selection.kind.startsWith('keep')
+      ? expression.selection.count
+      : expression.count - expression.selection.count
+    : expression.count;
   if (roll.dice.filter((die) => die.kept).length !== expectedKept) return false;
 
-  const computedTotal = roll.dice.reduce((sum, die) => sum + (die.kept ? die.value : 0), parsed.modifier);
+  const computedTotal = roll.dice.reduce((sum, die) => sum + (die.kept ? die.value : 0), expression.modifier);
   return computedTotal === roll.total;
 }
 
