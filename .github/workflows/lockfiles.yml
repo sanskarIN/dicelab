@@ -6,7 +6,9 @@ on:
     branches: [main]
     paths:
       - package.json
+      - package-lock.json
       - src-tauri/Cargo.toml
+      - src-tauri/Cargo.lock
       - .github/workflows/lockfiles.yml
 
 permissions:
