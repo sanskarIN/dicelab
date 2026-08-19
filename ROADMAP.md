@@ -48,9 +48,10 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Stable parser/probability/backup error codes with localized UI mapping.
 - [x] Structured local logging with secret/PII-oriented redaction and bounded context.
 - [x] Progressive rendering for very large retained histories.
-- [ ] Optional native save dialog integration with narrowly scoped permissions.
+- [x] Native desktop save dialog integration through a dedicated bounded Rust command with browser fallback.
 - [x] Add a reviewed second locale before exposing language selection.
 - [x] Expose a persisted English/Hindi language preference with backup compatibility and document-language metadata.
+- [x] Apply active-locale number/date/time formatting to roll, history, and probability presentation.
 
 ## Phase 4 — Verification depth
 
@@ -61,7 +62,7 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Rust native tests and TypeScript/Rust seeded reference vectors.
 - [x] Roll-statistics and deterministic RNG edge coverage.
 - [x] Component keyboard/accessibility smoke tests for modal and settings surfaces.
-- [x] Browser-state integration tests for roll/history/export, backup restore, and About navigation.
+- [x] Browser-state integration tests for roll/history/export, backup restore, About navigation, and live locale switching.
 - [x] Generated parser normalization/case/whitespace invariants.
 - [x] Native Rust generated normalization corpus and adversarial malformed-input regression corpus.
 - [x] Large-history progressive-rendering regression coverage.
@@ -72,11 +73,13 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Dependency-free CDP transport tests and E2E syntax self-check.
 - [ ] Observe the full real-browser E2E journey green on CI/release-candidate infrastructure.
 - [x] Add a coverage-guided Rust parser fuzz target with a bounded scheduled GitHub Actions campaign.
+- [ ] Observe a parser fuzz campaign green on CI/release-candidate infrastructure.
 - [ ] Record release-candidate benchmark evidence on a documented machine/runtime.
 
 ## Phase 5 — Release engineering
 
-- [x] Commit npm and Cargo lockfiles.
+- [x] Commit npm and Cargo lockfiles for the previous dependency graph.
+- [ ] Regenerate and commit `src-tauri/Cargo.lock` after adding the native dialog dependency, then observe locked Rust checks.
 - [x] Enforce locked dependencies in main CI and tagged release verification.
 - [x] Configure tagged Windows/macOS/Linux/web artifact builds.
 - [x] Package verified artifacts into draft GitHub releases with SHA-256 checksums.
