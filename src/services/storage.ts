@@ -1,4 +1,8 @@
+import { isPersistedPreset, isPersistedRollResult } from '../domain/persistence';
 import { DEFAULT_SETTINGS, type DiceLabSettings, type DicePreset, type RollResult } from '../domain/types';
+
+const MAX_HISTORY = 5_000;
+const MAX_CUSTOM_PRESETS = 500;
 
 const KEYS = {
   history: 'dicelab.history.v1',
@@ -19,29 +23,61 @@ export const BUILTIN_PRESETS: DicePreset[] = [
 export function loadHistory(): RollResult[] {
   const parsed = readJson<unknown>(KEYS.history, []);
   if (!Array.isArray(parsed)) return [];
-  return parsed.filter(isRollResult);
+  return uniqueById(parsed.slice(0, MAX_HISTORY).filter(isPersistedRollResult));
 }
 
 export function saveHistory(history: RollResult[], limit: number): void {
-  const safeLimit = Number.isSafeInteger(limit) ? Math.min(Math.max(limit, 10), 5_000) : DEFAULT_SETTINGS.historyLimit;
-  writeJson(KEYS.history, history.slice(0, safeLimit));
+  const safeLimit = Number.isSafeInteger(limit) ? Math.min(Math.max(limit, 10), MAX_HISTORY) : DEFAULT_SETTINGS.historyLimit;
+  const safeHistory = uniqueById(history.filter(isPersistedRollResult)).slice(0, safeLimit);
+  writeJson(KEYS.history, safeHistory);
 }
 
 export function loadPresets(): DicePreset[] {
   const parsed = readJson<unknown>(KEYS.presets, []);
-  const custom = Array.isArray(parsed) ? parsed.filter(isPreset) : [];
+  const custom = Array.isArray(parsed)
+    ? uniqueById(
+        parsed
+          .slice(0, MAX_CUSTOM_PRESETS)
+          .filter(isPersistedPreset)
+          .filter((item) => !item.id.startsWith('builtin-')),
+      )
+    : [];
   return [...BUILTIN_PRESETS, ...custom];
 }
 
 export function saveCustomPresets(presets: DicePreset[]): void {
-  writeJson(KEYS.presets, presets.filter((item) => !item.id.startsWith('builtin-')));
+  const custom = uniqueById(
+    presets.filter(isPersistedPreset).filter((item) => !item.id.startsWith('builtin-')),
+  ).slice(0, MAX_CUSTOM_PRESETS);
+  writeJson(KEYS.presets, custom);
 }
 
 export function loadSettings(): DiceLabSettings {
-  const parsed = readJson<Partial<DiceLabSettings>>(KEYS.settings, {});
+  const parsed = readJson<unknown>(KEYS.settings, {});
+  if (!parsed || typeof parsed !== 'object') return DEFAULT_SETTINGS;
+  const settings = parsed as Record<string, unknown>;
+  const reducedMotion =
+    typeof settings.reducedMotion === 'boolean' ? settings.reducedMotion : DEFAULT_SETTINGS.reducedMotion;
   return {
-    ...DEFAULT_SETTINGS,
-    ...(parsed && typeof parsed === 'object' ? parsed : {}),
+    theme:
+      settings.theme === 'light' || settings.theme === 'dark' || settings.theme === 'system'
+        ? settings.theme
+        : DEFAULT_SETTINGS.theme,
+    reducedMotion,
+    animations: reducedMotion
+      ? false
+      : typeof settings.animations === 'boolean'
+        ? settings.animations
+        : DEFAULT_SETTINGS.animations,
+    randomMode:
+      settings.randomMode === 'secure' || settings.randomMode === 'seeded'
+        ? settings.randomMode
+        : DEFAULT_SETTINGS.randomMode,
+    seed: typeof settings.seed === 'string' ? settings.seed.slice(0, 120) : DEFAULT_SETTINGS.seed,
+    historyLimit:
+      typeof settings.historyLimit === 'number' && Number.isSafeInteger(settings.historyLimit)
+        ? Math.min(MAX_HISTORY, Math.max(10, settings.historyLimit))
+        : DEFAULT_SETTINGS.historyLimit,
   };
 }
 
@@ -94,21 +130,11 @@ function writeJson(key: string, value: unknown): void {
   }
 }
 
-function isRollResult(value: unknown): value is RollResult {
-  if (!value || typeof value !== 'object') return false;
-  const roll = value as Partial<RollResult>;
-  return (
-    typeof roll.id === 'string' &&
-    typeof roll.expression === 'string' &&
-    typeof roll.total === 'number' &&
-    Array.isArray(roll.dice) &&
-    typeof roll.rolledAt === 'string' &&
-    (roll.mode === 'secure' || roll.mode === 'seeded')
-  );
-}
-
-function isPreset(value: unknown): value is DicePreset {
-  if (!value || typeof value !== 'object') return false;
-  const item = value as Partial<DicePreset>;
-  return typeof item.id === 'string' && typeof item.name === 'string' && typeof item.expression === 'string';
+function uniqueById<T extends { id: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
 }
