@@ -1,0 +1,49 @@
+name: Native command contract
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+    paths:
+      - 'src/**'
+      - 'src-tauri/src/lib.rs'
+      - 'scripts/check-native-command-contract.mjs'
+      - 'scripts/check-native-command-contract.test.mjs'
+      - 'scripts/check-native-command-contract.integration.test.mjs'
+      - '.github/workflows/native-command-contract.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'src-tauri/src/lib.rs'
+      - 'scripts/check-native-command-contract.mjs'
+      - 'scripts/check-native-command-contract.test.mjs'
+      - 'scripts/check-native-command-contract.integration.test.mjs'
+      - '.github/workflows/native-command-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-command-contract-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Audit native command contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Self-test native command auditor
+        run: node --test scripts/check-native-command-contract.test.mjs scripts/check-native-command-contract.integration.test.mjs
+
+      - name: Audit committed native command contract
+        run: node scripts/check-native-command-contract.mjs
