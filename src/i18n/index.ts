@@ -6,13 +6,20 @@ export type SupportedLocale = LocalePreference;
 
 const catalogs: Record<SupportedLocale, MessageCatalog> = { en, hi };
 
+let activeLocale: SupportedLocale = 'en';
+
 export function getMessages(locale: SupportedLocale = 'en'): MessageCatalog {
   return catalogs[locale];
 }
 
-export let messages = getMessages();
+export function getActiveLocale(): SupportedLocale {
+  return activeLocale;
+}
+
+export let messages = getMessages(activeLocale);
 
 export function setLocale(locale: SupportedLocale): MessageCatalog {
+  activeLocale = locale;
   messages = getMessages(locale);
   return messages;
 }
