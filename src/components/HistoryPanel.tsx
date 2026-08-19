@@ -4,6 +4,7 @@ import { filterRollHistory } from '../domain/history';
 import { summarizeRolls } from '../domain/statistics';
 import type { RollResult } from '../domain/types';
 import { messages } from '../i18n';
+import { formatDateTime } from '../i18n/format';
 import { historyToCsv, historyToJson, saveTextExport, type TextExportFormat } from '../services/export';
 
 interface HistoryPanelProps {
@@ -154,7 +155,7 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
                 </div>
                 <div className="history-time">
                   <span>{roll.mode === 'secure' ? messages.history.secure : messages.history.seeded}</span>
-                  <time dateTime={roll.rolledAt}>{new Date(roll.rolledAt).toLocaleString()}</time>
+                  <time dateTime={roll.rolledAt}>{formatDateTime(roll.rolledAt)}</time>
                 </div>
               </article>
             ))}
