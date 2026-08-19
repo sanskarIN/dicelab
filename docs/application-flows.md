@@ -47,6 +47,8 @@ Supported views are rendered conditionally:
 
 The command palette receives the same navigation setter, so keyboard navigation and visible navigation update the same application state rather than maintaining parallel routers.
 
+Navigation item labels are constructed during `AppShell` rendering rather than captured once at module import. This is required because language changes are live: a rerender after `setLocale()` must refresh persistent shell labels without requiring a page reload.
+
 ## 3. Roll flow
 
 ### Input
@@ -219,8 +221,16 @@ When the language selector changes:
 3. Built-in presets are regenerated from the next catalog.
 4. User presets are preserved.
 5. React rerenders catalog-backed copy.
-6. the theme/metadata effect updates document `lang`.
-7. settings are persisted.
+6. persistent shell navigation recomputes its translated labels during render;
+7. the command palette recomputes its translated command definitions during render;
+8. the theme/metadata effect updates document `lang`;
+9. settings are persisted.
+
+### Live-catalog requirement
+
+`messages` is a live ES-module binding, but a primitive translated string copied out of it into a module-level constant is not itself live. Persistent navigation/menu/command data that needs to switch without reload must therefore read the catalog during render or via a render-time factory.
+
+Integration coverage verifies the live English → Hindi transition updates shell navigation, command-palette heading/commands, built-in preset copy, and document language while preserving user-created preset text.
 
 ### Locale-neutral data
 
@@ -299,7 +309,20 @@ Dialog cancellation returns `false`. Save failure is surfaced by React as safe g
 - current settings;
 - current ISO export timestamp.
 
-`backupToJson()` pretty-prints the object. The same browser/native `saveTextExport()` boundary is used for output.
+`backupToJson()` then:
+
+1. pretty-prints the backup JSON;
+2. measures the resulting UTF-8 bytes with `TextEncoder`;
+3. rejects output larger than 5,000,000 bytes using stable `BackupValidationError('backup-too-large')`;
+4. returns the JSON only when it is within the same size contract accepted by restore.
+
+This check happens **before** browser download or native save. DiceLab does not silently truncate a backup to force it under the limit.
+
+The 5,000,000-byte backup contract is deliberately stricter than the generic native text-save command's 6,000,000-byte transport cap. A browser backup therefore cannot bypass the restore limit simply because the browser download path has no native payload guard.
+
+If the backup is too large, Settings maps the stable backup error through `formatBackupError()` and shows the existing localized 5 MB message. Unknown save failures still use a generic localized export fallback and do not expose raw native/browser details.
+
+When serialization succeeds, the same browser/native `saveTextExport()` boundary is used for output.
 
 ## 13. Backup import flow
 
@@ -309,7 +332,7 @@ The coordinator obtains file text and passes it to `parseBackupJson()`.
 
 Validation includes:
 
-- maximum 5 MB input size;
+- maximum 5,000,000-byte UTF-8 input size using the same `assertBackupSize()` rule as backup export;
 - valid JSON/object root;
 - schema version 1;
 - history array and maximum 5,000 entries;
@@ -395,7 +418,9 @@ The palette can:
 - navigate to application views;
 - set useful dice expressions.
 
-Its component tests protect modal focus trapping and focus restoration. The production browser E2E also covers keyboard opening/dismissal.
+Command labels/details are generated from the current catalog during rendering so an already-running application switches palette language immediately after a locale change.
+
+Its component tests protect modal focus trapping and focus restoration. The live-localization application integration test protects command-label switching, and the production browser E2E covers keyboard opening/dismissal.
 
 ## 18. Unexpected render failure flow
 
