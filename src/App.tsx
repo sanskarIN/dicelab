@@ -167,6 +167,7 @@ export default function App() {
             onExportBackup={exportBackup}
             onImportBackup={importBackup}
             onClearData={clearAllData}
+            onOpenAbout={() => setView('about')}
           />
         ) : null}
         {view === 'about' ? <AboutPanel /> : null}
