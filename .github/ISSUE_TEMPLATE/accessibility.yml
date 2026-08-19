@@ -1,0 +1,70 @@
+name: Accessibility issue
+description: Report a keyboard, screen-reader, contrast, motion, zoom, or other accessibility defect.
+title: "[Accessibility]: "
+labels:
+  - accessibility
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve DiceLab accessibility. Do not include credentials, private backups, unrelated personal data, or security-sensitive exploit details. Use SECURITY.md for vulnerabilities.
+  - type: input
+    id: version
+    attributes:
+      label: DiceLab version or commit
+      description: Provide the app version, tag, or full/short commit SHA when known.
+      placeholder: 0.1.0 or abc1234
+    validations:
+      required: true
+  - type: dropdown
+    id: target
+    attributes:
+      label: Target
+      options:
+        - Web companion
+        - Windows desktop
+        - macOS desktop
+        - Linux desktop
+        - Multiple targets
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Accessibility environment
+      description: Include OS, browser/webview, screen reader or assistive technology, zoom/text scaling, theme, and reduced-motion setting when relevant.
+      placeholder: Windows 11, Chrome, NVDA, 200% zoom, dark theme, reduced motion enabled
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Use the smallest safe sequence that reproduces the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected accessible behavior
+      description: Describe the expected focus, announcement, semantics, contrast, motion, or layout behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Optional safe evidence
+      description: Add a redacted screenshot, short recording, or relevant console/test output only if it helps. Remove private data first.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy confirmation
+      options:
+        - label: I removed credentials, private backups, personal information, and unrelated private data from this report.
+          required: true
