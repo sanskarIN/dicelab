@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { parseDiceExpression } from '../domain/parser';
 import { calculateProbability } from '../domain/probability';
-import { formatDomainError } from './errors';
+import { DEFAULT_SETTINGS } from '../domain/types';
+import { parseBackupJson } from '../services/export';
+import { formatBackupError, formatDomainError } from './errors';
 
 describe('formatDomainError', () => {
   it.each([
@@ -35,5 +37,30 @@ describe('formatDomainError', () => {
   it('returns the supplied localized fallback for unknown errors', () => {
     expect(formatDomainError(new Error('implementation detail'), 'Localized fallback')).toBe('Localized fallback');
     expect(formatDomainError('native rejection', 'Localized fallback')).toBe('Localized fallback');
+  });
+});
+
+describe('formatBackupError', () => {
+  it.each([
+    ['not-json', 'Backup is not valid JSON.'],
+    ['null', 'Backup root must be an object.'],
+    [
+      JSON.stringify({ schemaVersion: 99, history: [], presets: [], settings: DEFAULT_SETTINGS }),
+      'Unsupported DiceLab backup schema version.',
+    ],
+  ])('maps backup validation failures without relying on exception prose', (contents, expected) => {
+    let cause: unknown;
+    try {
+      parseBackupJson(contents);
+    } catch (error) {
+      cause = error;
+    }
+    expect(formatBackupError(cause, 'fallback')).toBe(expected);
+  });
+
+  it('returns the supplied localized fallback for non-backup failures', () => {
+    expect(formatBackupError(new Error('implementation detail'), 'Localized backup fallback')).toBe(
+      'Localized backup fallback',
+    );
   });
 });
