@@ -1,9 +1,12 @@
 import { isCanonicalIsoDate, isPersistedPreset, isPersistedRollResult } from '../domain/persistence';
 import { DEFAULT_SETTINGS, type DiceLabSettings, type DicePreset, type RollResult } from '../domain/types';
+import { isTauriRuntime } from './runtime';
 
 const MAX_BACKUP_BYTES = 5_000_000;
 const MAX_BACKUP_HISTORY = 5_000;
 const MAX_BACKUP_PRESETS = 500;
+
+export type TextExportFormat = 'csv' | 'json';
 
 export interface DiceLabBackup {
   schemaVersion: 1;
@@ -145,6 +148,20 @@ export function parseBackupJson(contents: string): DiceLabBackup {
     presets: candidate.presets.filter((preset) => !preset.id.startsWith('builtin-')),
     settings,
   };
+}
+
+export async function saveTextExport(
+  filename: string,
+  contents: string,
+  mimeType: string,
+  format: TextExportFormat,
+): Promise<boolean> {
+  if (isTauriRuntime()) {
+    const { invoke } = await import('@tauri-apps/api/core');
+    return invoke<boolean>('save_text_export', { filename, contents, format });
+  }
+  downloadText(filename, contents, mimeType);
+  return true;
 }
 
 export function downloadText(filename: string, contents: string, mimeType: string): void {
