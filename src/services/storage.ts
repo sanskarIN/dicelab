@@ -1,5 +1,6 @@
 import { DEFAULT_SETTINGS, type DiceLabSettings, type DicePreset, type RollResult } from '../domain/types';
 import { copy } from '../i18n';
+import { isValidPreset, isValidRollResult } from './export';
 
 const KEYS = {
   history: 'dicelab.history.v1',
@@ -25,7 +26,7 @@ export const BUILTIN_PRESETS: DicePreset[] = [
 export function loadHistory(): RollResult[] {
   const parsed = readJson<unknown>(KEYS.history, []);
   if (!Array.isArray(parsed)) return [];
-  return parsed.filter(isRollResult);
+  return parsed.filter(isValidRollResult).slice(0, 5_000);
 }
 
 export function saveHistory(history: RollResult[], limit: number): void {
@@ -37,22 +38,44 @@ export function saveHistory(history: RollResult[], limit: number): void {
 
 export function loadPresets(): DicePreset[] {
   const parsed = readJson<unknown>(KEYS.presets, []);
-  const custom = Array.isArray(parsed) ? parsed.filter(isPreset) : [];
+  const custom = Array.isArray(parsed)
+    ? parsed.filter(isValidPreset).filter((item) => !item.id.startsWith('builtin-')).slice(0, 500)
+    : [];
   return [...BUILTIN_PRESETS, ...custom];
 }
 
 export function saveCustomPresets(presets: DicePreset[]): void {
   writeJson(
     KEYS.presets,
-    presets.filter((item) => !item.id.startsWith('builtin-')),
+    presets.filter((item) => !item.id.startsWith('builtin-')).slice(0, 500),
   );
 }
 
 export function loadSettings(): DiceLabSettings {
-  const parsed = readJson<Partial<DiceLabSettings>>(KEYS.settings, {});
+  const parsed = readJson<unknown>(KEYS.settings, {});
+  if (!parsed || typeof parsed !== 'object') return { ...DEFAULT_SETTINGS };
+  const candidate = parsed as Record<string, unknown>;
+  const theme =
+    candidate.theme === 'light' || candidate.theme === 'dark' || candidate.theme === 'system'
+      ? candidate.theme
+      : DEFAULT_SETTINGS.theme;
+  const randomMode =
+    candidate.randomMode === 'secure' || candidate.randomMode === 'seeded'
+      ? candidate.randomMode
+      : DEFAULT_SETTINGS.randomMode;
+  const historyLimit =
+    typeof candidate.historyLimit === 'number' && Number.isSafeInteger(candidate.historyLimit)
+      ? Math.min(5_000, Math.max(10, candidate.historyLimit))
+      : DEFAULT_SETTINGS.historyLimit;
+
   return {
-    ...DEFAULT_SETTINGS,
-    ...(parsed && typeof parsed === 'object' ? parsed : {}),
+    theme,
+    randomMode,
+    reducedMotion:
+      typeof candidate.reducedMotion === 'boolean' ? candidate.reducedMotion : DEFAULT_SETTINGS.reducedMotion,
+    animations: typeof candidate.animations === 'boolean' ? candidate.animations : DEFAULT_SETTINGS.animations,
+    seed: typeof candidate.seed === 'string' ? candidate.seed.slice(0, 120) : DEFAULT_SETTINGS.seed,
+    historyLimit,
   };
 }
 
@@ -103,23 +126,4 @@ function writeJson(key: string, value: unknown): void {
   } catch {
     // Storage quota or privacy settings should not break rolling dice.
   }
-}
-
-function isRollResult(value: unknown): value is RollResult {
-  if (!value || typeof value !== 'object') return false;
-  const roll = value as Partial<RollResult>;
-  return (
-    typeof roll.id === 'string' &&
-    typeof roll.expression === 'string' &&
-    typeof roll.total === 'number' &&
-    Array.isArray(roll.dice) &&
-    typeof roll.rolledAt === 'string' &&
-    (roll.mode === 'secure' || roll.mode === 'seeded')
-  );
-}
-
-function isPreset(value: unknown): value is DicePreset {
-  if (!value || typeof value !== 'object') return false;
-  const item = value as Partial<DicePreset>;
-  return typeof item.id === 'string' && typeof item.name === 'string' && typeof item.expression === 'string';
 }
