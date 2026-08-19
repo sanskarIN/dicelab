@@ -10,9 +10,13 @@ interface HistoryPanelProps {
   onClear: () => void;
 }
 
+const INITIAL_VISIBLE_HISTORY = 200;
+const HISTORY_PAGE_SIZE = 200;
+
 export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
   const [query, setQuery] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
+  const [visibleLimit, setVisibleLimit] = useState(INITIAL_VISIBLE_HISTORY);
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return history;
@@ -20,6 +24,7 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
       (roll) => roll.expression.toLowerCase().includes(normalized) || String(roll.total).includes(normalized),
     );
   }, [history, query]);
+  const visibleHistory = filtered.slice(0, visibleLimit);
   const stats = useMemo(() => summarizeRolls(filtered), [filtered]);
   const maxFrequency = Math.max(1, ...stats.frequencies.map((item) => item.count));
 
@@ -73,7 +78,10 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
           <input
             aria-label={messages.history.filterLabel}
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setVisibleLimit(INITIAL_VISIBLE_HISTORY);
+            }}
             placeholder={messages.history.filterPlaceholder}
           />
         </div>
@@ -118,7 +126,7 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
           </section>
 
           <section className="panel history-list" aria-label={messages.history.entriesLabel}>
-            {filtered.map((roll) => (
+            {visibleHistory.map((roll) => (
               <article className="history-row" key={roll.id}>
                 <div className="history-total">{roll.total}</div>
                 <div className="history-meta">
@@ -131,6 +139,18 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
                 </div>
               </article>
             ))}
+            {visibleHistory.length < filtered.length ? (
+              <div className="history-load-more">
+                <p className="panel-note">{messages.history.showingEntries(visibleHistory.length, filtered.length)}</p>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setVisibleLimit((current) => Math.min(filtered.length, current + HISTORY_PAGE_SIZE))}
+                >
+                  {messages.history.showMore}
+                </button>
+              </div>
+            ) : null}
           </section>
         </>
       ) : (
