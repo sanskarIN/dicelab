@@ -103,7 +103,7 @@ fn parse_expression(input: &str) -> Result<Expression, String> {
     if !(2..=MAX_SIDES).contains(&sides) {
         return Err(format!("Sides must be between 2 and {MAX_SIDES}."));
     }
-    if modifier.abs() > MAX_ABS_MODIFIER {
+    if !(-MAX_ABS_MODIFIER..=MAX_ABS_MODIFIER).contains(&modifier) {
         return Err(format!(
             "Modifier magnitude must not exceed {MAX_ABS_MODIFIER}."
         ));
@@ -204,22 +204,36 @@ fn select_kept(values: &[u32], selection: Option<&Selection>) -> Vec<bool> {
     match selection.kind {
         SelectionKind::KeepLowest => {
             let mut kept = vec![false; values.len()];
-            ranked.iter().take(selection.count).for_each(|(index, _)| kept[*index] = true);
+            ranked
+                .iter()
+                .take(selection.count)
+                .for_each(|(index, _)| kept[*index] = true);
             kept
         }
         SelectionKind::KeepHighest => {
             let mut kept = vec![false; values.len()];
-            ranked.iter().rev().take(selection.count).for_each(|(index, _)| kept[*index] = true);
+            ranked
+                .iter()
+                .rev()
+                .take(selection.count)
+                .for_each(|(index, _)| kept[*index] = true);
             kept
         }
         SelectionKind::DropLowest => {
             let mut kept = vec![true; values.len()];
-            ranked.iter().take(selection.count).for_each(|(index, _)| kept[*index] = false);
+            ranked
+                .iter()
+                .take(selection.count)
+                .for_each(|(index, _)| kept[*index] = false);
             kept
         }
         SelectionKind::DropHighest => {
             let mut kept = vec![true; values.len()];
-            ranked.iter().rev().take(selection.count).for_each(|(index, _)| kept[*index] = false);
+            ranked
+                .iter()
+                .rev()
+                .take(selection.count)
+                .for_each(|(index, _)| kept[*index] = false);
             kept
         }
     }
@@ -258,6 +272,11 @@ mod tests {
     #[test]
     fn rejects_drop_all_dice() {
         assert!(parse_expression("2d6dl2").is_err());
+    }
+
+    #[test]
+    fn rejects_extreme_modifier_without_overflow() {
+        assert!(parse_expression("1d6-9223372036854775808").is_err());
     }
 
     #[test]
