@@ -4,6 +4,11 @@ export const en = {
     skipToContent: 'Skip to content',
     madeBy: 'Made by the Sanskar',
     customPresetDescription: 'Custom preset',
+    primaryNavigation: 'Primary navigation',
+    mobileNavigation: 'Mobile navigation',
+    version: 'Version',
+    business: 'Business',
+    support: 'Support',
   },
   navigation: {
     roll: 'Roll',
@@ -26,15 +31,19 @@ export const en = {
     rolling: 'Rolling…',
     roll: 'Roll',
     expressionHelp: 'Examples: 2d6+3 · 4d6kh3 · 2d20kl1 · 6d10dh2',
+    invalidExpression: 'Invalid expression.',
     presetName: 'Preset name',
     savePreset: 'Save preset',
     individualResults: 'Individual dice results',
     noModifier: 'No modifier',
+    modifier: 'Modifier',
+    seed: 'Seed',
     emptyHeading: 'Your next roll appears here',
     emptyBody: 'Choose a quick die or enter an expression, then roll.',
     presetsEyebrow: 'Reusable setups',
     presetsHeading: 'Tabletop presets',
     reset: 'Reset',
+    deletePreset: 'Delete',
     genericRollError: 'DiceLab could not complete the roll.',
   },
   history: {
@@ -62,6 +71,9 @@ export const en = {
     noRolls: 'No rolls yet',
     noMatchesBody: 'Try a different expression or total.',
     noRollsBody: 'Roll some dice and your local history will appear here.',
+    distinctTotals: (count: number) => `${count} distinct totals`,
+    histogramTitle: (total: number, count: number, percentage: number) =>
+      `${total}: ${count} rolls (${percentage.toFixed(1)}%)`,
   },
   probability: {
     eyebrow: 'Exact outcomes',
@@ -77,6 +89,9 @@ export const en = {
     chartHeading: 'Chance by total',
     exactCalculation: 'Exact calculation',
     genericError: 'Unable to calculate this distribution.',
+    veryLarge: 'Very large',
+    truncated: (visible: number, total: number) =>
+      `Showing the first ${visible} of ${total} totals to keep the interface responsive.`,
   },
   settings: {
     eyebrow: 'Your preferences',
@@ -169,6 +184,20 @@ export const en = {
     advantageDetail: 'Set expression to 2d20kh1',
     ability: 'Roll ability score',
     abilityDetail: 'Set expression to 4d6kh3',
+  },
+  presets: {
+    d20Name: 'D20 check',
+    d20Body: 'A standard tabletop check.',
+    advantageName: 'Advantage',
+    advantageBody: 'Roll two d20 and keep the highest.',
+    disadvantageName: 'Disadvantage',
+    disadvantageBody: 'Roll two d20 and keep the lowest.',
+    abilityName: 'Ability score',
+    abilityBody: 'Classic roll-four-drop-lowest equivalent.',
+    fireballName: 'Fireball',
+    fireballBody: 'A familiar multi-die damage roll.',
+    percentileName: 'Percentile',
+    percentileBody: 'A d100 percentile roll.',
   },
 } as const;
 
