@@ -14,6 +14,35 @@ test('accepts the current narrow Tauri CSP shape', () => {
   assert.deepEqual(auditTauriSecurityConfig(safeConfig, 'tauri.conf.json'), []);
 });
 
+test('allows loopback development origin while production policy remains strict', () => {
+  const config = {
+    app: {
+      security: {
+        csp: "default-src 'self'",
+        devCsp: "default-src 'self' http://localhost:1420; connect-src ipc: http://ipc.localhost http://localhost:1420 ws://localhost:1421",
+      },
+    },
+  };
+  assert.deepEqual(auditTauriSecurityConfig(config, 'tauri.conf.json'), []);
+  assert.deepEqual(auditCsp("default-src 'self' http://localhost:1420", 'production-csp'), [
+    'production-csp: remote network script source is not allowed: http://localhost:1420',
+  ]);
+});
+
+test('still rejects non-loopback development script origins', () => {
+  const config = {
+    app: {
+      security: {
+        csp: "default-src 'self'",
+        devCsp: "default-src 'self' https://dev.example.invalid",
+      },
+    },
+  };
+  assert.deepEqual(auditTauriSecurityConfig(config, 'tauri.conf.json'), [
+    'tauri.conf.json: app.security.devCsp: remote network script source is not allowed: https://dev.example.invalid',
+  ]);
+});
+
 test('requires a non-empty CSP', () => {
   assert.deepEqual(auditCsp(null, 'csp'), ['csp: a non-empty CSP string is required']);
 });
