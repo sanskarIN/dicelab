@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/sanskarIN/dicelab/blob/main/SECURITY.md
+    about: Do not open a public issue for a vulnerability. Follow the private reporting guidance in SECURITY.md.
+  - name: DiceLab roadmap
+    url: https://github.com/sanskarIN/dicelab/blob/main/ROADMAP.md
+    about: Check planned and evidence-gated work before opening a duplicate feature request.
+  - name: Contributor guide
+    url: https://github.com/sanskarIN/dicelab/blob/main/CONTRIBUTING.md
+    about: Review development, testing, localization, accessibility, and security expectations before contributing.
