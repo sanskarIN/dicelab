@@ -30,7 +30,7 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - Structured local application logger with recursive sensitive-key redaction, bounded context, and raw-error omission.
 - Safe operational events for storage degradation and root UI recovery.
 - Browser integration coverage for roll → history → export, backup restore, Settings → About, and live Hindi switching journeys.
-- Additional localization lifecycle coverage for persisted-locale startup, first-run Hindi onboarding, backup-driven locale restoration, clear-data locale reset, user-preset preservation, Hindi parser validation, and Hindi backup/export failure feedback.
+- Additional localization lifecycle coverage for persisted-locale startup, first-run Hindi onboarding, backup-driven locale restoration, clear-data locale reset, user-preset preservation, Hindi parser validation, Hindi backup/export failure feedback, and live shell/command-palette switching.
 - Dependency-free real-browser production-bundle E2E smoke covering onboarding, rolling, history, real CSV download, reload persistence, keyboard command palette, probability, real backup download, clear-data flow, real file-input restore, and restored history.
 - Extracted dependency-free CDP transport with Node tests for command routing, protocol errors, event waits/timeouts, and socket closure.
 - Component keyboard/accessibility regression tests for command palette, onboarding, settings, large-history behavior, and root error recovery.
@@ -67,7 +67,9 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - TypeScript and Rust seeded modes now use the same UTF-8 FNV-1a 32-bit seed hash and xorshift32 sequence so identical effective seeds reproduce identical deterministic values across web and desktop.
 - Probability calculations advertised as exact now reject raw-outcome counts that exceed JavaScript safe-integer precision.
 - Roll, history, and probability presentation now use the selected DiceLab locale for explicit `Intl` number/date/time formatting instead of inheriting the host browser locale independently from UI language.
+- Persistent shell navigation and command-palette definitions now read the active catalog during rendering instead of capturing translated primitive strings when modules first load.
 - Backup import validation rejects internally inconsistent roll totals, duplicate IDs, duplicate/out-of-range die indices, impossible die values, malformed timestamps, missing deterministic seeds, mismatched modifiers, and invalid keep/drop state.
+- Backup serialization now enforces the same 5,000,000-byte UTF-8 limit as backup restore before browser/native output, while the generic native text transport retains its separate 6,000,000-byte cap.
 - Parser/probability/backup UI feedback now resolves from stable error codes and catalog entries rather than raw exception messages.
 - Imported and locally persisted settings normalize contradictory reduced-motion/animation state.
 - Locale preferences are normalized to the reviewed English/Hindi set; missing or unsupported schema-v1 backup locale values fall back to English.
@@ -75,6 +77,7 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - Local history and custom presets are validated, bounded, and deduplicated before use or persistence.
 - History query logic is centralized in the domain layer so UI filtering, tests, and performance benchmarks share one implementation.
 - History and backup exports now use the dedicated native save command inside Tauri and preserve the existing Blob-download implementation in normal browsers.
+- Tauri security/offline-network policy audits now distinguish packaged production CSP from explicit loopback-only Vite/HMR development sources; production remains strict and non-loopback/broad-scheme development origins remain rejected.
 - Normal CI and tagged web release verification now self-test the browser automation infrastructure and require the real-browser smoke after the production build.
 - The dependency-lockfile workflow supports manual dispatch and preserves exact generated lockfiles on a dedicated automation branch if a protected `main` branch rejects its direct update.
 - Repository-level audit commands are exposed through stable npm scripts for documentation, policy, version, secret, E2E-infrastructure, and release-package verification.
@@ -86,7 +89,12 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 
 ### Fixed
 
+- DiceLab no longer generates a backup larger than its own documented 5 MB restore limit; oversized serialization fails before save/download with the stable localized backup-size error instead of producing an immediately un-restorable file.
 - Backups produced from a maximum-length 120-character user seed can be restored after DiceLab appends the deterministic sequence suffix.
+- Live English/Hindi switching now refreshes persistent shell navigation and command-palette labels/details immediately without requiring a reload.
+- The shell brand accessible name no longer appends a hardcoded English word during Hindi operation.
+- Tauri CSP policy checks no longer falsely reject the legitimate explicit loopback Vite development origin while still rejecting the same origin in packaged production policy and rejecting non-loopback remote development sources.
+- Offline-network CSP checks no longer falsely reject explicit loopback Vite/HMR development HTTP/WebSocket URLs while preserving production and broad-network-scheme restrictions.
 - Corrupted or forged local-storage entries no longer flow directly into application state.
 - Command-palette focus is trapped while open and restored to the invoking control after dismissal.
 - Unexpected React render failures now show a recovery surface instead of leaving the product with an unhandled blank interface.
@@ -112,7 +120,7 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - CI/tagged builds run a self-tested high-confidence secret scanner that never prints matched credential values.
 - The application recovery boundary logs only a fixed structured event from DiceLab rather than serializing raw exception contents.
 - Desktop capability audits reject broad filesystem/shell/HTTP/process permission families, remote-origin capability scope, and wildcard/invalid window targets.
-- Tauri configuration audits reject missing/self-unanchored CSP, wildcard sources, `unsafe-eval`, remote script sources, dangerous remote-domain IPC, and remote CSP network origins that conflict with the offline-first model.
+- Tauri configuration audits reject missing/self-unanchored CSP, wildcard sources, `unsafe-eval`, non-loopback remote script sources, dangerous remote-domain IPC, and remote production CSP network origins; development exceptions are explicit loopback-only.
 - Native runtime and native-command audits keep Tauri API access, runtime probing, command names, command routing, and Rust handler entries within reviewed allowlists.
 - Release lockfile consistency audit fails candidates whose direct manifest dependencies are not represented in committed lockfiles instead of silently resolving a different graph during release verification.
 - Release provenance/checksum metadata ties packaged files to a tag/source commit/workflow run for draft review.
