@@ -26,7 +26,8 @@ Current automated coverage includes:
 - onboarding dialog semantics and initial focus;
 - Settings reduced-motion behavior and release/About actions;
 - typed locale catalog defaults/dynamic helper behavior;
-- progressive large-history rendering and filter-window resets.
+- progressive large-history rendering and filter-window resets;
+- application root error-boundary fallback behavior and redacted DiceLab recovery logging.
 
 Use `npm run test:watch` during development and `npm run test:coverage` when reviewing coverage gaps.
 
@@ -89,10 +90,11 @@ Before a release, verify at least:
 14. Settings exposes version/releases/About information.
 15. About links and support details are correct.
 16. English catalog-backed labels remain readable at narrow widths and 200% zoom.
+17. A deliberately induced development-only React render failure displays the recovery surface; reloading restores normal startup and does not clear local history/settings.
 
 ## Accessibility checks
 
-Automated keyboard and component semantics now cover the modal entry points and selected settings behavior. Automation does not replace manual review. Follow [`accessibility.md`](accessibility.md).
+Automated keyboard and component semantics now cover the modal entry points and selected settings/recovery behavior. Automation does not replace manual review. Follow [`accessibility.md`](accessibility.md).
 
 ## Integration and end-to-end roadmap
 
@@ -105,7 +107,8 @@ Planned full-browser coverage should include:
 - settings persistence across reload;
 - export/import backup with real browser file/download APIs;
 - probability calculation;
-- keyboard command navigation.
+- keyboard command navigation;
+- recovery-page reload behavior in a controlled development test route/build.
 
 Desktop smoke coverage must verify the native Tauri command separately from the web fallback.
 
