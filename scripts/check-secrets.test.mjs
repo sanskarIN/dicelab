@@ -16,7 +16,8 @@ test('detects high-confidence token families without returning matched values', 
 });
 
 test('detects private key headers without requiring private key body content', () => {
-  const findings = scanText('before\n-----BEGIN PRIVATE KEY-----\nafter\n', 'credential.pem');
+  const privateKeyHeader = `-----BEGIN ${'PRIVATE KEY-----'}`;
+  const findings = scanText(`before\n${privateKeyHeader}\nafter\n`, 'credential.pem');
   assert.deepEqual(findings, [{ file: 'credential.pem', line: 2, rule: 'private-key' }]);
 });
 
