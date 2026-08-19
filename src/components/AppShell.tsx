@@ -47,7 +47,7 @@ export function AppShell({ view, onNavigate, onOpenCommands, children }: AppShel
         <button className="command-trigger" type="button" onClick={onOpenCommands}>
           <Keyboard size={18} aria-hidden="true" />
           <span>{messages.navigation.quickActions}</span>
-          <kbd>Ctrl K</kbd>
+          <kbd>Ctrl/⌘ K</kbd>
         </button>
         <p className="sidebar-credit">{messages.common.madeBy}</p>
       </aside>
