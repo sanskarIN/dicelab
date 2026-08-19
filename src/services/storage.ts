@@ -1,4 +1,5 @@
 import { DEFAULT_SETTINGS, type DiceLabSettings, type DicePreset, type RollResult } from '../domain/types';
+import { copy } from '../i18n';
 
 const KEYS = {
   history: 'dicelab.history.v1',
@@ -8,12 +9,17 @@ const KEYS = {
 } as const;
 
 export const BUILTIN_PRESETS: DicePreset[] = [
-  preset('builtin-d20', 'D20 check', '1d20', 'A standard tabletop check.'),
-  preset('builtin-advantage', 'Advantage', '2d20kh1', 'Roll two d20 and keep the highest.'),
-  preset('builtin-disadvantage', 'Disadvantage', '2d20kl1', 'Roll two d20 and keep the lowest.'),
-  preset('builtin-ability', 'Ability score', '4d6kh3', 'Classic roll-four-drop-lowest equivalent.'),
-  preset('builtin-fireball', 'Fireball', '8d6', 'A familiar multi-die damage roll.'),
-  preset('builtin-percentile', 'Percentile', '1d100', 'A d100 percentile roll.'),
+  preset('builtin-d20', copy.presets.d20Name, '1d20', copy.presets.d20Description),
+  preset('builtin-advantage', copy.presets.advantageName, '2d20kh1', copy.presets.advantageDescription),
+  preset(
+    'builtin-disadvantage',
+    copy.presets.disadvantageName,
+    '2d20kl1',
+    copy.presets.disadvantageDescription,
+  ),
+  preset('builtin-ability', copy.presets.abilityName, '4d6kh3', copy.presets.abilityDescription),
+  preset('builtin-fireball', copy.presets.fireballName, '8d6', copy.presets.fireballDescription),
+  preset('builtin-percentile', copy.presets.percentileName, '1d100', copy.presets.percentileDescription),
 ];
 
 export function loadHistory(): RollResult[] {
@@ -23,7 +29,9 @@ export function loadHistory(): RollResult[] {
 }
 
 export function saveHistory(history: RollResult[], limit: number): void {
-  const safeLimit = Number.isSafeInteger(limit) ? Math.min(Math.max(limit, 10), 5_000) : DEFAULT_SETTINGS.historyLimit;
+  const safeLimit = Number.isSafeInteger(limit)
+    ? Math.min(Math.max(limit, 10), 5_000)
+    : DEFAULT_SETTINGS.historyLimit;
   writeJson(KEYS.history, history.slice(0, safeLimit));
 }
 
@@ -34,7 +42,10 @@ export function loadPresets(): DicePreset[] {
 }
 
 export function saveCustomPresets(presets: DicePreset[]): void {
-  writeJson(KEYS.presets, presets.filter((item) => !item.id.startsWith('builtin-')));
+  writeJson(
+    KEYS.presets,
+    presets.filter((item) => !item.id.startsWith('builtin-')),
+  );
 }
 
 export function loadSettings(): DiceLabSettings {
