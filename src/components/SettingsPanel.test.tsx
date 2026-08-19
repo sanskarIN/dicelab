@@ -36,6 +36,12 @@ describe('SettingsPanel', () => {
     expect(props.onChange).toHaveBeenCalledWith({ ...DEFAULT_SETTINGS, locale: 'hi' });
   });
 
+  it('normalizes a fractional history limit to a bounded integer', () => {
+    const props = renderSettings();
+    fireEvent.change(screen.getByRole('spinbutton', { name: /History limit/i }), { target: { value: '42.9' } });
+    expect(props.onChange).toHaveBeenCalledWith({ ...DEFAULT_SETTINGS, historyLimit: 42 });
+  });
+
   it('reports a successful backup export', async () => {
     const props = renderSettings();
     fireEvent.click(screen.getByRole('button', { name: /Export backup/i }));
