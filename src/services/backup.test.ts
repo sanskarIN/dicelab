@@ -12,6 +12,16 @@ const roll: RollResult = {
   rolledAt: '2026-08-19T00:00:00.000Z',
 };
 
+function backupWith(historyEntry: unknown): string {
+  return JSON.stringify({
+    schemaVersion: 1,
+    exportedAt: '2026-08-19T00:00:00.000Z',
+    history: [historyEntry],
+    presets: [],
+    settings: DEFAULT_SETTINGS,
+  });
+}
+
 describe('DiceLab backups', () => {
   it('round trips a valid backup', () => {
     const original = createBackup([roll], [], DEFAULT_SETTINGS);
@@ -27,13 +37,50 @@ describe('DiceLab backups', () => {
   });
 
   it('rejects malformed roll expressions in imported history', () => {
-    const invalid = {
-      schemaVersion: 1,
-      exportedAt: '2026-08-19T00:00:00.000Z',
-      history: [{ ...roll, expression: 'not-dice' }],
-      presets: [],
-      settings: DEFAULT_SETTINGS,
+    expect(() => parseBackupJson(backupWith({ ...roll, expression: 'not-dice' }))).toThrow(BackupValidationError);
+  });
+
+  it('rejects die values outside the expression sides', () => {
+    expect(() => parseBackupJson(backupWith({ ...roll, dice: [{ value: 21, kept: true, index: 0 }], total: 23 }))).toThrow(
+      BackupValidationError,
+    );
+  });
+
+  it('rejects totals that do not match kept dice and modifier', () => {
+    expect(() => parseBackupJson(backupWith({ ...roll, total: 999 }))).toThrow(BackupValidationError);
+  });
+
+  it('rejects duplicate die indices', () => {
+    const duplicated = {
+      ...roll,
+      expression: '2d20+2',
+      total: 26,
+      dice: [
+        { value: 12, kept: true, index: 0 },
+        { value: 12, kept: true, index: 0 },
+      ],
     };
-    expect(() => parseBackupJson(JSON.stringify(invalid))).toThrow(BackupValidationError);
+    expect(() => parseBackupJson(backupWith(duplicated))).toThrow(BackupValidationError);
+  });
+
+  it('rejects incorrect keep/drop state', () => {
+    const invalidSelection = {
+      ...roll,
+      expression: '2d20kh1+2',
+      total: 26,
+      dice: [
+        { value: 12, kept: true, index: 0 },
+        { value: 12, kept: true, index: 1 },
+      ],
+    };
+    expect(() => parseBackupJson(backupWith(invalidSelection))).toThrow(BackupValidationError);
+  });
+
+  it('requires a seed for deterministic imported rolls', () => {
+    expect(() => parseBackupJson(backupWith({ ...roll, mode: 'seeded' }))).toThrow(BackupValidationError);
+  });
+
+  it('rejects non-canonical timestamps', () => {
+    expect(() => parseBackupJson(backupWith({ ...roll, rolledAt: '19 August 2026' }))).toThrow(BackupValidationError);
   });
 });
