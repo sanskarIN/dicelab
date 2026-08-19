@@ -15,6 +15,8 @@ DiceLab treats accessibility as a product requirement rather than a release poli
 - Mobile controls use comfortable target sizes.
 - Main navigation exposes `aria-current` for the active view.
 - Dice results and important state changes are announced through appropriate live regions.
+- The command palette moves focus into the modal, traps Tab/Shift+Tab within it, supports Escape, and restores focus to the invoking control when closed.
+- First-run onboarding exposes modal semantics, an accessible description, and initial focus on the primary action.
 
 ## Keyboard map
 
@@ -23,7 +25,7 @@ DiceLab treats accessibility as a product requirement rather than a release poli
 | `Ctrl/Cmd + K` | Open/close quick actions |
 | `Escape` | Close quick actions |
 | `Enter` | Submit focused forms / run first filtered quick action |
-| `Tab` / `Shift+Tab` | Move through interactive controls |
+| `Tab` / `Shift+Tab` | Move through interactive controls; modal dialogs wrap focus internally |
 
 Do not add shortcuts that conflict with typing inside inputs or common browser/OS commands.
 
@@ -34,30 +36,50 @@ Two settings are available:
 - **Reduced motion:** disables non-essential transitions and animation.
 - **Dice animations:** allows subtle result transitions only when reduced motion is off.
 
-CSS also honors `prefers-reduced-motion: reduce` independently of the app setting.
+Persisted and imported settings normalize `animations` to `false` whenever reduced motion is enabled, preventing contradictory state after corrupted storage or backup restore. CSS also honors `prefers-reduced-motion: reduce` independently of the app setting.
 
 ## Semantics
 
 Prefer semantic HTML before ARIA. Use ARIA only to fill a real accessibility gap. Avoid replacing native buttons with clickable `div` elements.
+
+Modal dialogs must:
+
+- have an accessible name;
+- expose `aria-modal="true"` where interaction outside the dialog is unavailable;
+- move focus to a sensible first control;
+- keep keyboard focus inside the modal while open;
+- restore focus to the invoking control when a dismissible modal closes.
+
+## Automated coverage
+
+Vitest + Testing Library currently checks:
+
+- command-palette initial focus, backwards focus wrapping, Escape dismissal, focus restoration, filtering, and Enter activation;
+- onboarding dialog name/description and primary-action focus;
+- reduced-motion Settings behavior;
+- Settings → About navigation through the application integration suite.
+
+These tests guard DOM semantics and keyboard state. They do not replace real-browser accessibility trees or screen-reader testing.
 
 ## Manual release checklist
 
 For each release candidate:
 
 1. Navigate onboarding and every main view using only a keyboard.
-2. Verify no focus trap occurs outside modal dialogs.
+2. Verify modal focus stays inside the command palette and returns to its trigger after closing.
 3. Check focus remains visible in light and dark themes.
 4. Zoom the web UI to 200% and verify content remains usable without horizontal page scrolling at common viewport sizes.
-5. Test reduced motion.
+5. Test reduced motion with both the application preference and operating-system preference.
 6. Review form labels, errors, and status messages with a screen reader.
 7. Verify links have meaningful text out of context.
 8. Confirm destructive actions require deliberate intent.
 9. Check that charts/distributions have a textual interpretation or labels.
 10. Check contrast for primary, muted, danger, success, borders, and focus indicators.
+11. Verify touch targets on narrow/mobile layouts.
 
-## Automated coverage roadmap
+## Pre-1.0 accessibility roadmap
 
-Before 1.0, add component-level accessibility smoke checks and browser E2E keyboard journeys. Automated checks supplement, but do not replace, manual screen-reader and keyboard review.
+Add real-browser automated accessibility scanning and E2E keyboard journeys before 1.0. Automated scans supplement, but do not replace, manual screen-reader and keyboard review.
 
 ## Reporting accessibility issues
 
