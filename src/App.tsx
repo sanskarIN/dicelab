@@ -11,7 +11,7 @@ import { parseDiceExpression } from './domain/parser';
 import { DEFAULT_SETTINGS, type DiceLabSettings, type DicePreset, type RollResult } from './domain/types';
 import { messages, setLocale } from './i18n';
 import { formatDomainError } from './i18n/errors';
-import { backupToJson, createBackup, downloadText, parseBackupJson } from './services/export';
+import { backupToJson, createBackup, parseBackupJson, saveTextExport } from './services/export';
 import { rollDice } from './services/roll-service';
 import {
   clearDiceLabData,
@@ -129,7 +129,7 @@ export default function App() {
 
   const exportBackup = () => {
     const backup = createBackup(history, presets, settings);
-    downloadText('dicelab-backup.json', backupToJson(backup), 'application/json');
+    return saveTextExport('dicelab-backup.json', backupToJson(backup), 'application/json', 'json');
   };
 
   const importBackup = async (file: File) => {
