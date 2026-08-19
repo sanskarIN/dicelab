@@ -2,207 +2,518 @@
 
 _Last updated: 2026-08-19_
 
-This file is the primary continuity record for continuing DiceLab in another chat/session. Read this file, the current repository tree, open issues/PRs, and recent commits before making new changes.
+This file is the primary continuity and audit record for DiceLab. Read it together with the current repository tree, pull request #1, workflow results, and recent commits before changing the project in another session.
 
 ## Current milestone
 
 - Project: **DiceLab**
 - Repository: `https://github.com/sanskarIN/dicelab`
-- Visibility/source model: public, open source
+- Visibility: public
+- Source model: open source
 - License: MIT
-- Current application version in source: `0.1.0`
-- Current delivery state: **Phase 6 audit in progress**
-- Working audit branch: `audit/phase-6`
+- Source version: `0.1.0`
+- Primary stack: Rust + Tauri 2 + TypeScript + React + Vite
+- Targets: Windows, macOS, Linux, and web companion
 - Default branch: `main`
-- Preferred Git author email: `sanskarin@outlook.in`
-- GitHub-created commits in this session are authored/committed as `Sanskar <sanskarin@outlook.in>`.
+- Audit branch: `audit/phase-6`
+- Audit pull request: `#1 — chore: run phase 6 repository audit`
+- Preferred commit email: `sanskarin@outlook.in`
+- Visible product credit: **Made by the Sanskar**
+- Current delivery state: **Phase 6 verification in progress; code/features are frozen except CI-driven fixes**
 
-Do **not** tag `v0.1.0` yet. A release tag should be created only after the exact release commit has passed clean checkout, CI, native packaging, security/dependency review, and release-candidate verification.
+Do **not** tag `v0.1.0` until the exact final candidate has passed all required CI/security/build checks and release-candidate verification documented below.
 
-## Work completed
+## Repository starting point
 
-### Repository and tooling
+The repository originally contained only the MIT `LICENSE`. DiceLab was implemented incrementally rather than replacing pre-existing working application code.
 
-- Bootstrapped the application from a repository that initially contained only `LICENSE`.
-- Added Node/TypeScript/Vite/React/Tauri package configuration.
-- Added strict TypeScript project references and browser/tooling configs.
-- Added ESLint typed rules, Prettier configuration, `.editorconfig`, `.gitattributes`, `.gitignore`, and `.env.example`.
-- Added an application icon at `src-tauri/icons/icon.png`.
-- Added GitHub CI, dependency-lock bootstrap automation, CodeQL, release-build workflow, Dependabot, funding configuration, issue templates, and pull-request template.
+## Completed implementation
 
-### Dice domain
+### Repository/toolchain foundation
 
-Implemented:
+Added and configured:
 
-- `d4`, `d6`, `d8`, `d10`, `d12`, `d20`, `d100`, and custom-sided dice.
-- Dice pools with modifiers.
-- Keep/drop syntax:
-  - `khN` — keep highest
-  - `klN` — keep lowest
-  - `dhN` — drop highest
-  - `dlN` — drop lowest
-- Input limits for dice count, side count, selection count, and modifier magnitude.
-- Normalized expression formatting.
-- Stable tie behavior using original die indices.
-- Secure browser randomness using Web Crypto and rejection sampling.
-- Deterministic seeded browser randomness.
-- Native Rust secure randomness using `OsRng`.
-- Native deterministic seeded mode using `StdRng`.
-- Explicit secure/seeded UI distinction.
-- Exact ordinary-sum probability calculation using dynamic programming.
-- Exact manageable keep/drop probability enumeration with an interactive complexity guard.
-- Roll statistics: count, min/max, mean, median, and frequencies.
+- `package.json`
+- `package-lock.json`
+- `tsconfig.json`
+- `tsconfig.app.json`
+- `tsconfig.node.json`
+- `vite.config.ts`
+- `vitest.config.ts`
+- `eslint.config.js`
+- `.prettierrc.json`
+- `.editorconfig`
+- `.gitattributes`
+- `.gitignore`
+- `.env.example`
+- `index.html`
+- `src/vite-env.d.ts`
 
-### Native/Tauri application
+The dependency-lock workflow generated and committed both `package-lock.json` and `src-tauri/Cargo.lock` on `main`, and that lockfile commit was merged into the audit branch.
+
+### Dice expression/domain engine
 
 Implemented:
 
-- Tauri 2 Rust project and desktop entry point.
-- Native `roll_expression` command.
-- Rust-side validation of all dice expressions before random generation.
-- Restrictive application CSP and development CSP.
-- Minimal `core:default` Tauri capability for the main window; no broad shell/filesystem plugin permission was added.
-- Cross-platform bundle configuration for Windows, macOS, and Linux.
-- Rust regression test protecting against extreme negative modifier overflow.
+- d4, d6, d8, d10, d12, d20, d100, and custom-sided dice;
+- multiple dice per expression;
+- signed modifiers;
+- `khN` keep-highest;
+- `klN` keep-lowest;
+- `dhN` drop-highest;
+- `dlN` drop-lowest;
+- stable index-based tie handling;
+- normalized expression formatting;
+- shared public TypeScript limits via `DICE_LIMITS`;
+- input bounds:
+  - maximum 1,000 dice;
+  - maximum 1,000,000 sides;
+  - maximum modifier magnitude 1,000,000,000;
+- user-safe validation errors through the locale catalog.
+
+Relevant files:
+
+- `src/domain/types.ts`
+- `src/domain/parser.ts`
+- `src/domain/engine.ts`
+- `src/domain/random.ts`
+- `src/domain/probability.ts`
+- `src/domain/statistics.ts`
+
+### Randomness modes
+
+Implemented two intentionally separate modes:
+
+- **Secure mode**
+  - Tauri desktop: Rust `OsRng`;
+  - web companion: Web Crypto with rejection sampling to avoid simple modulo bias.
+- **Seeded mode**
+  - deterministic TypeScript source for web testing/reproduction;
+  - deterministic Rust `StdRng` seeded from a stable derived value for native use;
+  - the configured seed is combined with a local roll sequence.
+
+Seeded output is not described as cryptographically secure.
+
+### Probability tools
+
+Implemented:
+
+- exact ordinary dice-sum distributions using dynamic programming;
+- exact manageable keep/drop distributions using raw-outcome enumeration;
+- expected value;
+- minimum/maximum;
+- per-total probability and ways;
+- interactive complexity guards;
+- UI output limiting so mathematically large distributions do not create an uncontrolled DOM tree.
+
+### Roll history and statistics
+
+Implemented:
+
+- offline local history;
+- configurable retention from 10 to 5,000 rolls;
+- search/filter by expression or total;
+- count, average, median, range;
+- observed total frequencies;
+- histogram;
+- secure/seeded state indication;
+- CSV export;
+- JSON export;
+- deliberate clear-history confirmation.
+
+### Presets
+
+Implemented built-in tabletop presets:
+
+- D20 check;
+- advantage;
+- disadvantage;
+- classic ability-score roll;
+- fireball multi-die preset;
+- percentile roll.
+
+Also implemented:
+
+- custom preset creation;
+- custom preset deletion;
+- versioned local persistence;
+- validation of persisted custom presets before loading.
+
+### Backup/export and restore
+
+Implemented backup schema version `1` with:
+
+- export timestamp;
+- roll history;
+- custom presets;
+- settings.
+
+Backup import validates untrusted files before replacing application state. Current checks include:
+
+- maximum 5 MB JSON input;
+- schema version;
+- maximum 5,000 history records;
+- maximum 500 custom presets;
+- roll IDs and field types;
+- normalized expressions;
+- modifier consistency;
+- exact die count;
+- die values within the expression side range;
+- unique/in-range die indices;
+- keep/drop flags recomputed from the expression and dice values;
+- recomputed roll total equality;
+- timestamp validity;
+- random-mode validity;
+- seed length;
+- preset IDs/names/descriptions/date/expression validity;
+- settings theme/random mode/retention/seed normalization.
+
+Built-in presets are re-created by the application and are never trusted from backup input.
+
+CSV export additionally neutralizes user-controlled seed values beginning with `=`, `+`, `-`, or `@` before the cell is opened by spreadsheet software.
+
+Relevant files:
+
+- `src/services/export.ts`
+- `src/services/backup.test.ts`
+- `src/services/export.test.ts`
+
+### Corrupted local-state recovery
+
+Local storage is treated as untrusted persisted input rather than assumed valid.
+
+Implemented:
+
+- shared roll/preset integrity validators reused by backup import and local persistence;
+- invalid/corrupted history entries are filtered on load;
+- invalid custom presets are filtered on load;
+- duplicate/built-in spoofed custom preset IDs are not accepted as custom entries;
+- invalid persisted theme/random mode values fall back to defaults;
+- history limit is clamped to supported bounds;
+- seed text is bounded;
+- invalid boolean preference types fall back to defaults;
+- storage exceptions degrade to in-memory operation instead of blocking rolls.
+
+Relevant files:
+
+- `src/services/storage.ts`
+- `src/services/storage.test.ts`
+- `src/services/export.ts`
+
+### Native Tauri application
+
+Implemented:
+
+- `src-tauri/Cargo.toml`
+- `src-tauri/Cargo.lock`
+- `src-tauri/build.rs`
+- `src-tauri/src/main.rs`
+- `src-tauri/src/lib.rs`
+- `src-tauri/tauri.conf.json`
+- `src-tauri/capabilities/default.json`
+- `src-tauri/icons/icon.png`
+
+The native `roll_expression` command:
+
+1. validates the expression again at the Rust trust boundary;
+2. enforces the same dice/sides/modifier/selection safety bounds;
+3. performs native secure or deterministic rolling;
+4. returns normalized result data;
+5. returns stable machine-readable error codes instead of English UI messages.
+
+Native codes currently include:
+
+- `ERR_INVALID_EXPRESSION`
+- `ERR_DICE_COUNT`
+- `ERR_SIDES`
+- `ERR_MODIFIER`
+- `ERR_SELECTION_COUNT`
+- `ERR_KEEP_COUNT`
+- `ERR_DROP_COUNT`
+- `ERR_RANDOM_MODE`
+
+`src/services/roll-service.ts` converts these codes into catalog-backed messages. Raw native codes are not intended as normal user-facing copy.
+
+### Native security configuration
+
+Implemented:
+
+- restrictive production CSP;
+- separate development CSP;
+- minimal Tauri `core:default` capability for the main window;
+- no broad shell permission;
+- no broad filesystem permission;
+- no required remote application API;
+- no production credential requirement for core operation.
 
 ### User interface
 
-Implemented a responsive product UI with:
+Implemented a complete responsive product interface:
 
-- sidebar desktop navigation;
+- desktop sidebar navigation;
 - compact mobile/web bottom navigation;
 - first-run onboarding;
-- dice studio;
-- quick standard-die buttons;
-- custom expression editor with live validation;
-- current result, dropped-die styling, modifier/seed details;
-- built-in tabletop presets;
-- custom preset creation/deletion;
-- searchable roll history;
-- summary statistic cards;
-- observed-history histogram;
-- CSV and JSON roll-log exports;
-- exact probability calculator;
-- theme setting: system/light/dark;
-- reduced-motion mode;
-- explicit dice-animation setting;
-- secure/seeded randomness setting and seed field;
-- configurable history retention from 10 to 5,000 rolls;
-- JSON backup export;
-- validated JSON backup import/restore;
-- local-data reset with deliberate confirmation;
-- command palette with `Ctrl/Cmd + K` and Escape handling;
-- About screen containing project identity, MIT license, support contacts, GitHub, BMC, privacy, and **Made by the Sanskar**.
+- roll studio;
+- standard quick-dice controls;
+- custom expression editor;
+- immediate validation;
+- secure/seeded status pill;
+- individual kept/dropped die presentation;
+- presets;
+- history/statistics/histogram;
+- probability calculator;
+- Settings;
+- About;
+- command palette;
+- backup import/export;
+- CSV/JSON export;
+- local data reset.
 
-### Backup/import security
+Primary files:
 
-Backup schema version `1` is implemented.
-
-Import checks include:
-
-- 5 MB file-size limit;
-- supported schema version;
-- maximum 5,000 history entries;
-- maximum 500 custom presets;
-- roll object shape and numeric sanity;
-- preset object shape and length limits;
-- expression re-validation for imported history/presets;
-- theme/random-mode validation;
-- setting normalization;
-- built-in presets are recreated by the application rather than trusted from an imported file.
+- `src/App.tsx`
+- `src/main.tsx`
+- `src/styles.css`
+- `src/components/AppShell.tsx`
+- `src/components/RollWorkspace.tsx`
+- `src/components/HistoryPanel.tsx`
+- `src/components/ProbabilityPanel.tsx`
+- `src/components/SettingsPanel.tsx`
+- `src/components/AboutPanel.tsx`
+- `src/components/CommandPalette.tsx`
+- `src/components/Onboarding.tsx`
 
 ### Accessibility baseline
 
 Implemented:
 
 - semantic native controls;
-- keyboard navigation;
-- skip-to-content link;
+- labels for inputs/selects/checkboxes;
 - visible focus styles;
-- `aria-current` navigation state;
-- accessible expression labels/errors;
-- live result/error/status regions where useful;
-- reduced-motion support through app settings and `prefers-reduced-motion`;
-- dropped dice indicated by more than color;
-- responsive touch-friendly controls;
-- documented manual accessibility release checklist.
+- skip-to-content link;
+- `aria-current` for active navigation;
+- dialog labeling;
+- error/status live regions where appropriate;
+- dropped dice communicated by more than color;
+- touch-friendly responsive controls;
+- reduced-motion setting;
+- separate dice-animation setting;
+- CSS support for `prefers-reduced-motion`;
+- keyboard command palette (`Ctrl/Cmd + K`, Escape);
+- component smoke tests for onboarding dialog semantics/activation and Settings control labeling.
 
-### Offline and privacy behavior
+Manual screen-reader/keyboard release review is still a release-candidate task and must not be claimed complete solely from automated tests.
 
-- Core rolling, history, presets, probability, settings, backup, and export workflows require no account.
-- Runtime application data uses versioned local browser/webview storage.
-- Storage failures degrade to in-memory operation rather than blocking dice rolls.
-- Core product does not require a remote application database.
-- No analytics/advertising SDK was added.
-- Privacy/security behavior is documented in `PRIVACY.md` and `SECURITY.md`.
+### Themes/UI design system
 
-## Files added or materially changed
+Implemented:
 
-### Root configuration
+- light theme;
+- dark theme;
+- system-following theme;
+- spacing/radii/border/elevation tokens;
+- responsive breakpoints;
+- consistent panels/buttons/inputs;
+- loading/busy roll state;
+- empty states;
+- error states;
+- status presentation;
+- reduced-motion behavior;
+- professional app icon and About branding.
 
-- `.editorconfig`
-- `.env.example`
-- `.gitattributes`
-- `.gitignore`
-- `.prettierrc.json`
-- `eslint.config.js`
-- `index.html`
-- `package.json`
-- `tsconfig.json`
-- `tsconfig.app.json`
-- `tsconfig.node.json`
-- `vite.config.ts`
-- `vitest.config.ts`
+### Internationalization-ready architecture
 
-### Frontend application
+Implemented an externalized English product catalog:
 
-- `src/App.tsx`
-- `src/main.tsx`
-- `src/styles.css`
-- `src/components/AboutPanel.tsx`
-- `src/components/AppShell.tsx`
-- `src/components/CommandPalette.tsx`
-- `src/components/HistoryPanel.tsx`
-- `src/components/Onboarding.tsx`
-- `src/components/ProbabilityPanel.tsx`
-- `src/components/RollWorkspace.tsx`
-- `src/components/SettingsPanel.tsx`
+- `src/i18n/en.ts`
+- `src/i18n/index.ts`
 
-### Domain and services
+Catalog-backed copy is used by:
 
-- `src/domain/types.ts`
-- `src/domain/parser.ts`
-- `src/domain/random.ts`
-- `src/domain/engine.ts`
-- `src/domain/probability.ts`
-- `src/domain/statistics.ts`
-- `src/services/storage.ts`
-- `src/services/export.ts`
-- `src/services/roll-service.ts`
+- application shell;
+- navigation;
+- onboarding;
+- roll workspace;
+- history/statistics;
+- probability calculator;
+- settings;
+- About/support;
+- command palette;
+- built-in presets;
+- TypeScript domain validation;
+- backup validation;
+- native error-code translation.
 
-### Automated tests
+The first additional translated locale is not included yet because a reviewed translation is required before claiming another supported language. The architecture no longer requires rewriting component/business logic to add it.
 
-- `src/test/setup.ts`
-- `src/domain/parser.test.ts`
-- `src/domain/engine.test.ts`
-- `src/domain/probability.test.ts`
-- `src/services/export.test.ts`
-- `src/services/backup.test.ts`
-- Rust unit tests embedded in `src-tauri/src/lib.rs`
+Stable machine contracts such as exported CSV field names, filenames, and internal developer diagnostics are intentionally not treated as translated UI strings.
 
-### Native application
+### Structured privacy-safe logging
 
-- `src-tauri/Cargo.toml`
-- `src-tauri/build.rs`
-- `src-tauri/tauri.conf.json`
-- `src-tauri/capabilities/default.json`
-- `src-tauri/icons/icon.png`
-- `src-tauri/src/main.rs`
-- `src-tauri/src/lib.rs`
+Implemented `src/services/logger.ts` with:
 
-### Documentation
+- structured JSON event records;
+- bounded event/value lengths;
+- sensitive-key redaction for keys matching authorization, cookie, email, password, secret, seed, token, credential, or key;
+- production suppression of debug events;
+- error logging that records the error type but intentionally omits exception messages that may contain user-controlled data.
+
+Integrated events include backup export/restore, restore failure, local-data clear, and roll failure metadata without logging dice expressions or seed values.
+
+### Privacy/offline behavior
+
+Core workflows require no account or remote database:
+
+- dice rolling;
+- history;
+- presets;
+- probability;
+- settings;
+- backup;
+- exports.
+
+No analytics SDK, advertising SDK, or donation gate was added.
+
+### Contact/support/funding
+
+Project documentation and About UI include appropriate references to:
+
+- `sanskarin@outlook.in`
+- `sanskarin.business@gmail.com`
+- `supportramsandesh@gmail.com`
+- `https://github.com/sanskarIN`
+- `https://github.com/sanskarIN/dicelab`
+- `https://buymeacoffee.com/sanskarIN`
+
+README includes a visible Buy Me a Coffee badge. Funding remains optional.
+
+## Automated tests added
+
+### TypeScript/Vitest domain tests
+
+`src/domain/parser.test.ts`
+
+- normal expression normalization;
+- omitted dice count;
+- custom side count;
+- keep/drop operations;
+- invalid count/sides/selection/text rejection.
+
+`src/domain/engine.test.ts`
+
+- keep-highest selection with modifier;
+- deterministic seeded sequence reproduction;
+- generated range invariants.
+
+`src/domain/probability.test.ts`
+
+- exact classic `2d6` distribution;
+- exact `2d20kh1` distribution;
+- exact `4d6kh3` limits/outcome count;
+- interactive complexity rejection.
+
+### TypeScript/Vitest service tests
+
+`src/services/export.test.ts`
+
+- JSON serialization;
+- CSV serialization/escaping;
+- spreadsheet formula neutralization for user-controlled seed cells.
+
+`src/services/backup.test.ts`
+
+- valid backup round trip;
+- unsupported schema rejection;
+- invalid expression rejection;
+- inconsistent roll-total rejection;
+- out-of-range die rejection;
+- inconsistent keep/drop flag rejection.
+
+`src/services/storage.test.ts`
+
+- corrupted history filtering;
+- corrupted custom-preset filtering while built-ins remain;
+- invalid settings normalization/clamping.
+
+`src/services/logger.test.ts`
+
+- sensitive-key redaction;
+- safe context retention;
+- exception-message omission.
+
+`src/services/roll-service.test.ts`
+
+- direct native string error-code extraction;
+- `Error` message code extraction;
+- message-bearing object normalization;
+- arbitrary-object data is not serialized/exposed.
+
+### Component smoke tests
+
+`src/components/Onboarding.test.tsx`
+
+- labeled modal semantics;
+- `aria-modal`;
+- focusable/keyboard-operable completion button.
+
+`src/components/SettingsPanel.test.tsx`
+
+- accessible native theme control;
+- setting change callback;
+- reduced-motion checkbox exposure;
+- backup export button exposure.
+
+### Rust tests
+
+Embedded in `src-tauri/src/lib.rs`:
+
+- valid keep-highest expression parsing;
+- stable native error codes;
+- invalid count/sides/keep/drop cases;
+- extreme negative modifier rejection without overflow;
+- keep-highest selection behavior;
+- deterministic seeded roll reproduction.
+
+## Bugs/security issues fixed during implementation
+
+### Native modifier overflow edge case
+
+An earlier Rust bound check used `modifier.abs()`. `i64::MIN.abs()` can overflow. It was replaced with an inclusive signed range check and a regression test for:
+
+```text
+1d6-9223372036854775808
+```
+
+### Lockfile automation race
+
+The initial generated-lockfile workflow could fail to push if `main` advanced during its run. It now rebases from `origin/main` before pushing.
+
+### CI before initial lockfiles
+
+The first Rust CI design always requested `--locked`, which is invalid before the first `Cargo.lock` exists. CI now uses locked resolution when the lockfile exists while still allowing the one-time bootstrap state.
+
+### Backup integrity hardening
+
+Backup validation originally checked broad object shape but not every relationship among expression/dice/keep flags/total. It now recomputes those relationships before restore.
+
+### CSV spreadsheet interpretation
+
+User-controlled seeded text could begin with formula prefixes in a CSV export. Such seed values are now neutralized before CSV serialization.
+
+### Corrupted local persistence
+
+Local storage originally used lighter shape checks. It now shares the stricter persisted-data validators and safely normalizes settings.
+
+### Native localization boundary
+
+Rust originally returned English error strings. It now returns stable machine codes and TypeScript maps them to the active product catalog.
+
+## Documentation set
+
+Created/maintained:
 
 - `README.md`
+- `LICENSE`
 - `CONTRIBUTING.md`
 - `CODE_OF_CONDUCT.md`
 - `SECURITY.md`
@@ -219,12 +530,17 @@ Implemented:
 - `docs/troubleshooting.md`
 - `docs/accessibility.md`
 - `docs/performance.md`
+- `docs/repository-settings.md`
 - `docs/adr/README.md`
 - `docs/adr/0001-modular-monolith.md`
 - `docs/adr/0002-randomness-modes.md`
 - `docs/adr/0003-local-persistence.md`
 
-### GitHub repository configuration
+README intentionally does **not** present fake/mock screenshots as real shipping captures. Real screenshots remain a release-candidate task.
+
+## GitHub repository quality configuration
+
+Added:
 
 - `.github/ISSUE_TEMPLATE/bug_report.yml`
 - `.github/ISSUE_TEMPLATE/feature_request.yml`
@@ -235,232 +551,208 @@ Implemented:
 - `.github/workflows/codeql.yml`
 - `.github/workflows/lockfiles.yml`
 - `.github/workflows/release.yml`
+- `.github/workflows/audit-format.yml` on the audit branch only, to normalize TypeScript/JSON/Markdown/YAML and Rust formatting before final verification.
 
-## Tests implemented
+`docs/repository-settings.md` documents branch protection/rulesets, Discussions categories, labels, milestones, Actions permissions, repository security settings, releases, and funding guidance for settings not fully representable by repository files.
 
-### TypeScript/Vitest
+## Lockfile state
 
-`src/domain/parser.test.ts`
+Completed:
 
-- normal expression normalization;
-- omitted dice-count parsing;
-- custom-side parsing;
-- keep/drop parsing;
-- invalid count/sides/selection/text rejection.
+- `package-lock.json` exists and uses lockfile version 3.
+- `src-tauri/Cargo.lock` was generated in the same lockfile automation commit.
+- Main lockfile commit: `f499161b0ddb8bbf82532e2ec4967a7fa9bca21f` — `build: lock application dependencies`.
+- Audit branch synced this main commit through merge commit `f5dcc9917325aab81f9e2791981f3fdb00350f2d`.
 
-`src/domain/engine.test.ts`
-
-- keep-highest + modifier totals;
-- deterministic seeded sequences;
-- generated-value range invariants.
-
-`src/domain/probability.test.ts`
-
-- classic `2d6` exact distribution;
-- exact `2d20kh1` distribution;
-- exact `4d6kh3` bounds/outcome count;
-- complexity-limit rejection.
-
-`src/services/export.test.ts`
-
-- JSON serialization;
-- CSV header/escaping.
-
-`src/services/backup.test.ts`
-
-- valid backup round trip;
-- unsupported schema rejection;
-- malformed imported dice-expression rejection.
-
-### Rust
-
-`src-tauri/src/lib.rs`
-
-- keep-highest expression parsing;
-- dropping all dice rejection;
-- extreme negative modifier rejection without integer overflow;
-- stable keep-highest selection behavior;
-- deterministic seeded roll reproduction.
-
-## Verification performed in this session
-
-### Repository inspection
-
-- GitHub repository metadata successfully fetched.
-- Repository confirmed accessible with admin/push permission through the connected GitHub integration.
-- Initial tree confirmed that only `LICENSE` existed before implementation.
-- Main-branch commit metadata confirmed connector commits use author/committer email `sanskarin@outlook.in`.
-- Repository tree was re-fetched after implementation and required source/documentation directories were present.
-
-### Local execution environment
+## Verification performed outside GitHub Actions
 
 The available local execution container was inspected:
 
-- Node.js available: `v22.16.0`
-- npm available: `10.9.2`
-- global TypeScript compiler available: `5.8.3`
-- Rust/Cargo toolchain not installed in that container.
-- project npm dependencies are not preinstalled.
-- cloning/downloading dependencies from GitHub/package registries failed because the container could not resolve external hosts.
+- Node.js: `v22.16.0`
+- npm: `10.9.2`
+- global TypeScript: `5.8.3`
+- Rust/Cargo: not installed in that container
+- project npm dependencies: not preinstalled
+- external package/GitHub downloads: blocked by DNS/network restrictions in that container
 
-Therefore this session **must not claim** that npm install, Vite build, Vitest, ESLint, Prettier, Cargo test, Clippy, or desktop packaging passed locally. The repository CI/PR audit is the correct remaining verification path.
+Therefore no local claim is made that npm install, Prettier, ESLint, Vitest, Vite production build, Cargo tests, Clippy, or desktop packaging passed in that restricted local environment.
 
-### CI status limitation
+GitHub Actions is the authoritative network-enabled verification path for this audit.
 
-A combined-status query on an earlier main commit returned no status contexts through the connector. The repository therefore has not yet been declared green.
+## GitHub Actions audit history
 
-`package-lock.json` was explicitly checked after the dependency-lock workflow was added and was still absent at that point. `Cargo.lock` should be treated as pending until explicitly verified.
+An earlier audit-branch CI run proved that the Rust formatting stage could execute successfully on the GitHub runner. That run became obsolete when additional hardening commits changed the branch and must not be treated as the final candidate result.
 
-The lockfile workflow was hardened to rebase against the latest `main` before pushing generated lockfiles so later commits do not cause an avoidable non-fast-forward failure.
+Current branch changes are now frozen except for:
 
-The normal CI workflow was hardened so it can verify the pre-lock bootstrap state, while using `npm ci`/Cargo `--locked` automatically once lockfiles exist.
+1. automated formatting generated by the branch-only audit formatter;
+2. defects discovered by the final CI/CodeQL runs;
+3. final audit-record documentation updates.
 
-## Bugs fixed during implementation
+Final workflow IDs/conclusions must be recorded here after the formatter-generated commit (if any) becomes the PR head and CI/CodeQL finish.
 
-### Native modifier overflow
+## Current known release blockers
 
-The Rust parser initially used `modifier.abs()` to enforce a modifier-magnitude limit. `i64::MIN.abs()` can overflow, so this was replaced with a safe inclusive range check:
+The following are explicitly **not** claimed complete yet:
 
-```text
--MAX_ABS_MODIFIER <= modifier <= MAX_ABS_MODIFIER
-```
+1. Final PR-head Prettier check.
+2. Final PR-head ESLint check.
+3. Final PR-head TypeScript/Vite production build.
+4. Final PR-head Vitest suite.
+5. Final PR-head Rust format check.
+6. Final PR-head Rust tests.
+7. Final PR-head Clippy with warnings denied.
+8. Final PR-head CodeQL result.
+9. Windows/macOS/Linux release-bundle verification for the exact release candidate.
+10. Real release-candidate screenshots.
+11. Manual keyboard/screen-reader release review.
+12. Documentation-link audit.
+13. Signed/notarized desktop artifacts where credentials are available.
+14. Repository-level branch protection/ruleset is not configurable through the currently exposed connector action set and must be enabled using `docs/repository-settings.md` after stable required-check names are confirmed.
 
-A regression test for `1d6-9223372036854775808` was added.
+These are release-gate items, not hidden defects.
 
-### Lockfile automation push race
+## Phase status
 
-The initial lockfile workflow committed generated lockfiles and pushed directly. If `main` advanced while the job was running, that could fail as non-fast-forward. The workflow now pulls/rebases from `origin/main` before its push.
+### Phase 0 — Foundation
 
-### CI before first lockfiles
+Implementation complete; final verification tied to Phase 6.
 
-The initial Rust CI commands required `--locked` even when `Cargo.lock` had not yet been generated. CI now uses locked mode when the file exists and normal resolution only during the bootstrap state.
+### Phase 1 — End-to-end MVP
 
-## Known limitations / unfinished verification
+Implementation complete; final verification tied to Phase 6.
 
-These are not hidden; they are the exact remaining release blockers or quality follow-ups.
+### Phase 2 — Complete core feature set
 
-1. **Full CI has not yet been proven green on the final audit commit.**
-2. **Dependency lockfiles must be explicitly verified as generated and committed.**
-3. **Windows/macOS/Linux release bundles have not yet been verified from the final release commit.**
-4. **Real release screenshots have not been captured.** README intentionally does not present fabricated screenshots as shipping captures.
-5. **Manual screen-reader/keyboard release review has not yet been recorded.**
-6. **Browser end-to-end test automation is not yet implemented.**
-7. **Component-level automated accessibility smoke tests are not yet implemented.**
-8. **Property/fuzz testing and repeatable performance benchmarks remain follow-up quality work.**
-9. **English user-facing strings are currently present directly in components.** The architecture is intentionally kept easy to migrate, but a complete externalized translation catalog is not yet implemented and should be completed before claiming full i18n readiness.
-10. **Native signed/notarized artifacts require external signing credentials and cannot be created safely from source-controlled secrets.**
-11. **Branch protection is currently not enabled on `main` in the repository metadata observed during this session.** Enable it after the required check names are proven stable.
+Implementation complete, including validated backup restore.
+
+### Phase 3 — Hardening and advanced UX
+
+Implemented for the current product scope:
+
+- CSP/minimal capabilities;
+- reduced motion;
+- responsive layouts;
+- structured redacted logging;
+- corrupted-state recovery;
+- CSV formula neutralization;
+- externalized English catalog;
+- locale-neutral native error contract.
+
+Additional translated languages and optional native save-dialog integration remain future enhancements, not requirements for core offline DiceLab correctness.
+
+### Phase 4 — Automated verification depth
+
+Implemented domain/service/native/component smoke tests listed above. Browser E2E, dedicated fuzzing, and formal performance benchmark harnesses remain follow-up quality depth and must not be represented as already shipped.
+
+### Phase 5 — Release engineering
+
+Implemented:
+
+- lockfiles;
+- release documentation;
+- cross-platform tag build workflow;
+- CodeQL;
+- Dependabot;
+- funding/repository templates.
+
+Release-candidate bundles/screenshots/signing verification remain pending.
+
+### Phase 6 — Final audit
+
+In progress through PR #1.
 
 ## Exact next tasks
 
-Continue in this order:
+Continue in this exact order:
 
-1. Open/complete the Phase 6 audit PR from `audit/phase-6` to `main` so pull-request-triggered workflows can be inspected through the GitHub connector.
-2. Fetch the PR head SHA and workflow run/jobs.
-3. Fix every real formatting, lint, TypeScript, test, Rustfmt, Clippy, or build failure on the audit branch.
-4. Verify whether `package-lock.json` and `src-tauri/Cargo.lock` were generated. If missing, generate them using a network-enabled GitHub Actions runner and commit them with author email `sanskarin@outlook.in`.
-5. Re-run CI until required checks are green.
-6. Update `ROADMAP.md` to mark backup import complete and to reflect actual verified audit results.
-7. Update `CHANGELOG.md` if fixes from the audit change user-visible behavior.
-8. Add externalized English string catalogs and migrate UI strings before claiming full i18n readiness.
-9. Add at least browser E2E primary-journey coverage and component accessibility smoke coverage when tooling is available.
-10. Run/record Windows, macOS, and Linux release bundle verification.
-11. Capture real release-candidate screenshots and place them in documented repository paths; update README screenshot section.
-12. Perform documentation-link/security/dependency audit.
-13. Enable branch protection for `main` using proven required checks, if repository settings permit it.
-14. Update this file with final commands/results and final commit hashes.
-15. Only then prepare/tag `v0.1.0`.
+1. Allow `.github/workflows/audit-format.yml` to create `style: normalize repository formatting` if Prettier/rustfmt changes are needed.
+2. Confirm the audit PR head after formatting.
+3. Inspect CI and CodeQL runs for that exact head SHA.
+4. Fetch failed job logs and fix every real formatting/lint/type/test/build/Rust/Clippy/security defect with small regression-oriented commits.
+5. Repeat until final PR-head CI and CodeQL checks are successful.
+6. Update this file with exact final workflow run IDs, job names, conclusions, and any fixes made during CI.
+7. Re-run/check CI after the final documentation-only handoff update if the PR head changes.
+8. Merge PR #1 using a normal merge commit rather than squash so the meaningful atomic history is preserved.
+9. Verify the merged `main` commit/workflow state.
+10. Run/verify Windows, macOS, and Linux release-candidate bundles before tagging.
+11. Capture real release-candidate screenshots and replace the README screenshot placeholder section with actual captures.
+12. Complete the manual accessibility/documentation-link release checklist.
+13. Enable repository branch protection/ruleset using the stable check names documented in `docs/repository-settings.md` when repository settings access is available.
+14. Only after the full release gate passes, prepare/tag `v0.1.0` and publish release notes/artifacts.
 
 ## Migration notes
 
-- Runtime local-storage schema remains version `v1`; no migration is currently required.
-- Backup schema is version `1`.
+- Runtime local-storage schema remains `v1`.
+- Backup schema remains version `1`.
+- Current changes do not require a user data migration.
 - Future incompatible local-storage changes must introduce a migration or new versioned key.
-- Future backup schema versions must validate the incoming version and define an explicit migration path; do not silently reinterpret unknown schemas.
-- Built-in presets are application-owned and are not restored from backup input.
+- Future backup schema versions must explicitly validate and migrate known earlier versions.
+- Unknown backup schema versions must be rejected rather than silently reinterpreted.
+- Built-in presets remain application-owned and are never restored from external backup data.
 
-## Release notes draft — 0.1.0
+## Draft release notes — 0.1.0
 
 ### Dice rolling
 
-- Standard/custom dice with modifiers and keep/drop expressions.
-- Secure random and deterministic seeded modes.
-- Native Rust dice command for Tauri desktop.
+- standard and custom dice;
+- pools, modifiers, keep/drop expressions;
+- native secure random mode;
+- deterministic seeded mode.
 
 ### History and probability
 
-- Local history, filtering, statistics, and histogram.
-- CSV/JSON exports.
-- Exact common-expression probability calculator with complexity guards.
+- local history;
+- filters/statistics/histogram;
+- CSV/JSON exports;
+- exact common-expression probability distributions with complexity guards.
 
 ### Presets and data
 
-- Built-in tabletop presets.
-- Custom presets.
-- Versioned local storage.
-- JSON backup export and validated restore.
+- built-in tabletop presets;
+- custom presets;
+- versioned local persistence;
+- validated JSON backup export/restore;
+- corrupted-state recovery.
 
 ### Experience
 
-- Responsive desktop/web interface.
-- light/dark/system themes.
-- reduced-motion and non-animation controls.
-- command palette.
-- first-run onboarding.
+- responsive desktop/web UI;
+- light/dark/system themes;
+- reduced motion/non-animation controls;
+- command palette;
+- first-run onboarding;
+- externalized English catalog;
 - About/support/privacy surfaces.
 
 ### Security/privacy
 
-- local-first core product with no required account.
-- restrictive Tauri CSP.
-- minimal Tauri capabilities.
-- bounded input validation on TypeScript and Rust boundaries.
-- responsible-disclosure documentation and CodeQL workflow.
+- offline-first core product with no required account;
+- restrictive Tauri CSP;
+- minimal Tauri permissions;
+- bounded validation at TypeScript and Rust trust boundaries;
+- stable native error codes;
+- validated backup integrity;
+- spreadsheet-safe seed export;
+- privacy-safe structured logs;
+- responsible disclosure documentation;
+- CodeQL and dependency maintenance automation.
 
-### Known pre-release blockers
+Do not publish these notes as final until the release gate above is complete.
 
-Do not publish these notes as a final release until CI, platform packaging, lockfiles, screenshots, and release-candidate checks are complete.
+## Important recent commits/checkpoints
 
-## Recent meaningful commits
+Known meaningful checkpoints include:
 
-Recent commits at the time this handoff was written include:
+- `f499161b0ddb8bbf82532e2ec4967a7fa9bca21f` — `build: lock application dependencies`
+- `f5dcc9917325aab81f9e2791981f3fdb00350f2d` — `chore: sync dependency lockfiles into audit branch`
+- `b378fc6ffdcc55e65919906fb26ae5d0f0be4f01` — `ci: autoformat phase 6 audit branch`
+- later audit commits add Rust native error codes, localized native-error mapping, structured logging/tests, backup/CSV hardening, local-persistence validation/tests, externalized catalog migration, component smoke tests, repository-settings guidance, and updated architecture/testing/roadmap/changelog documentation.
 
-- `d542e96` — `ci: add cross-platform tagged release builds`
-- `dbf64d0` — `ci: add CodeQL static analysis`
-- `1671237` — `chore: configure optional project funding link`
-- `b59361d` — `chore: configure automated dependency updates`
-- `14f9154` — `docs: add pull request quality checklist`
-- `b8ca678` — `docs: add structured feature request template`
-- `c7f9419` — `docs: add structured bug report template`
-- `bc0a33d` — `docs: record local persistence decision`
-- `464d985` — `docs: record randomness mode security decision`
-- `d38bb75` — `docs: record modular monolith architecture decision`
-- `95ef42e` — `docs: index architecture decision records`
-- `ec45d9c` — `docs: add troubleshooting guide`
-- `6b2a62c` — `docs: add reproducible release process`
-- `b32e17a` — `build: standardize frontend formatting rules`
-- `ee84225` — `chore: document optional local environment placeholders`
-- `8840c3e` — `ci: support verification before lockfile bootstrap`
-- `83e59d1` — `fix: reject extreme modifiers without overflow`
-- `76ee734` — `test: cover backup validation and restore parsing`
-- `4258356` — `feat: restore validated local backups`
-- `c060990` — `feat: add validated backup import controls`
-- `33dae8f` — `feat: validate and restore DiceLab backups`
-- `a4262cf` — `docs: define phased DiceLab roadmap`
-- `21e8a8e` — `docs: add complete DiceLab project guide`
-- `3167868` — `feat: add DiceLab desktop application icon`
-- `711139d` — `ci: verify web and Rust quality gates`
-- `3836ac9` — `test: verify exact probability distributions`
-- `82d5622` — `test: verify deterministic rolls and keep drop totals`
-- `77a5f43` — `feat: implement native secure dice engine`
-- `60dfcc0` — `feat: implement responsive DiceLab design system`
-- `4263c33` — `feat: connect complete DiceLab application workflow`
-- `eb1561b` — `feat: calculate exact dice probability distributions`
-- `2bcfe52` — `feat: implement dice roll engine with keep and drop`
-- `b70187b` — `feat: parse validated dice expressions`
+Use GitHub recent-commit history for exact hashes of those later atomic commits before preparing a release.
 
 ## Continuation rule
 
-Do not replace working code or restart the project. Continue from the next unfinished audit task, update tests/docs with every meaningful change, keep commits small and meaningful, and update this file again before ending another session.
+Do not restart or replace the project. Continue from the exact audit state above, allow only verification-driven fixes until PR #1 is green, keep commits atomic and meaningful, and update this file again before ending another development session.
 
 **Made by the Sanskar**
