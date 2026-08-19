@@ -1,6 +1,6 @@
 import { isPersistedPreset, isPersistedRollResult } from '../domain/persistence';
 import { DEFAULT_SETTINGS, type DiceLabSettings, type DicePreset, type RollResult } from '../domain/types';
-import { messages } from '../i18n';
+import { getMessages, type SupportedLocale } from '../i18n';
 import { logger } from './logger';
 
 const MAX_HISTORY = 5_000;
@@ -15,14 +15,19 @@ const KEYS = {
 
 type StorageKeyClass = keyof typeof KEYS;
 
-export const BUILTIN_PRESETS: DicePreset[] = [
-  preset('builtin-d20', messages.presets.d20Name, '1d20', messages.presets.d20Body),
-  preset('builtin-advantage', messages.presets.advantageName, '2d20kh1', messages.presets.advantageBody),
-  preset('builtin-disadvantage', messages.presets.disadvantageName, '2d20kl1', messages.presets.disadvantageBody),
-  preset('builtin-ability', messages.presets.abilityName, '4d6kh3', messages.presets.abilityBody),
-  preset('builtin-fireball', messages.presets.fireballName, '8d6', messages.presets.fireballBody),
-  preset('builtin-percentile', messages.presets.percentileName, '1d100', messages.presets.percentileBody),
-];
+export const BUILTIN_PRESETS: DicePreset[] = getBuiltinPresets('en');
+
+export function getBuiltinPresets(locale: SupportedLocale = 'en'): DicePreset[] {
+  const catalog = getMessages(locale);
+  return [
+    preset('builtin-d20', catalog.presets.d20Name, '1d20', catalog.presets.d20Body),
+    preset('builtin-advantage', catalog.presets.advantageName, '2d20kh1', catalog.presets.advantageBody),
+    preset('builtin-disadvantage', catalog.presets.disadvantageName, '2d20kl1', catalog.presets.disadvantageBody),
+    preset('builtin-ability', catalog.presets.abilityName, '4d6kh3', catalog.presets.abilityBody),
+    preset('builtin-fireball', catalog.presets.fireballName, '8d6', catalog.presets.fireballBody),
+    preset('builtin-percentile', catalog.presets.percentileName, '1d100', catalog.presets.percentileBody),
+  ];
+}
 
 export function loadHistory(): RollResult[] {
   const parsed = readJson<unknown>('history', []);
@@ -36,7 +41,7 @@ export function saveHistory(history: RollResult[], limit: number): void {
   writeJson('history', safeHistory);
 }
 
-export function loadPresets(): DicePreset[] {
+export function loadPresets(locale: SupportedLocale = 'en'): DicePreset[] {
   const parsed = readJson<unknown>('presets', []);
   const custom = Array.isArray(parsed)
     ? uniqueById(
@@ -46,7 +51,7 @@ export function loadPresets(): DicePreset[] {
           .filter((item) => !item.id.startsWith('builtin-')),
       )
     : [];
-  return [...BUILTIN_PRESETS, ...custom];
+  return [...getBuiltinPresets(locale), ...custom];
 }
 
 export function saveCustomPresets(presets: DicePreset[]): void {
@@ -67,6 +72,7 @@ export function loadSettings(): DiceLabSettings {
       settings.theme === 'light' || settings.theme === 'dark' || settings.theme === 'system'
         ? settings.theme
         : DEFAULT_SETTINGS.theme,
+    locale: settings.locale === 'hi' || settings.locale === 'en' ? settings.locale : DEFAULT_SETTINGS.locale,
     reducedMotion,
     animations: reducedMotion
       ? false
