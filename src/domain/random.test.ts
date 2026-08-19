@@ -10,6 +10,13 @@ describe('SeededRandomSource', () => {
     expect(firstSequence).toEqual(secondSequence);
   });
 
+  it('matches the desktop reference vector', () => {
+    const source = new SeededRandomSource('reproducible');
+    expect([source.nextInt(20) + 1, source.nextInt(20) + 1, source.nextInt(20) + 1, source.nextInt(6) + 1]).toEqual([
+      2, 19, 10, 6,
+    ]);
+  });
+
   it('stays within the requested exclusive upper bound', () => {
     const source = new SeededRandomSource('bounds');
     const values = Array.from({ length: 500 }, () => source.nextInt(6));
@@ -25,6 +32,11 @@ describe('hashSeed', () => {
   it('is deterministic and sensitive to seed text', () => {
     expect(hashSeed('alpha')).toBe(hashSeed('alpha'));
     expect(hashSeed('alpha')).not.toBe(hashSeed('beta'));
+  });
+
+  it('matches desktop UTF-8 reference hashes', () => {
+    expect(hashSeed('reproducible')).toBe(2_201_898_953);
+    expect(hashSeed('🎲 DiceLab')).toBe(1_755_545_114);
   });
 
   it('supports unicode seed input', () => {
