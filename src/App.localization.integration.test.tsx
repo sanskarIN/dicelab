@@ -31,7 +31,7 @@ describe('live localization and user-created presets', () => {
     localStorage.clear();
   });
 
-  it('localizes built-ins while preserving user-created preset copy', () => {
+  it('localizes the live shell, command palette, and built-ins while preserving user-created preset copy', () => {
     render(<App />);
 
     expect(screen.getByText('D20 check')).toBeInTheDocument();
@@ -42,6 +42,16 @@ describe('live localization and user-created presets', () => {
     fireEvent.change(screen.getByRole('combobox', { name: 'Language' }), {
       target: { value: 'hi' },
     });
+
+    expect(screen.getAllByRole('button', { name: 'रोल' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: 'इतिहास' }).length).toBeGreaterThan(0);
+
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('त्वरित क्रियाएँ')).toBeInTheDocument();
+    expect(screen.getByText('पासे रोल करें')).toBeInTheDocument();
+    expect(screen.getByText('प्रायिकता कैलकुलेटर')).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
 
     fireEvent.click(screen.getAllByRole('button', { name: 'रोल' })[0]);
 
