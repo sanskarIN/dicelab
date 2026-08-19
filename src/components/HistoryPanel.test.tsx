@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { RollResult } from '../domain/types';
 import { HistoryPanel } from './HistoryPanel';
 
@@ -15,6 +15,8 @@ function makeHistory(count: number): RollResult[] {
     rolledAt: new Date(Date.UTC(2026, 7, 19, 4, 0, index % 60)).toISOString(),
   }));
 }
+
+afterEach(() => vi.restoreAllMocks());
 
 describe('HistoryPanel performance behavior', () => {
   it('renders large histories progressively while keeping full statistics', () => {
@@ -41,5 +43,28 @@ describe('HistoryPanel performance behavior', () => {
     fireEvent.change(screen.getByLabelText('Filter roll history'), { target: { value: '1d20' } });
     expect(screen.getAllByRole('article')).toHaveLength(10);
     expect(screen.queryByRole('button', { name: 'Show more rolls' })).not.toBeInTheDocument();
+  });
+
+  it('reports a successful browser history export', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:history-panel');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+
+    render(<HistoryPanel history={makeHistory(1)} onClear={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'CSV' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Export ready.');
+  });
+
+  it('reports export failures without exposing thrown details', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockImplementation(() => {
+      throw new Error('private filesystem detail');
+    });
+
+    render(<HistoryPanel history={makeHistory(1)} onClear={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'JSON' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Export could not be saved.');
+    expect(screen.queryByText(/private filesystem detail/i)).not.toBeInTheDocument();
   });
 });
