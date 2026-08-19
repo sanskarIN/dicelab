@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { getMessages, messages, setLocale, type SupportedLocale } from './index';
+import { getActiveLocale, getMessages, messages, setLocale, type SupportedLocale } from './index';
 
 afterEach(() => {
   setLocale('en');
@@ -7,6 +7,7 @@ afterEach(() => {
 
 describe('message catalogs', () => {
   it('uses English as the default locale', () => {
+    expect(getActiveLocale()).toBe('en');
     expect(messages).toBe(getMessages('en'));
     expect(messages.common.appName).toBe('DiceLab');
   });
@@ -36,10 +37,12 @@ describe('message catalogs', () => {
     expect(hindi.history.histogramTitle(7, 6, 16.666)).toBe('7: 6 रोल (16.7%)');
   });
 
-  it('updates the exported live catalog when locale changes', () => {
+  it('updates both the live catalog and active locale when locale changes', () => {
     setLocale('hi');
+    expect(getActiveLocale()).toBe('hi');
     expect(messages.settings.heading).toBe('सेटिंग्स');
     setLocale('en');
+    expect(getActiveLocale()).toBe('en');
     expect(messages.settings.heading).toBe('Settings');
   });
 });
