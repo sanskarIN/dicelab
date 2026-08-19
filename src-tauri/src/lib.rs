@@ -2,10 +2,13 @@ use rand::{rngs::OsRng, Rng};
 use regex::Regex;
 use serde::Serialize;
 use std::sync::OnceLock;
+use tauri_plugin_dialog::DialogExt;
 
 const MAX_DICE: usize = 1_000;
 const MAX_SIDES: u32 = 1_000_000;
 const MAX_ABS_MODIFIER: i64 = 1_000_000_000;
+const MAX_EXPORT_BYTES: usize = 6_000_000;
+const MAX_EXPORT_FILENAME_BYTES: usize = 160;
 const UINT32_RANGE: u64 = 0x1_0000_0000;
 const SEEDED_FALLBACK_STATE: u32 = 0x9e37_79b9;
 
@@ -47,6 +50,12 @@ struct NativeRollResult {
     total: i64,
     dice: Vec<DieRoll>,
     modifier: i64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ExportSpec {
+    filter_name: &'static str,
+    extension: &'static str,
 }
 
 #[derive(Debug, Clone)]
@@ -96,6 +105,70 @@ fn roll_expression(
         }
         _ => Err("Random mode must be either 'secure' or 'seeded'.".to_string()),
     }
+}
+
+#[tauri::command]
+async fn save_text_export(
+    app: tauri::AppHandle,
+    filename: String,
+    contents: String,
+    format: String,
+) -> Result<bool, String> {
+    let spec = validate_export_request(&filename, &contents, &format)?;
+    let selected = app
+        .dialog()
+        .file()
+        .set_title("Save DiceLab export")
+        .set_file_name(filename)
+        .add_filter(spec.filter_name, &[spec.extension])
+        .blocking_save_file();
+
+    let Some(file_path) = selected else {
+        return Ok(false);
+    };
+    let path = file_path
+        .into_path()
+        .map_err(|_| "DiceLab could not resolve the selected file path.".to_string())?;
+    std::fs::write(path, contents.as_bytes())
+        .map_err(|_| "DiceLab could not save the selected file.".to_string())?;
+    Ok(true)
+}
+
+fn validate_export_request(filename: &str, contents: &str, format: &str) -> Result<ExportSpec, String> {
+    if filename.is_empty()
+        || filename.len() > MAX_EXPORT_FILENAME_BYTES
+        || filename
+            .chars()
+            .any(|character| character.is_control() || matches!(character, '/' | '\\'))
+    {
+        return Err("Export filename is invalid.".to_string());
+    }
+    if contents.len() > MAX_EXPORT_BYTES {
+        return Err(format!(
+            "Export is larger than the supported {MAX_EXPORT_BYTES} byte limit."
+        ));
+    }
+
+    let spec = match format {
+        "csv" => ExportSpec {
+            filter_name: "CSV",
+            extension: "csv",
+        },
+        "json" => ExportSpec {
+            filter_name: "JSON",
+            extension: "json",
+        },
+        _ => return Err("Export format must be either 'csv' or 'json'.".to_string()),
+    };
+
+    let expected_suffix = format!(".{}", spec.extension);
+    if !filename.to_ascii_lowercase().ends_with(&expected_suffix) {
+        return Err(format!(
+            "Export filename must end with {expected_suffix}."
+        ));
+    }
+
+    Ok(spec)
 }
 
 fn parse_expression(input: &str) -> Result<Expression, String> {
@@ -307,7 +380,8 @@ fn hash_seed(seed: &str) -> u32 {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![roll_expression])
+        .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![roll_expression, save_text_export])
         .run(tauri::generate_context!())
         .expect("error while running DiceLab");
 }
@@ -373,6 +447,39 @@ mod tests {
         assert_eq!(first_values, second_values);
         assert_eq!(first.total, 36);
         assert_eq!(first.total, second.total);
+    }
+
+    #[test]
+    fn validates_native_export_formats_and_extensions() {
+        assert_eq!(
+            validate_export_request("dicelab-rolls.csv", "a,b\n1,2\n", "csv"),
+            Ok(ExportSpec {
+                filter_name: "CSV",
+                extension: "csv"
+            })
+        );
+        assert_eq!(
+            validate_export_request("dicelab-backup.JSON", "{}\n", "json"),
+            Ok(ExportSpec {
+                filter_name: "JSON",
+                extension: "json"
+            })
+        );
+    }
+
+    #[test]
+    fn rejects_unsafe_native_export_requests() {
+        assert!(validate_export_request("../rolls.csv", "data", "csv").is_err());
+        assert!(validate_export_request("folder\\rolls.csv", "data", "csv").is_err());
+        assert!(validate_export_request("rolls.txt", "data", "csv").is_err());
+        assert!(validate_export_request("rolls.csv", "data", "txt").is_err());
+        assert!(validate_export_request("", "data", "csv").is_err());
+    }
+
+    #[test]
+    fn rejects_oversized_native_exports() {
+        let oversized = "x".repeat(MAX_EXPORT_BYTES + 1);
+        assert!(validate_export_request("rolls.csv", &oversized, "csv").is_err());
     }
 
     #[test]
