@@ -11,15 +11,15 @@ interface AppShellProps {
   children: ReactNode;
 }
 
-const items: Array<{ id: AppView; label: string; icon: typeof Dices }> = [
-  { id: 'roll', label: messages.navigation.roll, icon: Dices },
-  { id: 'history', label: messages.navigation.history, icon: History },
-  { id: 'probability', label: messages.navigation.probability, icon: BarChart3 },
-  { id: 'settings', label: messages.navigation.settings, icon: Settings },
-  { id: 'about', label: messages.navigation.about, icon: Info },
-];
-
 export function AppShell({ view, onNavigate, onOpenCommands, children }: AppShellProps) {
+  const items: Array<{ id: AppView; label: string; icon: typeof Dices }> = [
+    { id: 'roll', label: messages.navigation.roll, icon: Dices },
+    { id: 'history', label: messages.navigation.history, icon: History },
+    { id: 'probability', label: messages.navigation.probability, icon: BarChart3 },
+    { id: 'settings', label: messages.navigation.settings, icon: Settings },
+    { id: 'about', label: messages.navigation.about, icon: Info },
+  ];
+
   return (
     <div className="app-shell">
       <aside className="sidebar" aria-label={messages.common.primaryNavigation}>
