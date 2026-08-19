@@ -28,4 +28,9 @@ describe('history exports', () => {
     expect(output).toContain('"example,seed"');
     expect(output.split('\n')[0]).toBe('id,rolled_at,expression,total,modifier,mode,seed,dice');
   });
+
+  it('neutralizes spreadsheet formulas in user-controlled seed cells', () => {
+    const output = historyToCsv([{ ...roll, seed: '=HYPERLINK("https://invalid.example")' }]);
+    expect(output).toContain('"\'=HYPERLINK(""https://invalid.example"")"');
+  });
 });
