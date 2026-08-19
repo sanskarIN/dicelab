@@ -1,10 +1,10 @@
-import { en } from './en';
+import { en, type MessageCatalog } from './en';
 
 export type SupportedLocale = 'en';
 
-const catalogs = { en } as const;
+const catalogs: Record<SupportedLocale, MessageCatalog> = { en };
 
-export function getMessages(locale: SupportedLocale = 'en') {
+export function getMessages(locale: SupportedLocale = 'en'): MessageCatalog {
   return catalogs[locale];
 }
 
