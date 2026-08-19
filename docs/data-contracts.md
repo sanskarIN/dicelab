@@ -128,11 +128,13 @@ Persistence validation additionally requires:
 - persisted modifier equals parsed expression modifier;
 - die count equals parsed expression count;
 - no duplicate die indices;
-- kept/dropped count matches the expression selection;
+- die values reconstructed by original index produce the exact expected kept-index set for the parsed keep/drop selection, including deterministic tie-breaking;
 - total exactly equals kept die sum plus modifier;
 - `rolledAt` is a canonical ISO timestamp (`new Date(value).toISOString() === value`);
 - optional stored seed is at most 200 characters;
 - seeded-mode rolls must contain a seed.
+
+A persisted record is therefore rejected even when it has the correct number of kept dice and a self-consistent total if the wrong actual dice are marked kept.
 
 The user-configured seed is capped separately at 120 characters; the persisted effective seed may be longer because DiceLab appends deterministic sequence information.
 
@@ -270,6 +272,8 @@ Normalization rules:
 - reduced motion → boolean or default;
 - when reduced motion is true, animations are forced false regardless of imported/stored animation value.
 
+The Settings history-limit number control also truncates finite live input to an integer and clamps it to 10–5,000 before emitting application state, so live and persisted contracts agree.
+
 ## 9. Locale contract
 
 Product locale IDs:
@@ -348,13 +352,16 @@ Built-in presets are intentionally absent so a backup cannot redefine applicatio
 
 `backupToJson()` and `parseBackupJson()` use the same `assertBackupSize()` byte check. This is a deliberate round-trip invariant: DiceLab must not knowingly produce a backup that its own importer rejects solely because of file size.
 
+For browser-selected restore files, `parseBackupFile()` adds a first-stage `File.size` check before calling `File.text()`. Files larger than 5,000,000 bytes are therefore rejected without reading them into memory. After the read, `parseBackupJson()` still measures the decoded string's actual UTF-8 byte length with `TextEncoder`; both stages use the same stable `backup-too-large` error/context.
+
 An oversized export is not truncated. It fails with the stable `backup-too-large` error and the existing localized 5 MB user message. This backup-specific 5,000,000-byte limit is intentionally stricter than the native text-save command's generic 6,000,000-byte transport limit.
 
 ### Import/export bounds
 
 | Value | Limit |
 | --- | --- |
-| Backup JSON UTF-8 size (export and import) | 5,000,000 bytes |
+| Selected backup file metadata size before read | 5,000,000 bytes |
+| Backup JSON UTF-8 size (export and decoded import) | 5,000,000 bytes |
 | History records | 5,000 |
 | Custom preset records | 500 |
 
@@ -398,9 +405,10 @@ dice
 
 The `dice` field flattens values and marks dropped entries in human-readable form.
 
-CSV escaping rules:
+CSV escaping/security rules:
 
-- formula-like leading `=`, `+`, `-`, `@` is prefixed with `'`;
+- untrusted `id` and `seed` values whose first non-whitespace character is `=`, `+`, `-`, or `@` are prefixed with `'` before normal escaping;
+- application-generated numeric `total` and `modifier` values remain numeric, including negative values;
 - cells containing quote/comma/newline are quoted;
 - embedded quotes are doubled;
 - output ends with a newline.
