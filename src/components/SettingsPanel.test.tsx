@@ -17,12 +17,12 @@ describe('SettingsPanel', () => {
       />,
     );
 
-    const theme = screen.getByRole('combobox', { name: copy.settings.theme });
+    const theme = screen.getByRole('combobox', { name: /^Theme\b/ });
     expect(theme).toHaveValue('system');
     fireEvent.change(theme, { target: { value: 'dark' } });
     expect(onChange).toHaveBeenCalledWith({ ...DEFAULT_SETTINGS, theme: 'dark' });
 
-    expect(screen.getByRole('checkbox', { name: copy.settings.reducedMotion })).toBeEnabled();
+    expect(screen.getByRole('checkbox', { name: /^Reduced motion\b/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: copy.settings.exportBackup })).toBeEnabled();
   });
 });
