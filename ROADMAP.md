@@ -45,6 +45,8 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Backup duplicate/integrity validation and spreadsheet-safe CSV output.
 - [x] Cross-runtime deterministic seeded parity.
 - [x] Externalized typed English catalog and locale boundary for user-facing React/preset copy.
+- [x] Stable parser/probability/backup error codes with localized UI mapping.
+- [x] Structured local logging with secret/PII-oriented redaction and bounded context.
 - [x] Progressive rendering for very large retained histories.
 - [ ] Optional native save dialog integration with narrowly scoped permissions.
 - [ ] Add a reviewed second locale before exposing language selection.
@@ -61,9 +63,12 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Browser-state integration tests for roll/history/export, backup restore, and About navigation.
 - [x] Generated parser normalization/case/whitespace invariants.
 - [x] Large-history progressive-rendering regression coverage.
+- [x] Domain history-filter regression coverage.
+- [x] Structured logger/storage-degradation security regression coverage.
+- [x] Executable Vitest benchmarks for parser, RNG, probability, 5,000-record filtering, and 5,000-record statistics.
 - [ ] Add a dedicated Rust fuzz target for expression parsing.
 - [ ] Add real-browser E2E tests for rendering/download/reload journeys.
-- [ ] Establish executable performance benchmarks in addition to documented budgets.
+- [ ] Record release-candidate benchmark evidence on a documented machine/runtime.
 
 ## Phase 5 — Release engineering
 
@@ -71,6 +76,8 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Enforce locked dependencies in main CI and tagged release verification.
 - [x] Configure tagged Windows/macOS/Linux/web artifact builds.
 - [x] Package verified artifacts into draft GitHub releases with SHA-256 checksums.
+- [x] Add dependency-free repository secret audit and self-tests to CI/tagged verification.
+- [x] Document branch protection, labels, milestones, Discussions, security settings, and release governance.
 - [ ] Verify clean builds on Windows, macOS, and Linux from the current release candidate.
 - [ ] Capture real screenshots from release-candidate builds.
 - [ ] Add signed/notarized release artifacts where credentials are available and document unsigned builds accurately otherwise.
@@ -80,8 +87,9 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 
 - [ ] Clean-checkout setup verification.
 - [ ] Full lint/format/type/test/build suite observed green on the release commit.
-- [ ] Dependency and CodeQL checks reviewed.
-- [ ] Documentation-link audit.
+- [ ] Dependency, CodeQL, repository security settings, and secret-scan results reviewed.
+- [ ] Documentation-link audit observed green on the release commit.
+- [ ] Network-enabled external-link audit.
 - [ ] Manual keyboard and screen-reader smoke review.
 - [ ] Release-candidate artifact verification.
 - [ ] Confirm screenshots and release notes match the actual candidate build.
