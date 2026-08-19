@@ -20,6 +20,8 @@
     "docs:check": "node scripts/check-doc-links.mjs",
     "security:secrets": "node scripts/check-secrets.mjs",
     "security:secrets:test": "node --test scripts/check-secrets.test.mjs",
+    "version:check:test": "node --test scripts/check-version-sync.test.mjs",
+    "version:check": "node scripts/check-version-sync.mjs",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"
