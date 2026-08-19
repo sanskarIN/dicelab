@@ -1,11 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { APP_VERSION, RELEASES_URL } from '../config/app';
 import { DEFAULT_SETTINGS } from '../domain/types';
 import { SettingsPanel } from './SettingsPanel';
 
-function renderSettings(overrides: Partial<React.ComponentProps<typeof SettingsPanel>> = {}) {
-  const props: React.ComponentProps<typeof SettingsPanel> = {
+function renderSettings(overrides: Partial<ComponentProps<typeof SettingsPanel>> = {}) {
+  const props: ComponentProps<typeof SettingsPanel> = {
     settings: DEFAULT_SETTINGS,
     onChange: vi.fn(),
     onExportBackup: vi.fn(),
