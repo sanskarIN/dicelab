@@ -1,3 +1,4 @@
+import { copy } from '../i18n';
 import type { DiceExpression, DiceSelection, SelectionKind } from './types';
 
 const MAX_DICE = 1_000;
@@ -22,7 +23,7 @@ export class DiceExpressionError extends Error {
 export function parseDiceExpression(input: string): DiceExpression {
   const match = EXPRESSION_PATTERN.exec(input);
   if (!match) {
-    throw new DiceExpressionError('Use an expression such as 2d6+3, 4d6kh3, or 1d20.');
+    throw new DiceExpressionError(copy.errors.invalidExpression);
   }
 
   const [, rawCount, rawSides, rawSelection, rawSelectionCount, rawModifier] = match;
@@ -31,30 +32,26 @@ export function parseDiceExpression(input: string): DiceExpression {
   const modifier = rawModifier ? Number.parseInt(rawModifier.replace(/\s+/g, ''), 10) : 0;
 
   if (!Number.isSafeInteger(count) || count < 1 || count > MAX_DICE) {
-    throw new DiceExpressionError(`Dice count must be between 1 and ${MAX_DICE}.`);
+    throw new DiceExpressionError(copy.errors.diceCount(MAX_DICE));
   }
   if (!Number.isSafeInteger(sides) || sides < 2 || sides > MAX_SIDES) {
-    throw new DiceExpressionError(`Sides must be between 2 and ${MAX_SIDES.toLocaleString('en-US')}.`);
+    throw new DiceExpressionError(copy.errors.sides(MAX_SIDES));
   }
   if (!Number.isSafeInteger(modifier) || Math.abs(modifier) > MAX_ABS_MODIFIER) {
-    throw new DiceExpressionError(`Modifier magnitude must not exceed ${MAX_ABS_MODIFIER.toLocaleString('en-US')}.`);
+    throw new DiceExpressionError(copy.errors.modifier(MAX_ABS_MODIFIER));
   }
 
   let selection: DiceSelection | undefined;
   if (rawSelection && rawSelectionCount) {
     const selectionCount = Number.parseInt(rawSelectionCount, 10);
     if (!Number.isSafeInteger(selectionCount) || selectionCount < 1) {
-      throw new DiceExpressionError('Keep/drop count must be at least 1.');
+      throw new DiceExpressionError(copy.errors.selectionAtLeastOne);
     }
 
     const kind = selectionKinds[rawSelection.toLowerCase()];
     const isKeep = kind === 'keep-highest' || kind === 'keep-lowest';
     if ((isKeep && selectionCount > count) || (!isKeep && selectionCount >= count)) {
-      throw new DiceExpressionError(
-        isKeep
-          ? 'Keep count cannot exceed the number of dice.'
-          : 'Drop count must leave at least one die.',
-      );
+      throw new DiceExpressionError(isKeep ? copy.errors.keepCount : copy.errors.dropCount);
     }
     selection = { kind, count: selectionCount };
   }
@@ -78,6 +75,7 @@ export function formatDiceExpression(expression: Omit<DiceExpression, 'normalize
   const selection = expression.selection
     ? `${selectionCode[expression.selection.kind]}${expression.selection.count}`
     : '';
-  const modifier = expression.modifier === 0 ? '' : expression.modifier > 0 ? `+${expression.modifier}` : `${expression.modifier}`;
+  const modifier =
+    expression.modifier === 0 ? '' : expression.modifier > 0 ? `+${expression.modifier}` : `${expression.modifier}`;
   return `${expression.count}d${expression.sides}${selection}${modifier}`;
 }
