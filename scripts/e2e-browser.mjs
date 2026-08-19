@@ -74,8 +74,7 @@ try {
   });
 
   await step('verify reload persistence', async () => {
-    await session.send('Page.reload', { ignoreCache: true });
-    await waitForDocumentReady();
+    await reloadPage();
     await waitForText('Roll with confidence.');
     assert(!(await documentContains('Start rolling')), 'Onboarding unexpectedly returned after reload.');
     await clickButton('History');
@@ -272,7 +271,17 @@ async function allowDownloads(downloadPath) {
 }
 
 async function navigate(url) {
-  await session.send('Page.navigate', { url });
+  const loaded = session.waitForEvent('Page.loadEventFired', STARTUP_TIMEOUT_MS);
+  const result = await session.send('Page.navigate', { url });
+  if (result.errorText) throw new Error(`Browser navigation failed: ${result.errorText}`);
+  await loaded;
+  await waitForDocumentReady();
+}
+
+async function reloadPage() {
+  const loaded = session.waitForEvent('Page.loadEventFired', STARTUP_TIMEOUT_MS);
+  await session.send('Page.reload', { ignoreCache: true });
+  await loaded;
   await waitForDocumentReady();
 }
 
@@ -448,18 +457,26 @@ class CdpSession {
     this.socket = socket;
     this.nextId = 1;
     this.pending = new Map();
+    this.eventWaiters = new Map();
     socket.addEventListener('message', (event) => {
       const message = JSON.parse(String(event.data));
-      if (!message.id) return;
-      const pending = this.pending.get(message.id);
-      if (!pending) return;
-      this.pending.delete(message.id);
-      if (message.error) pending.reject(new Error(`${message.error.message} (${message.error.code})`));
-      else pending.resolve(message.result ?? {});
+      if (message.id) {
+        const pending = this.pending.get(message.id);
+        if (!pending) return;
+        this.pending.delete(message.id);
+        if (message.error) pending.reject(new Error(`${message.error.message} (${message.error.code})`));
+        else pending.resolve(message.result ?? {});
+        return;
+      }
+      if (message.method) this.resolveEvent(message.method, message.params ?? {});
     });
     socket.addEventListener('close', () => {
       for (const pending of this.pending.values()) pending.reject(new Error('DevTools WebSocket closed.'));
       this.pending.clear();
+      for (const waiters of this.eventWaiters.values()) {
+        for (const waiter of waiters) waiter.reject(new Error('DevTools WebSocket closed.'));
+      }
+      this.eventWaiters.clear();
     });
   }
 
@@ -469,6 +486,37 @@ class CdpSession {
       this.pending.set(id, { resolve, reject });
       this.socket.send(JSON.stringify({ id, method, params }));
     });
+  }
+
+  waitForEvent(method, timeoutMs) {
+    return new Promise((resolve, reject) => {
+      const waiter = { resolve, reject, timeout: undefined };
+      waiter.timeout = setTimeout(() => {
+        this.removeEventWaiter(method, waiter);
+        reject(new Error(`Timed out waiting for DevTools event ${method}.`));
+      }, timeoutMs);
+      const waiters = this.eventWaiters.get(method) ?? [];
+      waiters.push(waiter);
+      this.eventWaiters.set(method, waiters);
+    });
+  }
+
+  resolveEvent(method, params) {
+    const waiters = this.eventWaiters.get(method);
+    if (!waiters?.length) return;
+    this.eventWaiters.delete(method);
+    for (const waiter of waiters) {
+      clearTimeout(waiter.timeout);
+      waiter.resolve(params);
+    }
+  }
+
+  removeEventWaiter(method, waiter) {
+    const waiters = this.eventWaiters.get(method);
+    if (!waiters) return;
+    const remaining = waiters.filter((item) => item !== waiter);
+    if (remaining.length) this.eventWaiters.set(method, remaining);
+    else this.eventWaiters.delete(method);
   }
 
   close() {
