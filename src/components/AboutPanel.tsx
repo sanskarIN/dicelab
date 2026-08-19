@@ -27,7 +27,7 @@ export function AboutPanel() {
           ◆
         </div>
         <div>
-          <span className="version-chip">Version {APP_VERSION}</span>
+          <span className="version-chip">{messages.common.version} {APP_VERSION}</span>
           <h2>{APP_NAME}</h2>
           <p>{messages.about.productBody}</p>
           <strong className="made-by">{APP_CREDIT}</strong>
@@ -55,11 +55,11 @@ export function AboutPanel() {
           <Mail size={22} aria-hidden="true" />
           <h2>{messages.about.contactHeading}</h2>
           <p>
-            Business: {BUSINESS_EMAILS[0]}
+            {messages.common.business}: {BUSINESS_EMAILS[0]}
             <br />
-            Business: {BUSINESS_EMAILS[1]}
+            {messages.common.business}: {BUSINESS_EMAILS[1]}
             <br />
-            Support: {SUPPORT_EMAIL}
+            {messages.common.support}: {SUPPORT_EMAIL}
           </p>
           <a href={`mailto:${SUPPORT_EMAIL}`}>
             {messages.about.supportLink} <ExternalLink size={14} aria-hidden="true" />
