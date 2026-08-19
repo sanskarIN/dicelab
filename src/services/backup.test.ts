@@ -47,6 +47,31 @@ describe('DiceLab backups', () => {
     expect(restored.settings).toEqual(DEFAULT_SETTINGS);
   });
 
+  it('refuses to serialize a backup larger than the restore size limit', () => {
+    const oversized = createBackup(
+      [],
+      [
+        {
+          id: 'oversized-preset',
+          name: 'Oversized backup regression',
+          expression: '1d6',
+          description: 'x'.repeat(5_000_000),
+          createdAt: '2026-08-19T00:00:00.000Z',
+        },
+      ],
+      DEFAULT_SETTINGS,
+    );
+
+    try {
+      backupToJson(oversized);
+      throw new Error('expected oversized backup serialization to fail');
+    } catch (cause) {
+      expect(cause).toBeInstanceOf(BackupValidationError);
+      expect((cause as BackupValidationError).code).toBe('backup-too-large');
+      expect((cause as BackupValidationError).context.limit).toBe(5_000_000);
+    }
+  });
+
   it('round trips the Hindi locale preference', () => {
     const settings = { ...DEFAULT_SETTINGS, locale: 'hi' as const };
     const restored = parseBackupJson(backupToJson(createBackup([], [], settings)));
