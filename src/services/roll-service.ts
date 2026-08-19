@@ -1,6 +1,7 @@
 import { rollExpression } from '../domain/engine';
 import { SecureRandomSource, SeededRandomSource } from '../domain/random';
 import type { RandomMode, RollResult } from '../domain/types';
+import { isTauriRuntime } from './runtime';
 
 interface NativeRollResult {
   expression: string;
@@ -38,10 +39,6 @@ export async function rollDice(
     mode,
     seed: mode === 'seeded' ? effectiveSeed : undefined,
   });
-}
-
-export function isTauriRuntime(): boolean {
-  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 }
 
 function createId(): string {
