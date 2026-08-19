@@ -6,8 +6,9 @@ const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_CONFIG_PATH = path.resolve(SCRIPT_DIRECTORY, '../src-tauri/tauri.conf.json');
 const NETWORK_SCHEMES = new Set(['http:', 'https:', 'ws:', 'wss:']);
 const LOCAL_TAURI_URL = /^http:\/\/(?:asset|ipc)\.localhost(?::\d+)?(?:\/|$)/i;
+const LOOPBACK_NETWORK_URL = /^(?:https?|wss?):\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(?:\/|$)/i;
 
-export function auditOfflineCsp(csp, source = 'csp') {
+export function auditOfflineCsp(csp, source = 'csp', { allowLoopback = false } = {}) {
   if (typeof csp !== 'string' || csp.trim().length === 0) {
     return [`${source}: a non-empty CSP string is required`];
   }
@@ -19,6 +20,7 @@ export function auditOfflineCsp(csp, source = 'csp') {
     const [directive, ...sources] = trimmed.split(/\s+/);
     for (const token of sources) {
       if (LOCAL_TAURI_URL.test(token)) continue;
+      if (allowLoopback && LOOPBACK_NETWORK_URL.test(token)) continue;
       if (NETWORK_SCHEMES.has(token.toLowerCase())) {
         findings.push(`${source}: remote network scheme source is not allowed in ${directive}: ${token}`);
         continue;
@@ -42,7 +44,9 @@ export function auditOfflineTauriConfig(config, source = 'src-tauri/tauri.conf.j
 
   const findings = auditOfflineCsp(security.csp, `${source}: app.security.csp`);
   if ('devCsp' in security && security.devCsp !== null && security.devCsp !== undefined) {
-    findings.push(...auditOfflineCsp(security.devCsp, `${source}: app.security.devCsp`));
+    findings.push(
+      ...auditOfflineCsp(security.devCsp, `${source}: app.security.devCsp`, { allowLoopback: true }),
+    );
   }
   return findings;
 }
