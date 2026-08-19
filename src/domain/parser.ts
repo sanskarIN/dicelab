@@ -1,9 +1,12 @@
 import { copy } from '../i18n';
 import type { DiceExpression, DiceSelection, SelectionKind } from './types';
 
-const MAX_DICE = 1_000;
-const MAX_SIDES = 1_000_000;
-const MAX_ABS_MODIFIER = 1_000_000_000;
+export const DICE_LIMITS = {
+  maxDice: 1_000,
+  maxSides: 1_000_000,
+  maxAbsModifier: 1_000_000_000,
+} as const;
+
 const EXPRESSION_PATTERN = /^\s*(\d*)d(\d+)(?:(kh|kl|dh|dl)(\d+))?\s*([+-]\s*\d+)?\s*$/i;
 
 const selectionKinds: Record<string, SelectionKind> = {
@@ -31,14 +34,14 @@ export function parseDiceExpression(input: string): DiceExpression {
   const sides = Number.parseInt(rawSides, 10);
   const modifier = rawModifier ? Number.parseInt(rawModifier.replace(/\s+/g, ''), 10) : 0;
 
-  if (!Number.isSafeInteger(count) || count < 1 || count > MAX_DICE) {
-    throw new DiceExpressionError(copy.errors.diceCount(MAX_DICE));
+  if (!Number.isSafeInteger(count) || count < 1 || count > DICE_LIMITS.maxDice) {
+    throw new DiceExpressionError(copy.errors.diceCount(DICE_LIMITS.maxDice));
   }
-  if (!Number.isSafeInteger(sides) || sides < 2 || sides > MAX_SIDES) {
-    throw new DiceExpressionError(copy.errors.sides(MAX_SIDES));
+  if (!Number.isSafeInteger(sides) || sides < 2 || sides > DICE_LIMITS.maxSides) {
+    throw new DiceExpressionError(copy.errors.sides(DICE_LIMITS.maxSides));
   }
-  if (!Number.isSafeInteger(modifier) || Math.abs(modifier) > MAX_ABS_MODIFIER) {
-    throw new DiceExpressionError(copy.errors.modifier(MAX_ABS_MODIFIER));
+  if (!Number.isSafeInteger(modifier) || Math.abs(modifier) > DICE_LIMITS.maxAbsModifier) {
+    throw new DiceExpressionError(copy.errors.modifier(DICE_LIMITS.maxAbsModifier));
   }
 
   let selection: DiceSelection | undefined;
