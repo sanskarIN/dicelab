@@ -43,6 +43,11 @@ describe('history exports', () => {
     expect(output).toContain(`'${seed}`);
   });
 
+  it.each(['\t=1+1', '   +SUM(A1:A2)'])('neutralizes whitespace-prefixed formula-like seed %j', (seed) => {
+    const output = historyToCsv([{ ...roll, seed }]);
+    expect(output).toContain(`'${seed}`);
+  });
+
   it('neutralizes formula prefixes before applying normal CSV quoting', () => {
     const output = historyToCsv([{ ...roll, seed: '=HYPERLINK("https://example.invalid","click")' }]);
     expect(output).toContain("\"'=HYPERLINK(\"\"https://example.invalid\"\",\"\"click\"\")\"");
