@@ -218,6 +218,22 @@ describe('DiceLab backups', () => {
     expectBackupCode(backupWith(invalidSelection), 'invalid-history-entry');
   });
 
+  it('rejects a semantically forged keep/drop mask with the correct kept count', () => {
+    const forgedSelection = {
+      ...roll,
+      expression: '4d6kh3',
+      total: 13,
+      modifier: 0,
+      dice: [
+        { value: 6, kept: true, index: 0 },
+        { value: 6, kept: true, index: 1 },
+        { value: 1, kept: true, index: 2 },
+        { value: 2, kept: false, index: 3 },
+      ],
+    };
+    expectBackupCode(backupWith(forgedSelection), 'invalid-history-entry');
+  });
+
   it('requires a seed for deterministic imported rolls', () => {
     expectBackupCode(backupWith({ ...roll, mode: 'seeded' }), 'invalid-history-entry');
   });
