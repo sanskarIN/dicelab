@@ -55,7 +55,7 @@ Commands are declared in `package.json`.
 | `npm run security:secrets:test` | Self-test the secret scanner without printing matched secret values |
 | `npm run policy:capabilities` | Audit Tauri capability files for forbidden broad permission classes/window/origin scope |
 | `npm run policy:tauri-security` | Audit Tauri CSP and remote-domain IPC configuration |
-| `npm run policy:offline-csp` | Reject remote network sources in the desktop CSP while permitting local Tauri asset/IPC sources |
+| `npm run policy:offline-csp` | Reject production remote network sources and broad network schemes while permitting explicit loopback-only development sources |
 | `npm run policy:localized-formatting` | Ensure localized React surfaces use the shared formatting boundary |
 | `npm run policy:runtime` | Ensure Tauri runtime probing/core imports stay in approved service adapters |
 | `npm run policy:native-commands` | Audit renderer→Rust native command allowlist/routing synchronization |
@@ -156,11 +156,11 @@ Runs the same policy against the actual committed capability directory.
 
 #### `scripts/check-tauri-security.mjs`
 
-Audits `src-tauri/tauri.conf.json` for required CSP baseline, self anchoring, wildcard/`unsafe-eval` restrictions, remote script-source restrictions, and disabled remote-domain IPC.
+Audits `src-tauri/tauri.conf.json` for required CSP baseline, self anchoring, wildcard/`unsafe-eval` restrictions, remote script-source restrictions, and disabled remote-domain IPC. Packaged production policy remains strict; explicit `localhost`, `127.0.0.1`, and `[::1]` development URLs are permitted only in the development CSP, while broad schemes and non-loopback remote origins remain rejected.
 
 #### `scripts/check-tauri-security.test.mjs`
 
-Synthetic CSP/remote-IPC allow/deny cases.
+Synthetic CSP/remote-IPC allow/deny cases, including the development-loopback versus production/remote-origin distinction.
 
 #### `scripts/check-tauri-security.integration.test.mjs`
 
@@ -170,11 +170,11 @@ Audits the committed Tauri security configuration.
 
 #### `scripts/check-offline-csp.mjs`
 
-Checks every production/development CSP directive for remote HTTP/HTTPS/WebSocket sources while allowing local Tauri asset/IPC mechanisms required by the desktop runtime.
+Checks production/development CSP directives for remote HTTP/HTTPS/WebSocket sources. Packaged production policy rejects remote network origins; development policy may contain only explicit supported loopback Vite/HMR URLs, not broad `http:`, `https:`, `ws:`, or `wss:` scheme sources or non-loopback origins.
 
 #### `scripts/check-offline-csp.test.mjs`
 
-Synthetic local-versus-remote CSP source cases.
+Synthetic loopback-development versus production/non-loopback/broad-scheme CSP source cases.
 
 #### `scripts/check-offline-csp.integration.test.mjs`
 
@@ -339,18 +339,25 @@ A workflow definition is not a recorded green campaign until an actual run is ob
 
 ## 18. GitHub workflow: `lockfiles.yml`
 
-**Triggers:** manual dispatch or changes to `package.json`, `src-tauri/Cargo.toml`, or the workflow on `main`.
+**Triggers:** manual dispatch or changes on `main` to `package.json`, `package-lock.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, or the workflow itself.
+
+The job has a 20-minute timeout and a concurrency group so overlapping lockfile runs do not race each other.
 
 Responsibilities:
 
-1. regenerate npm lockfile using package manager;
-2. regenerate Cargo lockfile using Cargo;
-3. commit only if lockfiles changed;
-4. rebase on current `main`;
-5. try to push generated commit to `main`;
-6. if direct push is rejected, force-publish the exact generated commit to `automation/lockfiles` for review/application.
+1. checkout full history;
+2. set up Node.js 22;
+3. regenerate `package-lock.json` with `npm install --package-lock-only --ignore-scripts --no-audit --no-fund`;
+4. install stable Rust;
+5. regenerate `src-tauri/Cargo.lock` with `cargo generate-lockfile`;
+6. require `cargo metadata --locked --no-deps --format-version 1` to accept the generated Cargo lock against the manifest;
+7. run `git diff --check` on the generated changes;
+8. commit only when one or both lockfiles changed;
+9. rebase the generated commit on current `main`;
+10. try to push the exact generated commit to `main`;
+11. if direct push is rejected, force-publish that generated commit to `automation/lockfiles` for maintainer review/application.
 
-The workflow uses the repository automation identity/email configured in its Git commit step.
+The workflow uses the repository automation identity/email configured in its Git commit step. Its existence is configuration evidence only; a generated commit or successful run must still be observed before claiming the lockfile blocker is resolved.
 
 ## 19. GitHub workflow: `release.yml`
 
@@ -396,7 +403,7 @@ Runs CSP/remote-IPC auditor tests and checks committed Tauri security configurat
 
 ### `offline-csp-audit.yml`
 
-Runs on relevant changes, pull requests, manual dispatch, and release tags to reject remote CSP network sources.
+Runs on relevant changes, pull requests, manual dispatch, and release tags to reject remote CSP network sources while retaining only the documented explicit loopback development exception.
 
 ### `localized-formatting-audit.yml`
 
