@@ -2,20 +2,20 @@
 
 ## Goals
 
-DiceLab is a modular, offline-first desktop application with a web companion. The architecture prioritizes deterministic domain logic, secure native randomness, accessible UI, small trust boundaries, and straightforward testing.
+DiceLab is a modular, offline-first desktop application with a web companion. The architecture prioritizes deterministic domain logic, secure native randomness, accessible UI, small trust boundaries, straightforward testing, and locale-ready presentation.
 
 ## High-level shape
 
 ```text
 ┌────────────────────────────────────────────────────────────┐
-│ React UI                                                   │
-│ components/                                                │
+│ React UI + English message catalog                         │
+│ components/ · i18n/ · config/                             │
 ├────────────────────────────────────────────────────────────┤
 │ Application services                                      │
 │ roll-service · storage · export/backup                     │
 ├────────────────────────────────────────────────────────────┤
 │ TypeScript domain                                         │
-│ parser · engine · random abstractions · probability · stats│
+│ parser · engine · random · persistence · probability · stats│
 ├──────────────────────┬─────────────────────────────────────┤
 │ Browser companion    │ Tauri desktop                      │
 │ Web Crypto           │ Rust command + OS secure RNG       │
@@ -32,7 +32,8 @@ Pure or mostly pure business rules live here:
 - `parser.ts` validates and normalizes dice notation.
 - `engine.ts` applies rolls, modifiers, and keep/drop selection.
 - `random.ts` defines secure-browser and deterministic random sources.
-- `probability.ts` computes exact common-expression distributions with explicit complexity limits.
+- `persistence.ts` validates persisted roll/preset records independently of TypeScript compile-time trust.
+- `probability.ts` computes exact common-expression distributions with explicit complexity and numeric-precision limits.
 - `statistics.ts` summarizes observed history.
 - `types.ts` defines shared domain contracts.
 
@@ -43,14 +44,29 @@ Domain code should not depend on React or browser persistence.
 Application boundaries live here:
 
 - `roll-service.ts` selects native Tauri or web execution.
-- `storage.ts` owns versioned local-storage keys and safe fallback behavior.
-- `export.ts` owns CSV/JSON serialization plus backup validation/import.
+- `storage.ts` owns versioned local-storage keys, validation, deduplication, bounds, and safe fallback behavior.
+- `export.ts` owns CSV/JSON serialization plus strict backup validation/import.
 
 Services may use browser APIs, but UI components should not duplicate their rules.
 
+### `src/i18n/`
+
+User-facing English copy is externalized from UI components:
+
+- `en.ts` is the English catalog and defines the widened `MessageCatalog` shape for future locales.
+- `index.ts` is the locale-selection boundary. English is the only shipped locale today.
+- Dynamic UI phrases are catalog functions so plural/count-dependent text does not need to be reintroduced inline.
+- Built-in preset names/descriptions are also catalog-backed.
+
+Adding a locale must satisfy the same `MessageCatalog` contract before locale selection is exposed in Settings. No runtime translation dependency is required for the current single-locale release.
+
+### `src/config/`
+
+Stable product metadata such as version, project URLs, support contacts, and funding links is centralized so About/Settings surfaces do not drift independently.
+
 ### `src/components/`
 
-Components own presentation and user interaction. They receive domain objects and callbacks rather than accessing storage directly. This keeps views easier to test and avoids hidden state transitions.
+Components own presentation and user interaction. They receive domain objects and callbacks rather than accessing storage directly. This keeps views easier to test and avoids hidden state transitions. User-facing copy should come from the message catalog rather than new inline literals.
 
 ## Native boundary
 
@@ -72,10 +88,12 @@ Secure mode and seeded mode are separate product concepts.
 
 - **Secure desktop mode:** Rust uses `OsRng` from the `rand` ecosystem.
 - **Secure web mode:** Web Crypto fills `Uint32Array` values with rejection sampling to avoid modulo bias.
-- **Seeded web mode:** a deterministic xorshift32 stream is used only for reproducibility.
-- **Seeded native mode:** a deterministic `StdRng` is initialized from a stable FNV-derived seed.
+- **Seeded web mode:** UTF-8 FNV-1a 32-bit hashing feeds a deterministic xorshift32 stream.
+- **Seeded native mode:** Rust implements the same UTF-8 FNV-1a 32-bit hash, xorshift32 state transition, and bounded integer conversion.
 
-The seeded algorithms do not need to produce identical cross-language sequences. Reproducibility is guaranteed within the selected runtime for the same effective seed.
+The same effective seed and expression therefore reproduce the same deterministic values in web and desktop runtimes. TypeScript and Rust tests share fixed reference vectors to make algorithm drift a visible compatibility failure. Seeded mode is intentionally non-cryptographic and must never replace secure mode silently.
+
+See ADR-0002 for the compatibility contract.
 
 ## Persistence
 
@@ -88,6 +106,8 @@ DiceLab currently needs no database. Small local records use namespaced, version
 
 This is deliberate: a database would add migration and binary size complexity without improving current workflows. If storage requirements become relational or significantly larger, a future ADR must justify a database and migration plan.
 
+Local storage is not treated as trusted merely because DiceLab wrote it earlier. History/presets are validated against domain invariants, bounded, and deduplicated on recovery. Invalid values degrade safely rather than crashing application startup.
+
 ## Backup schema
 
 Backup schema version `1` contains:
@@ -97,7 +117,9 @@ Backup schema version `1` contains:
 - custom presets;
 - settings.
 
-Imports are bounded and validated before replacing in-memory state. Built-in presets are never trusted from the backup; the application re-adds its own built-ins.
+Imports are bounded and strictly validated before replacing in-memory state. Validation includes expression/result consistency, die bounds/indices, canonical timestamps, deterministic-seed requirements, unique record IDs, and supported settings. Built-in presets are never trusted from the backup; the application re-adds its own built-ins.
+
+Ordinary local-storage recovery can discard malformed/duplicate records. Backup import instead rejects ambiguous input so a user-supplied backup is never silently rewritten during restore.
 
 ## Error handling
 
@@ -108,18 +130,21 @@ User-controlled inputs are converted into bounded domain errors. The UI shows ac
 - No shell plugin is granted.
 - No broad filesystem plugin is granted.
 - No remote application API is required.
-- Tauri capabilities are limited to `core:default` for the main window.
+- Tauri capabilities are limited to the required core surface for the main window.
 - A restrictive CSP blocks arbitrary remote scripts/content.
-- Backup data is treated as untrusted input.
+- Backup and local-storage data are treated as untrusted input.
+- CSV export neutralizes spreadsheet formula prefixes in user-controlled cells.
 - Repository secrets and signing credentials must stay outside source control.
 
 ## Performance boundaries
 
-Probability calculation has explicit interactive complexity limits. Large history retention is capped at 5,000 entries. Rendering also limits the number of probability bars shown at once.
+Probability calculation has explicit interactive complexity limits and refuses raw-outcome counts that cannot retain exact safe-integer ways. Large history retention is capped at 5,000 entries. Rendering also limits the number of probability bars shown at once.
 
 ## Internationalization
 
-English is the initial shipping language. New user-facing copy should be kept easy to move into locale catalogs. A full string-catalog migration is planned before adding a second locale rather than prematurely introducing a translation framework.
+English is the initial shipping language. The user-facing React surfaces and built-in preset copy are externalized through `src/i18n/`. The current locale boundary intentionally remains small: it provides compile-time catalog shape checking without a translation dependency or locale switch that would imply an unshipped translation.
+
+A second locale can be added by creating a complete catalog with the same `MessageCatalog` shape, extending `SupportedLocale`, and then exposing locale selection/persistence. Domain/parser errors should migrate to stable error codes before those messages are translated so business rules remain locale-neutral.
 
 ## Architecture decisions
 
