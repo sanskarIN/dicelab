@@ -31,6 +31,24 @@ export const en = {
       `Exact keep/drop calculation is limited to ${limit.toLocaleString('en-US')} raw outcomes.`,
     probabilityEmpty: 'Probability calculation produced no outcomes.',
   },
+  backupErrors: {
+    tooLarge: 'Backup is larger than the supported 5 MB limit.',
+    invalidJson: 'Backup is not valid JSON.',
+    invalidRoot: 'Backup root must be an object.',
+    unsupportedSchema: 'Unsupported DiceLab backup schema version.',
+    invalidHistoryShape: (limit: number) =>
+      `Backup history must contain at most ${limit.toLocaleString('en-US')} rolls.`,
+    invalidPresetsShape: (limit: number) =>
+      `Backup presets must contain at most ${limit.toLocaleString('en-US')} items.`,
+    invalidHistoryEntry: 'Backup contains an invalid roll history entry.',
+    invalidPreset: 'Backup contains an invalid preset.',
+    duplicateRollIds: 'Backup history contains duplicate roll ids.',
+    duplicatePresetIds: 'Backup presets contain duplicate ids.',
+    invalidExportTimestamp: 'Backup export timestamp is invalid.',
+    invalidSettings: 'Backup settings are missing or invalid.',
+    invalidTheme: 'Backup theme is invalid.',
+    invalidRandomMode: 'Backup random mode is invalid.',
+  },
   navigation: {
     roll: 'Roll',
     history: 'History',
