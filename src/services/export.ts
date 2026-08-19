@@ -146,6 +146,13 @@ export function parseBackupJson(contents: string): DiceLabBackup {
   };
 }
 
+export async function parseBackupFile(file: Pick<File, 'size' | 'text'>): Promise<DiceLabBackup> {
+  if (file.size > MAX_BACKUP_BYTES) {
+    throwBackupTooLarge();
+  }
+  return parseBackupJson(await file.text());
+}
+
 export async function saveTextExport(
   filename: string,
   contents: string,
@@ -209,12 +216,16 @@ function normalizeSettings(value: unknown): DiceLabSettings {
 
 function assertBackupSize(contents: string): void {
   if (new TextEncoder().encode(contents).byteLength > MAX_BACKUP_BYTES) {
-    throw new BackupValidationError(
-      'backup-too-large',
-      'Backup is larger than the supported 5 MB limit.',
-      { limit: MAX_BACKUP_BYTES },
-    );
+    throwBackupTooLarge();
   }
+}
+
+function throwBackupTooLarge(): never {
+  throw new BackupValidationError(
+    'backup-too-large',
+    'Backup is larger than the supported 5 MB limit.',
+    { limit: MAX_BACKUP_BYTES },
+  );
 }
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
