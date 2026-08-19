@@ -22,7 +22,7 @@ const items: Array<{ id: AppView; label: string; icon: typeof Dices }> = [
 export function AppShell({ view, onNavigate, onOpenCommands, children }: AppShellProps) {
   return (
     <div className="app-shell">
-      <aside className="sidebar" aria-label="Primary navigation">
+      <aside className="sidebar" aria-label={messages.common.primaryNavigation}>
         <div className="brand" aria-label={`${messages.common.appName} home`}>
           <span className="brand-mark" aria-hidden="true">◆</span>
           <div>
@@ -54,7 +54,7 @@ export function AppShell({ view, onNavigate, onOpenCommands, children }: AppShel
 
       <main className="main-content" id="main-content">{children}</main>
 
-      <nav className="bottom-nav" aria-label="Mobile navigation">
+      <nav className="bottom-nav" aria-label={messages.common.mobileNavigation}>
         {items.slice(0, 4).map(({ id, label, icon: Icon }) => (
           <button
             className={view === id ? 'active' : ''}
