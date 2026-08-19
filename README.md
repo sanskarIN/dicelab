@@ -14,7 +14,7 @@
 
 ## Why DiceLab?
 
-DiceLab goes beyond a one-button dice demo. It combines expressive dice notation, secure and cross-runtime reproducible randomness modes, roll history, statistics, presets, exports, exact probability tools, hardened local persistence, and release-focused engineering in a desktop-first product that remains useful without an account or network connection.
+DiceLab goes beyond a one-button dice demo. It combines expressive dice notation, secure and cross-runtime reproducible randomness modes, roll history, statistics, presets, exports, exact probability tools, hardened local persistence, localization, and release-focused engineering in a desktop-first product that remains useful without an account or network connection.
 
 ## Screenshots
 
@@ -25,7 +25,7 @@ Real release screenshots will be captured from a verified release-candidate buil
 | Dice Studio | Quick d4/d6/d8/d10/d12/d20/d100 choices, custom expressions, presets, and result details |
 | History | Searchable local roll log, statistics, histogram, progressive large-list rendering, CSV/JSON export |
 | Probability | Exact common-expression distributions and expected values with explicit complexity/precision limits |
-| Settings | Theme, reduced motion, secure/seeded mode, history retention, backup, release/version, and About access |
+| Settings | Theme, English/Hindi language, reduced motion, secure/seeded mode, history retention, backup, release/version, and About access |
 | About | Privacy, license, project links, support contacts, funding, version, and credits |
 
 ## Features
@@ -39,14 +39,16 @@ Real release screenshots will be captured from a verified release-candidate buil
 - Reusable domain history filtering for expression/total queries.
 - Exact probability distributions for normal sums and manageable keep/drop pools, with safe-integer exactness guards.
 - CSV and JSON roll-log export plus validated JSON backup/restore.
+- Native desktop save dialogs for CSV/JSON exports through a dedicated bounded Rust command, with ordinary browser downloads retained for the web companion.
 - Spreadsheet-safe CSV handling for formula-like user-controlled cells.
 - Stable parser/probability/backup error codes mapped to localized user-facing messages.
+- Reviewed English and Hindi interface catalogs with a persisted language preference, localized built-in presets, backup compatibility, and document-language metadata.
 - Light, dark, and system themes.
 - Reduced-motion and non-animation modes with normalized persisted settings.
 - Keyboard command palette (`Ctrl/Cmd + K`) with modal focus trapping/restoration and keyboard-first navigation.
 - Responsive desktop/web UI with accessible labels, focus styles, scalable layouts, and non-color-only states.
-- Typed English message catalog and locale boundary for future localization.
 - Structured local diagnostic logging with sensitive-key redaction, bounded context, and raw-error omission.
+- Coverage-guided Rust parser fuzz target with a bounded scheduled/manual GitHub Actions campaign.
 - Dependency-free high-confidence secret audit in normal CI and tagged release verification.
 - Dependency-free Node 22 + Chromium CDP real-browser E2E smoke for the production bundle.
 - Executable benchmark suites for parser, RNG, probability, history filtering, and statistics.
@@ -67,11 +69,11 @@ Real release screenshots will be captured from a verified release-candidate buil
 
 - **Native core:** Rust + Tauri 2
 - **Frontend:** TypeScript + React + Vite
-- **Localization:** typed in-repository English catalog with stable error-code mappings and an extensible locale boundary
-- **Tests:** Vitest, Testing Library, Node built-in quality/security/CDP tests, dependency-free real-browser CDP E2E, Rust unit/generated/adversarial parser tests
+- **Localization:** typed in-repository English/Hindi catalogs with stable error-code mappings and a persisted locale boundary
+- **Tests:** Vitest, Testing Library, Node built-in quality/security/CDP tests, dependency-free real-browser CDP E2E, Rust unit/generated/adversarial parser tests, cargo-fuzz parser target
 - **Benchmarks:** Vitest benchmark suites using the existing locked toolchain
 - **Quality:** ESLint, Prettier, rustfmt, Clippy, Markdown link audit, secret audit, version audit, GitHub Actions
-- **Security:** restrictive Tauri CSP, minimal capabilities, CodeQL/dependency update configuration, validated persistence/import boundaries, redacted local logging
+- **Security:** restrictive Tauri CSP, minimal capabilities, bounded native export command, CodeQL/dependency update configuration, validated persistence/import boundaries, redacted local logging
 - **Persistence:** browser/webview local storage; no remote database is required
 
 ## Quick start — web companion
@@ -123,6 +125,16 @@ The real-browser E2E test requires the production build and a Chromium-compatibl
 
 See [`docs/testing.md`](docs/testing.md) for the complete strategy and CI expectations.
 
+### Rust parser fuzzing
+
+From `src-tauri`, developers with the nightly toolchain and `cargo-fuzz` installed can run:
+
+```bash
+cargo +nightly fuzz run parser
+```
+
+See [`src-tauri/fuzz/README.md`](src-tauri/fuzz/README.md) for the bounded smoke command, corpus policy, and regression workflow.
+
 ## Benchmarks
 
 Run the executable benchmark suite with:
@@ -171,11 +183,12 @@ scripts/
 
 src-tauri/
 ├── capabilities/    # least-privilege desktop permissions
+├── fuzz/            # cargo-fuzz parser harness and workflow documentation
 ├── icons/           # shipping branding assets
-└── src/             # native parser and secure/seeded roll command
+└── src/             # native parser, roll command, and bounded native export command
 ```
 
-The frontend uses a web implementation when running as a browser companion and invokes the Rust command when running inside Tauri. Domain rules remain explicit and testable. Seeded web/native implementations intentionally share an algorithm and fixed compatibility vectors. User-facing validation copy resolves from stable error codes rather than depending on raw exception prose. See [`docs/architecture.md`](docs/architecture.md) and [`docs/adr/`](docs/adr/) for decisions and trade-offs.
+The frontend uses web implementations when running as a browser companion and invokes purpose-built Rust commands when running inside Tauri. Domain rules remain explicit and testable. Seeded web/native implementations intentionally share an algorithm and fixed compatibility vectors. User-facing validation copy resolves from stable error codes rather than depending on raw exception prose. Desktop exports never accept an arbitrary destination path from the webview; the native command receives the user-selected path from the system dialog. See [`docs/architecture.md`](docs/architecture.md), [`docs/native-exports.md`](docs/native-exports.md), and [`docs/adr/`](docs/adr/) for decisions and trade-offs.
 
 ## Dice expression syntax
 
@@ -202,9 +215,9 @@ Selection operators:
 
 ## Privacy and security
 
-DiceLab is designed to work without cloud storage. Roll history, presets, and settings remain local unless you explicitly export them. Local storage and imported backups are validated rather than trusted blindly. Seeded mode is deterministic and clearly separated from secure random mode. Current diagnostic logging is local-only and redacts sensitive/user-content key families.
+DiceLab is designed to work without cloud storage. Roll history, presets, and settings remain local unless you explicitly export them. Local storage and imported backups are validated rather than trusted blindly. Seeded mode is deterministic and clearly separated from secure random mode. Current diagnostic logging is local-only and redacts sensitive/user-content key families. Native desktop exports are initiated explicitly and limited to the user-selected system-dialog destination through a bounded Rust command.
 
-Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and [`docs/logging.md`](docs/logging.md) before changing data handling or diagnostics. Please report vulnerabilities privately rather than opening a public exploit issue.
+Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), [`docs/native-exports.md`](docs/native-exports.md), and [`docs/logging.md`](docs/logging.md) before changing data handling, exports, or diagnostics. Please report vulnerabilities privately rather than opening a public exploit issue.
 
 ## Contributing
 
@@ -219,6 +232,8 @@ Contributions are welcome. Start with [`CONTRIBUTING.md`](CONTRIBUTING.md), foll
 - [Real-browser E2E](docs/e2e.md)
 - [Accessibility](docs/accessibility.md)
 - [Localization](docs/localization.md)
+- [Hindi localization review](docs/localization/HINDI_REVIEW.md)
+- [Native exports](docs/native-exports.md)
 - [Structured logging](docs/logging.md)
 - [Performance](docs/performance.md)
 - [Repository governance](docs/repository-governance.md)
