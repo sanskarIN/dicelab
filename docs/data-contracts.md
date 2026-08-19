@@ -299,6 +299,8 @@ Locale changes apply to:
 
 Locale changes do not rewrite machine/user data such as expressions, IDs, ISO storage values, seeds, user preset names, or JSON/CSV field names.
 
+Catalog-backed string values that need to react to live language changes must be read during render or from a function called during render; a module-level primitive string captured from `messages.*` does not become live merely because the exported `messages` binding changes.
+
 ## 10. Local-storage contract
 
 Current versioned keys:
@@ -339,15 +341,20 @@ interface DiceLabBackup {
 - `exportedAt` is current ISO timestamp;
 - history is included;
 - only custom presets are included;
-- settings are included, including locale.
+- settings are included, including locale;
+- pretty-printed backup JSON must be no larger than 5,000,000 UTF-8 bytes before DiceLab will save/download it.
 
 Built-in presets are intentionally absent so a backup cannot redefine application-owned built-ins.
 
-### Import bounds
+`backupToJson()` and `parseBackupJson()` use the same `assertBackupSize()` byte check. This is a deliberate round-trip invariant: DiceLab must not knowingly produce a backup that its own importer rejects solely because of file size.
+
+An oversized export is not truncated. It fails with the stable `backup-too-large` error and the existing localized 5 MB user message. This backup-specific 5,000,000-byte limit is intentionally stricter than the native text-save command's generic 6,000,000-byte transport limit.
+
+### Import/export bounds
 
 | Value | Limit |
 | --- | --- |
-| Backup UTF-8/Blob size | 5,000,000 bytes |
+| Backup JSON UTF-8 size (export and import) | 5,000,000 bytes |
 | History records | 5,000 |
 | Custom preset records | 500 |
 
@@ -421,6 +428,8 @@ Return meaning:
 
 `mimeType` is used by the browser Blob path. Native validation is based on the explicit format allowlist rather than trusting renderer MIME text.
 
+Content-specific serializers may impose stricter limits before this generic output boundary is reached. In particular, backup JSON is capped at 5,000,000 UTF-8 bytes so a saved backup remains acceptable to DiceLab's own restore boundary, while the native generic text command accepts at most 6,000,000 bytes.
+
 ## 14. Native roll command contract
 
 Command name:
@@ -473,7 +482,7 @@ Rust bounds:
 | Value | Limit |
 | --- | --- |
 | Suggested filename | 160 bytes |
-| Export payload | 6,000,000 bytes |
+| Generic text export payload | 6,000,000 bytes |
 | Formats | CSV or JSON only |
 
 Filename rules:
@@ -562,7 +571,7 @@ When changing a contract above, review all relevant layers:
 - parser/engine/probability behavior;
 - persisted-data validation;
 - storage normalization/versioning;
-- backup schema/import compatibility;
+- backup schema/import/export compatibility;
 - English/Hindi catalogs and stable error mapping;
 - browser/native service adapters;
 - Rust command input/output/validation;
