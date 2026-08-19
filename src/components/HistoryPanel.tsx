@@ -1,5 +1,6 @@
 import { Download, FileJson, Search, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { filterRollHistory } from '../domain/history';
 import { summarizeRolls } from '../domain/statistics';
 import type { RollResult } from '../domain/types';
 import { messages } from '../i18n';
@@ -17,13 +18,7 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
   const [query, setQuery] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
   const [visibleLimit, setVisibleLimit] = useState(INITIAL_VISIBLE_HISTORY);
-  const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return history;
-    return history.filter(
-      (roll) => roll.expression.toLowerCase().includes(normalized) || String(roll.total).includes(normalized),
-    );
-  }, [history, query]);
+  const filtered = useMemo(() => filterRollHistory(history, query), [history, query]);
   const visibleHistory = filtered.slice(0, visibleLimit);
   const stats = useMemo(() => summarizeRolls(filtered), [filtered]);
   const maxFrequency = Math.max(1, ...stats.frequencies.map((item) => item.count));
