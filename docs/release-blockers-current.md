@@ -162,9 +162,11 @@ The final source audit on 2026-08-19 closed additional issues before release evi
 
 - persisted keep/drop history now validates the **exact expected kept indices**, not only the number of kept dice;
 - backup imports inherit the same semantic keep/drop integrity check and have dedicated regression coverage;
+- selected backup files larger than the 5,000,000-byte contract are rejected from `File.size` **before** `File.text()` reads them, while the existing UTF-8 byte check still runs after reading as defense in depth;
 - CSV formula-injection protection now catches whitespace-prefixed formula markers in untrusted text fields;
 - CSV numeric total/modifier fields remain numeric instead of being unnecessarily apostrophe-prefixed when negative;
 - the history-limit UI now emits a bounded integer immediately instead of allowing a fractional live value that would normalize differently after reload;
+- the visible command-palette shortcut now advertises `Ctrl/⌘ K`, matching the implemented Ctrl-or-Command handler;
 - lockfile automation now validates its generated diff and generated locked Cargo metadata before committing.
 
 These fixes are implementation work, not substitutes for the candidate evidence listed above.
