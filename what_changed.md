@@ -129,7 +129,23 @@ The final audit explicitly rechecked whether a failed roll request should reuse 
 
 A tentative success-only increment change was therefore reverted rather than silently changing deterministic semantics. The current code remains aligned with the documented contract.
 
-## Documentation state
+## Documentation synchronized in this continuation
+
+The final behavior changes were propagated into the canonical maintainer/user-facing references rather than being left only in commit history:
+
+- `docs/application-flows.md` now documents exact keep/drop persistence validation, spreadsheet-safe CSV behavior, `Ctrl/⌘ K`, and the two-stage backup-import size boundary;
+- `docs/data-contracts.md` now records exact kept-index validation, live integer history-limit behavior, pre-read/post-read backup size contracts, and scoped CSV formula neutralization;
+- `docs/automation-reference.md` now matches the strengthened lockfile workflow and explicit production-versus-loopback-development CSP audit rules;
+- `docs/release-blockers-current.md` includes the final closed audit findings without converting configuration into release evidence;
+- `CHANGELOG.md` records the final correctness/security/documentation changes under Unreleased.
+
+Documentation synchronization commits:
+
+- `fe1c996a` — `docs: include final backup import hardening`
+- `1e8bd259` — `docs: synchronize final application boundaries`
+- `63430661` — `docs: synchronize persistence export contracts`
+- `d30a2289` — `docs: synchronize lockfile automation reference`
+- `1b8417f5` — `docs: record final audit fixes in changelog`
 
 The deep documentation system remains the canonical reference. Start at [`docs/README.md`](docs/README.md).
 
@@ -148,6 +164,19 @@ Key references:
 
 No new tracked file was introduced by this continuation, so the exhaustive file-reference inventory does not require a new path entry.
 
+## Final repository-state verification
+
+Compared with checkpoint commit `23065cb15b1f3cbc2d941c59d95649661aceaeea`, the audited continuation reached commit `1b8417f582f134577901a279dc0a05f0b928bece` at the time of the state check:
+
+- 27 commits ahead;
+- 0 commits behind;
+- 16 tracked files modified in the net diff;
+- no new tracked paths introduced.
+
+The classic GitHub commit-status API returned no status records for that checked head. That absence is **not** treated as a green CI result.
+
+The available environment also could not perform a clean local clone/test run because its direct GitHub DNS/network path was unavailable. No test/CI/fuzz/platform result is claimed from that limitation.
+
 ## Current first release blocker — still open
 
 `src-tauri/Cargo.toml` declares:
@@ -156,9 +185,9 @@ No new tracked file was introduced by this continuation, so the exhaustive file-
 tauri-plugin-dialog = "2.7.2"
 ```
 
-A fresh audit of the current `main` branch still finds **no `tauri-plugin-dialog` package entry** in `src-tauri/Cargo.lock`.
+The final raw `main` lockfile check still finds **no `tauri-plugin-dialog` package entry** in `src-tauri/Cargo.lock`.
 
-Recent commit history also does not yet show the workflow-generated `build: lock application dependencies` commit, and no `automation/lockfiles` fallback branch was observed.
+Recent commit history still does not show the workflow-generated `build: lock application dependencies` commit, and the final branch lookup found no `automation/lockfiles` fallback branch.
 
 Therefore the Rust dependency graph is **not yet eligible for a reproducibility claim**. Do not hand-edit Cargo's transitive lock entries.
 
