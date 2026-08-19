@@ -7,9 +7,10 @@ This document describes the intended GitHub configuration. Settings that are not
 ## Default branch
 
 - Default branch: `main`.
+- Current release-preparation target: `v2.0.12`.
 - Do not force-push or rewrite published release history.
 - Prefer pull requests for external contributions and substantial changes.
-- Small maintainer changes may be committed directly while the project is pre-1.0, but only when the same relevant quality checks are run or observed afterward.
+- Small maintainer changes may be committed directly only when the same relevant quality checks are run or observed afterward.
 - Keep release/evidence history in source-controlled handoffs, changelog, roadmap, and release-candidate evidence records rather than relying on chat or local memory.
 
 ## Branch protection rollout
@@ -39,6 +40,8 @@ Several of these intentionally use path filters. Do **not** make a path-filtered
 
 Prefer the always-running `Repository audit` as the universal dependency-free repository invariant status, then use focused policy checks as additional evidence on affected changes. If a focused workflow is converted to always run in the future, its observed emitted status may then become a candidate required check.
 
+The tag-driven release workflow also runs documentation inventory and repository policy gates directly before producing artifacts. Separate focused workflows remain defense in depth and additional evidence rather than the only protection on a release tag.
+
 ## Lockfile automation and branch protection
 
 The `Dependency lockfiles` workflow needs `contents: write` because it may commit generated npm/Cargo lockfiles.
@@ -46,10 +49,11 @@ The `Dependency lockfiles` workflow needs `contents: write` because it may commi
 Its current behavior:
 
 1. generate `package-lock.json` and `src-tauri/Cargo.lock` using the package managers;
-2. commit only when generated files changed;
-3. rebase onto current `main`;
-4. try a direct generated commit to `main`;
-5. if protection rejects that write, publish the exact generated commit to `automation/lockfiles` for review/application.
+2. verify generated locked Cargo metadata and generated diff hygiene;
+3. commit only when generated files changed;
+4. rebase onto current `main`;
+5. try a direct generated commit to `main`;
+6. if protection rejects that write, publish the exact generated commit to `automation/lockfiles` for review/application.
 
 If repository policy evolves, prefer an automation pull-request path over weakening protection for all writers. Never solve protected-branch friction by hand-editing transitive Cargo lock entries.
 
@@ -115,13 +119,13 @@ Avoid applying a `security` label to a public issue that would expose an exploit
 
 ## Milestones
 
-Use milestones for outcome-based release coordination rather than arbitrary dates. Recommended pre-1.0 milestones:
+Use milestones for outcome-based release coordination rather than arbitrary dates. Recommended current milestones:
 
-- `v0.1.0 Release Candidate` — current generated locks, clean CI/policy/fuzz/browser evidence, platform bundles, native-save/localization/accessibility smoke, real screenshots, artifact/security review.
-- `v0.1.0` — fixes found during candidate verification and publication readiness.
-- `v1.0.0` — stable compatibility/documentation/release criteria after pre-1.0 feedback.
+- `v2.0.12 Release Candidate` — current generated locks, clean CI/policy/fuzz/browser evidence, platform bundles, native-save/localization/accessibility smoke, real screenshots, artifact/security review.
+- `v2.0.12` — fixes found during candidate verification and publication readiness.
+- `Next` — post-2.0.12 work that is accepted but not yet assigned to a concrete semantic version.
 
-Post-1.0 ideas should remain in `ROADMAP.md` or issues until there is a concrete release target.
+Future ideas should remain in `ROADMAP.md` or issues until there is a concrete release target.
 
 ## GitHub Discussions
 
@@ -158,9 +162,9 @@ CODEOWNERS does not replace human judgment: a change that touches a sensitive bo
 
 ## Release governance
 
-A version tag triggers cross-platform packaging and creates/updates a **draft** GitHub release. A draft must remain unpublished until maintainers have:
+The intended next published tag is `v2.0.12`. A version tag triggers cross-platform packaging and creates/updates a **draft** GitHub release. A draft must remain unpublished until maintainers have:
 
-1. confirmed current npm/Cargo generated locks on the exact candidate;
+1. confirmed current npm/Cargo generated locks on the exact 2.0.12 candidate;
 2. observed the release workflow and relevant policy/lock/security checks succeed;
 3. downloaded all expected artifacts;
 4. verified `SHA256SUMS.txt` and `RELEASE-METADATA.json` source/tag/run identity;
@@ -171,7 +175,7 @@ A version tag triggers cross-platform packaging and creates/updates a **draft** 
 9. completed keyboard/screen-reader/text-scaling/reduced-motion review;
 10. captured real screenshots from the verified candidate;
 11. reviewed dependency/CodeQL/repository-security findings;
-12. confirmed version/changelog/release-note consistency;
+12. confirmed version/changelog/release-note consistency and that About/Settings report `2.0.12`;
 13. recorded signing/notarization status accurately;
 14. filled the release-candidate evidence record sufficiently to make an explicit approve/hold decision.
 
@@ -214,4 +218,4 @@ At each release candidate, review:
 - `SECURITY.md`, `PRIVACY.md`, `SUPPORT.md`, and contact details;
 - current release blockers/evidence template.
 
-Repository settings can drift even when source files do not, so this review is part of Phase 6 release evidence.
+Repository settings can drift even when source files do not, so this review is part of the 2.0.12 final release evidence.
