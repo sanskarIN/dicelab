@@ -22,6 +22,13 @@ function calculateSumDistribution(expression: DiceExpression): ProbabilityDistri
     throw new ProbabilityComplexityError('This distribution is too large for the interactive exact calculator.');
   }
 
+  const totalOutcomes = Math.pow(expression.sides, expression.count);
+  if (!Number.isSafeInteger(totalOutcomes)) {
+    throw new ProbabilityComplexityError(
+      'This expression has too many raw outcomes to preserve exact integer counts safely.',
+    );
+  }
+
   let ways = new Float64Array(1);
   ways[0] = 1;
   for (let die = 0; die < expression.count; die += 1) {
@@ -36,7 +43,6 @@ function calculateSumDistribution(expression: DiceExpression): ProbabilityDistri
     ways = next;
   }
 
-  const totalOutcomes = Math.pow(expression.sides, expression.count);
   const points: ProbabilityPoint[] = [];
   let expectedValue = 0;
   for (let subtotal = 0; subtotal < ways.length; subtotal += 1) {
