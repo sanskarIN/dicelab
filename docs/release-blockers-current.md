@@ -8,23 +8,48 @@ This file separates **implemented product/repository work** from **release evide
 
 ## Blocker 1 — Generated dependency lockfiles
 
-The authoritative version metadata is now being prepared for 2.0.12, but the generated dependency locks have not yet been observed regenerated for the new manifests.
+The authoritative manifests/configuration are now prepared for 2.0.12, but both generated dependency locks remain on the previous application version and the Rust lock is also missing the native dialog dependency.
 
 ### npm lock state
 
-`package.json` declares version `2.0.12`, while the latest observed `package-lock.json` root metadata still reports `0.1.0`.
+Current observed state:
 
-The dependency ranges remain represented, but the generated npm lock metadata must be refreshed by npm before the 2.0.12 candidate can make a clean reproducibility claim.
+```text
+package.json version                  2.0.12
+package-lock.json top-level version   0.1.0
+package-lock.json packages[""]        0.1.0
+```
+
+The dependency ranges remain represented, but npm must regenerate its lock metadata before the 2.0.12 candidate can make a reproducibility/version-synchronization claim.
 
 ### Cargo lock state
 
-`src-tauri/Cargo.toml` now declares package version `2.0.12` and includes:
+`src-tauri/Cargo.toml` declares package version `2.0.12` and includes:
 
 ```toml
 tauri-plugin-dialog = "2.7.2"
 ```
 
-The latest observed `main` branch still does **not** contain `tauri-plugin-dialog` in `src-tauri/Cargo.lock`. The dependency is used by `src-tauri/src/lib.rs`, so the committed Rust dependency graph is not reproducibly complete for 2.0.12.
+The directly inspected DiceLab package block in `src-tauri/Cargo.lock` still reads:
+
+```toml
+[[package]]
+name = "dicelab"
+version = "0.1.0"
+dependencies = [
+ "rand",
+ "regex",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+]
+```
+
+Therefore the generated Rust lock is stale in two independently observable ways:
+
+- DiceLab's lock package version is still `0.1.0` rather than `2.0.12`;
+- `tauri-plugin-dialog` is absent from DiceLab's direct dependency list/lock graph.
 
 The lockfile workflow is configured to:
 
@@ -34,7 +59,22 @@ The lockfile workflow is configured to:
 - run `git diff --check` before committing generated lockfiles;
 - attempt a direct `main` update and otherwise publish the generated commit on `automation/lockfiles`.
 
-No generated `build: lock application dependencies` commit has yet been observed for this 2.0.12 bump, so this blocker remains open.
+The latest commit check still shows no generated `build: lock application dependencies` commit for the 2.0.12 bump, and the latest branch check still shows no `automation/lockfiles` fallback branch. This blocker remains open.
+
+### Stronger version gate now in place
+
+`scripts/check-version-sync.mjs` now includes generated lock metadata in the version contract. It verifies:
+
+- `package.json`;
+- `package-lock.json` top-level version;
+- `package-lock.json packages[""]` version;
+- `src/config/app.ts`;
+- `src-tauri/Cargo.toml`;
+- DiceLab's `src-tauri/Cargo.lock` package version;
+- `src-tauri/tauri.conf.json`;
+- optional release tag/version agreement.
+
+Its focused parser/agreement suite was independently exercised after the hardening and passed **14/14 tests**. The full repository `version:check` is expected to fail while the two generated locks remain at `0.1.0`; that failure is now intentional protection rather than an undocumented inconsistency.
 
 Required sequence on a network-enabled runner:
 
@@ -48,7 +88,7 @@ cargo clippy --all-targets --all-features --locked -- -D warnings
 cd ..
 
 npm run policy:lockfiles
-npm run version:check
+DICELAB_EXPECT_VERSION=v2.0.12 npm run version:check
 ```
 
 Do not hand-edit Cargo's transitive lock entries.
@@ -130,9 +170,11 @@ The repository contains executable policy audits for:
 - localized formatting boundary;
 - native runtime boundary;
 - native command contract;
-- dependency lock consistency.
+- dependency lock consistency;
+- generated-lock-aware application version agreement;
+- exhaustive tracked-file documentation inventory.
 
-Release readiness still requires observed successful 2.0.12 candidate runs plus review of:
+The tag-driven release workflow now also runs documentation inventory and repository policy gates directly before artifact production. Release readiness still requires observed successful 2.0.12 candidate runs plus review of:
 
 - secret scanning;
 - CodeQL/code scanning;
@@ -171,19 +213,22 @@ Before publishing the 2.0.12 draft release:
 
 ## Final code-audit findings closed before candidate verification
 
-The final source audit on 2026-08-19 closed additional issues before release evidence is collected:
+The final source/release audit on 2026-08-19 closed additional issues before release evidence is collected:
 
-- persisted keep/drop history now validates the **exact expected kept indices**, not only the number of kept dice;
+- persisted keep/drop history validates the **exact expected kept indices**, not only the number of kept dice;
 - backup imports inherit the same semantic keep/drop integrity check and have dedicated regression coverage;
 - selected backup files larger than the 5,000,000-byte contract are rejected from `File.size` **before** `File.text()` reads them, while the existing UTF-8 byte check still runs after reading as defense in depth;
-- CSV formula-injection protection now catches whitespace-prefixed formula markers in untrusted text fields;
+- CSV formula-injection protection catches whitespace-prefixed formula markers in untrusted text fields;
 - CSV numeric total/modifier fields remain numeric instead of being unnecessarily apostrophe-prefixed when negative;
-- the history-limit UI now emits a bounded integer immediately instead of allowing a fractional live value that would normalize differently after reload;
-- the visible command-palette shortcut now advertises `Ctrl/⌘ K`, matching the implemented Ctrl-or-Command handler;
+- the history-limit UI emits a bounded integer immediately instead of allowing a fractional live value that would normalize differently after reload;
+- the visible command-palette shortcut advertises `Ctrl/⌘ K`, matching the implemented Ctrl-or-Command handler;
 - lockfile automation validates its generated diff and generated locked Cargo metadata before committing;
-- authoritative application version metadata has been advanced to `2.0.12`.
+- authoritative application manifest/config metadata has been advanced to `2.0.12`;
+- version synchronization now includes generated npm/Cargo application package versions;
+- the release workflow directly gates artifact creation on documentation inventory, policy checks, lock/version checks, release-verifier self-tests, and explicit job timeouts;
+- roadmap, governance, changelog, release guide, README, data contracts, automation reference, and release-evidence template now consistently target the 2.0.12 candidate.
 
-These fixes are implementation work, not substitutes for the candidate evidence listed above.
+These fixes are implementation/configuration work, not substitutes for the candidate execution evidence listed above.
 
 ## Final publication gate
 
