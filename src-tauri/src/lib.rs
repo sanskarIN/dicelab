@@ -1,7 +1,7 @@
 use rand::{rngs::OsRng, Rng};
 use regex::Regex;
 use serde::Serialize;
-use std::sync::OnceLock;
+use std::{path::Path, sync::OnceLock};
 use tauri_plugin_dialog::DialogExt;
 
 const MAX_DICE: usize = 1_000;
@@ -129,6 +129,12 @@ async fn save_text_export(
     let path = file_path
         .into_path()
         .map_err(|_| "DiceLab could not resolve the selected file path.".to_string())?;
+    if !selected_export_path_is_valid(&path, spec) {
+        return Err(format!(
+            "Selected export file must use the .{} extension.",
+            spec.extension
+        ));
+    }
     std::fs::write(path, contents.as_bytes())
         .map_err(|_| "DiceLab could not save the selected file.".to_string())?;
     Ok(true)
@@ -169,6 +175,12 @@ fn validate_export_request(filename: &str, contents: &str, format: &str) -> Resu
     }
 
     Ok(spec)
+}
+
+fn selected_export_path_is_valid(path: &Path, spec: ExportSpec) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case(spec.extension))
 }
 
 fn parse_expression(input: &str) -> Result<Expression, String> {
@@ -480,6 +492,18 @@ mod tests {
     fn rejects_oversized_native_exports() {
         let oversized = "x".repeat(MAX_EXPORT_BYTES + 1);
         assert!(validate_export_request("rolls.csv", &oversized, "csv").is_err());
+    }
+
+    #[test]
+    fn validates_selected_export_path_extension() {
+        let csv = ExportSpec {
+            filter_name: "CSV",
+            extension: "csv",
+        };
+        assert!(selected_export_path_is_valid(Path::new("rolls.csv"), csv));
+        assert!(selected_export_path_is_valid(Path::new("rolls.CSV"), csv));
+        assert!(!selected_export_path_is_valid(Path::new("rolls.txt"), csv));
+        assert!(!selected_export_path_is_valid(Path::new("rolls"), csv));
     }
 
     #[test]
