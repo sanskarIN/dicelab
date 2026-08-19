@@ -3,6 +3,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { calculateProbability } from '../domain/probability';
 import type { ProbabilityDistribution } from '../domain/types';
 import { messages } from '../i18n';
+import { formatDomainError } from '../i18n/errors';
 
 const examples = ['2d6', '1d20+5', '4d6kh3', '2d20kh1'];
 const MAX_VISIBLE_POINTS = 180;
@@ -23,7 +24,7 @@ export function ProbabilityPanel() {
       setDistribution(calculateProbability(expression));
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : messages.probability.genericError);
+      setError(formatDomainError(cause, messages.probability.genericError));
     }
   };
 
