@@ -2,7 +2,7 @@
 
 ## Goals
 
-DiceLab is a modular, offline-first desktop application with a web companion. The architecture prioritizes deterministic domain logic, secure native randomness, accessible UI, small trust boundaries, localization-ready user messaging, privacy-safe diagnostics, reproducible release automation, and straightforward testing.
+DiceLab is a modular, offline-first desktop application with a web companion. The architecture prioritizes deterministic domain logic, secure native randomness, accessible UI, small trust boundaries, reviewed localization, privacy-safe diagnostics, reproducible release automation, and straightforward testing.
 
 ## High-level shape
 
@@ -12,22 +12,24 @@ DiceLab is a modular, offline-first desktop application with a web companion. Th
 │ components/                                                  │
 ├──────────────────────────────────────────────────────────────┤
 │ Product metadata + localization                             │
-│ config/ · i18n catalogs · stable error-to-copy mapping      │
+│ config/ · typed catalogs · locale-aware formatters          │
 ├──────────────────────────────────────────────────────────────┤
 │ Application services                                        │
-│ roll-service · storage · export/backup · structured logging  │
+│ runtime · roll-service · storage · export/backup · logging  │
 ├──────────────────────────────────────────────────────────────┤
 │ TypeScript domain                                           │
 │ parser · engine · random · history · persistence · prob/stats│
 ├───────────────────────┬──────────────────────────────────────┤
 │ Browser companion     │ Tauri desktop                       │
-│ Web Crypto            │ Rust command + OS secure RNG        │
+│ Web Crypto            │ Rust commands + OS secure RNG       │
+│ Blob downloads        │ native system save dialog           │
 │ localStorage          │ WebView localStorage                │
 └───────────────────────┴──────────────────────────────────────┘
 
 Repository verification outside the runtime:
   scripts/ → docs/secret/version audits, CDP browser E2E, benchmarks
-  .github/ → CI, CodeQL, dependency updates, tagged release packaging
+  src-tauri/fuzz/ → coverage-guided native parser fuzzing
+  .github/ → CI, fuzzing, CodeQL, dependency updates, release packaging
 ```
 
 ## Frontend boundaries
@@ -49,27 +51,32 @@ Pure or mostly pure business rules live here:
 - `persistence.ts` validates untrusted persisted roll/preset records and canonical timestamps.
 - `probability.ts` computes exact common-expression distributions with explicit complexity/numeric limits and stable error codes.
 - `statistics.ts` summarizes observed history.
-- `types.ts` defines shared domain contracts.
+- `types.ts` defines shared domain contracts, including the persisted locale preference.
 
 Domain code should not depend on React or browser persistence.
 
 ### `src/i18n/`
 
-User-facing copy and error translation live here:
+User-facing copy, locale state, locale-aware presentation formatting, and error translation live here:
 
-- `en.ts` is the shipping English catalog and structural source for future locales.
-- `index.ts` owns supported-locale resolution.
-- `errors.ts` maps stable parser/probability/backup error codes into catalog messages.
+- `en.ts` is the English catalog and structural source for catalog compatibility.
+- `hi.ts` is the reviewed Hindi catalog.
+- `index.ts` owns supported-locale resolution, active locale state, and the live catalog binding.
+- `format.ts` maps DiceLab locale IDs to explicit `Intl` locales and centralizes number/date/time formatting.
+- `errors.ts` maps stable parser/probability/backup error codes into the active catalog.
 
 React surfaces should not parse English exception prose to decide what a failure means. Known validation failures are categorized by code; unknown/native failures use a safe localized fallback.
+
+The selected locale controls both UI copy and application-generated presentation formatting. Machine-readable exports, persisted ISO timestamps, expressions, and identifiers remain locale-neutral.
 
 ### `src/services/`
 
 Application boundaries live here:
 
-- `roll-service.ts` selects native Tauri or web execution.
-- `storage.ts` owns versioned local-storage keys, validation/normalization, bounded retention, and safe fallback behavior.
-- `export.ts` owns CSV/JSON serialization plus backup validation/import and stable backup error codes.
+- `runtime.ts` detects the Tauri/native boundary used by service adapters.
+- `roll-service.ts` selects native Tauri or web rolling execution.
+- `storage.ts` owns versioned local-storage keys, validation/normalization, bounded retention, localized built-ins, and safe fallback behavior.
+- `export.ts` owns CSV/JSON serialization, backup validation/import, browser download fallback, and native save-command routing.
 - `logger.ts` owns structured local diagnostic events, sensitive-key redaction, depth/size bounds, and omission of raw error messages/stacks.
 
 Services may use browser APIs, but UI components should not duplicate their rules.
@@ -78,13 +85,18 @@ Services may use browser APIs, but UI components should not duplicate their rule
 
 Components own presentation and user interaction. They receive domain objects and callbacks rather than accessing storage directly. This keeps views easier to test and avoids hidden state transitions.
 
-The root `AppErrorBoundary` is a last-resort UI recovery layer. Expected validation/storage operations remain handled closer to their source; the boundary does not replace normal error handling.
+The root `AppErrorBoundary` is a last-resort UI recovery layer. Expected validation/storage/export operations remain handled closer to their source; the boundary does not replace normal error handling.
 
 ## Native boundary
 
-`src-tauri/src/lib.rs` exposes one product-specific Tauri command: `roll_expression`.
+`src-tauri/src/lib.rs` currently exposes two product-specific Tauri commands:
 
-The command:
+- `roll_expression`
+- `save_text_export`
+
+### Native rolling
+
+`roll_expression`:
 
 1. validates the expression again in Rust;
 2. bounds dice count, sides, modifiers, and keep/drop counts;
@@ -94,7 +106,34 @@ The command:
 
 Validation exists on both sides intentionally. Frontend validation provides immediate UX; native validation protects the trust boundary.
 
-Native tests include fixed seeded/hash compatibility vectors plus generated normalization and adversarial malformed-input parser corpora. A coverage-guided fuzz target remains a separate tooling task rather than being approximated by hidden dependency/lockfile changes.
+### Native text exports
+
+`save_text_export` is deliberately narrower than a general filesystem API.
+
+The frontend supplies only:
+
+- a bounded suggested filename;
+- bounded text contents;
+- an allowlisted `csv` or `json` format.
+
+The frontend does not supply an arbitrary destination path. Rust opens the system save dialog, obtains the selected destination from the dialog, revalidates the final extension, and writes only to that selected path.
+
+Cancellation returns a normal false result. Native save failures are presented through generic localized UI messages; the private selected path is not included in frontend error text.
+
+This design allows useful native saves without granting the webview broad filesystem-write capability. See [`native-exports.md`](native-exports.md).
+
+## Native parser verification
+
+Native deterministic tests include:
+
+- fixed seeded/hash compatibility vectors;
+- generated normalization invariants;
+- adversarial malformed-input parser corpus;
+- native export request/path validation.
+
+Coverage-guided parser fuzzing is separate from the normal deterministic suite under `src-tauri/fuzz/`. The parent crate exposes a parser invariant hook only when the `fuzzing` feature is enabled.
+
+`.github/workflows/fuzz.yml` provides manual and scheduled bounded fuzz execution. Workflow configuration does not count as release evidence until a campaign is observed green on the intended candidate.
 
 ## Randomness model
 
@@ -122,13 +161,15 @@ Values read from local storage are treated as untrusted runtime input rather tha
 Recovery behavior:
 
 - malformed JSON falls back safely;
-- settings are normalized to supported enums/bounds;
+- settings are normalized to supported enums/bounds, including the reviewed locale allowlist;
 - reduced motion overrides contradictory animation state;
 - roll/preset records are domain validated;
 - duplicate IDs are discarded from ordinary persisted collections;
 - forged reserved built-in preset IDs are ignored;
 - history/preset collection sizes remain bounded;
 - storage read/write/clear failures degrade without blocking core rolling and emit only privacy-safe structured operational events.
+
+Built-in preset names/descriptions are regenerated from the active catalog. User-created preset copy remains unchanged across locale switches.
 
 A database would add migration/binary-size complexity without improving current workflows. If storage requirements become relational or significantly larger, a future ADR must justify a database and migration plan.
 
@@ -139,11 +180,13 @@ Backup schema version `1` contains:
 - export timestamp;
 - roll history;
 - custom presets;
-- settings.
+- settings, including the supported locale preference.
 
-Imports are bounded and validated before replacing in-memory state. Built-in presets are never trusted from the backup; the application re-adds its own built-ins.
+Imports are bounded and validated before replacing in-memory state. Built-in presets are never trusted from the backup; the application re-adds its own localized built-ins.
 
 Explicit backup import is intentionally stricter than ordinary local-storage recovery. Duplicate/ambiguous or structurally inconsistent supplied records reject the import instead of being silently discarded.
+
+Schema-v1 backups produced before locale persistence remain compatible: missing or unsupported locale values normalize safely to English.
 
 Backup validation errors expose stable codes and bounded numeric context to the localization layer. Schema changes that cannot preserve safe compatibility require a new schema version and migration documentation.
 
@@ -158,6 +201,8 @@ Expected failures are categorized near their source:
 Each category provides stable machine-readable code plus bounded context. Developer-oriented exception messages may remain for diagnostics, but presentation behavior uses code/context.
 
 Unknown/native failures use a localized generic fallback. The root error boundary handles unexpected render errors with a reload action and preserves local data.
+
+Export UI also catches native/browser save failures and emits only safe localized status text rather than arbitrary thrown details.
 
 ## Logging and diagnostics
 
@@ -188,6 +233,8 @@ It intentionally avoids a new Playwright/Puppeteer dependency for the current sm
 
 The E2E journey covers onboarding, rolling/history, browser downloads, reload persistence, command-palette keyboard behavior, probability, clear-data, real file input, and backup restoration. CI/tagged release web verification run it after `npm run build`.
 
+The browser E2E validates the browser download path. Native system-dialog export behavior is verified separately on packaged desktop candidates because a browser test cannot prove the Tauri command/dialog/filesystem boundary.
+
 The runner checks browser navigation errors explicitly and does not count a browser/network policy error as an application pass. See [`e2e.md`](e2e.md).
 
 ## Repository verification boundaries
@@ -208,6 +255,8 @@ After locked dependency installation:
 - Rust format/test/Clippy;
 - separate CodeQL analysis.
 
+`Cargo.toml` changes require a regenerated committed `Cargo.lock`; configured automation is not evidence that the new graph has landed. Locked Rust checks are the release verification boundary.
+
 ## Release boundary
 
 A `v*` tag triggers cross-platform packaging only after version/tag agreement and web/native quality prerequisites.
@@ -217,14 +266,15 @@ Successful workflow artifacts are packaged into ZIP files. The draft-release job
 - `RELEASE-METADATA.json` — repository, tag, source commit, workflow run ID/attempt;
 - `SHA256SUMS.txt` — hashes for artifact ZIPs and provenance metadata.
 
-The release remains a draft until maintainers verify checksums, install/smoke-test supported desktop artifacts, review signing status, and capture real candidate screenshots.
+The release remains a draft until maintainers verify checksums, install/smoke-test supported desktop artifacts, verify native saves and localization, review signing status, and capture real candidate screenshots.
 
 ## Security boundaries
 
 - No shell plugin is granted.
-- No broad filesystem plugin is granted.
+- No broad filesystem plugin is granted to the webview.
+- Native text writes are limited to the purpose-built export command and operating-system-dialog-selected destination.
 - No remote application API is required.
-- Tauri capabilities are limited to `core:default` for the main window.
+- Tauri capabilities remain intentionally narrow for the main window.
 - A restrictive CSP blocks arbitrary remote scripts/content.
 - Local persistence and backup data are treated as untrusted input.
 - CSV output neutralizes common spreadsheet formula prefixes.
@@ -234,11 +284,15 @@ The release remains a draft until maintainers verify checksums, install/smoke-te
 
 ## Internationalization
 
-English is the initial shipping language. User-facing React/preset strings are stored in a typed `src/i18n/en.ts` catalog, including dynamic message functions where word order may differ between locales.
+DiceLab currently ships reviewed English and Hindi catalogs. English remains the default.
 
-Parser/probability/backup presentation errors resolve from stable error codes rather than English exception text. A future locale must satisfy the widened `MessageCatalog` structure and preserve dynamic parameter types.
+User-facing React/preset strings are stored in typed catalogs, including dynamic message functions where word order may differ between locales. Parser/probability/backup presentation errors resolve from stable error codes rather than English exception text.
 
-A language selector should be added only when at least one complete second locale exists and locale persistence/default resolution are implemented. See [`localization.md`](localization.md).
+`src/i18n/format.ts` explicitly maps supported DiceLab locales to `Intl` locales so application-generated number/date/time presentation follows the selected UI language instead of independently inheriting the host browser locale.
+
+The supported locale preference persists locally, survives compatible backups, updates document language metadata, and controls localized built-in preset copy. User-created content remains unchanged.
+
+A future locale must satisfy the widened `MessageCatalog`, extend the locale preference and formatter mapping, pass persistence/backup/interface/formatting regression coverage, and receive a locale-specific human review before Settings exposes it. See [`localization.md`](localization.md).
 
 ## Performance and benchmarks
 
