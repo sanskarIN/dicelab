@@ -111,6 +111,12 @@ jobs:
           path: release-artifacts
       - name: Package release artifacts
         shell: bash
+        env:
+          DICELAB_TAG: ${{ github.ref_name }}
+          DICELAB_SOURCE_COMMIT: ${{ github.sha }}
+          DICELAB_REPOSITORY: ${{ github.repository }}
+          DICELAB_WORKFLOW_RUN_ID: ${{ github.run_id }}
+          DICELAB_WORKFLOW_RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           set -euo pipefail
           mkdir -p release-packages
@@ -122,9 +128,22 @@ jobs:
               zip -qr "../../release-packages/${name}.zip" .
             )
           done
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from 'node:fs';
+          const manifest = {
+            schemaVersion: 1,
+            project: 'DiceLab',
+            repository: process.env.DICELAB_REPOSITORY,
+            tag: process.env.DICELAB_TAG,
+            sourceCommit: process.env.DICELAB_SOURCE_COMMIT,
+            workflowRunId: process.env.DICELAB_WORKFLOW_RUN_ID,
+            workflowRunAttempt: process.env.DICELAB_WORKFLOW_RUN_ATTEMPT,
+          };
+          writeFileSync('release-packages/RELEASE-METADATA.json', `${JSON.stringify(manifest, null, 2)}\n`);
+          NODE
           (
             cd release-packages
-            sha256sum ./*.zip > SHA256SUMS.txt
+            sha256sum ./*.zip RELEASE-METADATA.json > SHA256SUMS.txt
           )
       - name: Create or update draft release
         shell: bash
