@@ -11,74 +11,99 @@ Phase 4 — verification, regression coverage, import/export hardening, and rele
 - Visibility: public
 - Existing stack: React + TypeScript + Vite with Tauri 2 desktop shell
 - Existing architecture includes domain parser/engine/probability/statistics modules, local persistence, roll history, presets, probability UI, settings, onboarding, command palette, backup/import/export, CI, CodeQL, release workflow, documentation, and ADRs.
-- Existing latest commit at inspection: `f499161b0ddb8bbf82532e2ec4967a7fa9bca21f` — `build: lock application dependencies`.
+- Baseline commit when this continuation started: `f499161b0ddb8bbf82532e2ec4967a7fa9bca21f` — `build: lock application dependencies`.
 
-## Work plan for this continuation
-
-1. Harden CSV export against spreadsheet formula injection and add regression tests.
-2. Harden imported backup validation so malformed or internally inconsistent roll records cannot enter local state.
-3. Expand deterministic domain regression coverage around statistics and random generation edge cases where useful.
-4. Improve release/audit documentation and keep this handoff current.
-5. Verify GitHub workflow/check state where the connector exposes it.
-
-## Completed work
+## Completed work in this continuation
 
 - Inspected the uploaded DiceLab master prompt and current repository instead of replacing working code.
-- Confirmed the repository already contains a meaningful implementation and professional documentation baseline.
-- Created this handoff file so later chats can resume without reconstructing repository state.
+- Added this handoff file so later chats can resume from exact repository state.
+- Hardened CSV export against spreadsheet formula injection by prefix-neutralizing values beginning with `=`, `+`, `-`, or `@` before normal RFC-style CSV quoting.
+- Added CSV regression tests for formula-like values, including values that also contain quotes/commas.
+- Hardened imported backup validation so malformed history cannot silently replace trusted local state.
+- Imported roll records now validate expression/roll consistency: modifier, die count, die range, unique/bounded indices, keep/drop count, computed total, canonical timestamp, deterministic seed presence, and bounded seed length.
+- Preset timestamps are validated as canonical ISO timestamps during backup import.
+- Added regression tests for malformed expressions, out-of-range dice, incorrect totals, duplicate indices, impossible keep/drop state, missing deterministic seeds, and malformed timestamps.
+- Added dedicated statistics tests for empty state, min/max/mean, odd/even medians, sorted frequencies, percentages, and non-mutation of history order.
+- Added deterministic random-source tests for repeatability, bounds, invalid ranges, seed hashing, and Unicode input.
+- Updated `CHANGELOG.md` to document the security/reliability hardening and added coverage.
 
 ## Files added or changed
 
-- `what_changed.md` — added the current milestone, inspected baseline, exact next tasks, verification limits, and continuation protocol.
+- `what_changed.md`
+- `src/services/export.ts`
+- `src/services/export.test.ts`
+- `src/services/backup.test.ts`
+- `src/domain/statistics.test.ts`
+- `src/domain/random.test.ts`
+- `CHANGELOG.md`
 
-## Tests added
+## Tests added or expanded
 
-None in this handoff commit. Regression tests are the next task.
+- CSV formula-injection regression coverage.
+- Backup-import integrity/security regression coverage.
+- Roll-statistics unit coverage.
+- Seeded-random and seed-hash unit coverage.
 
 ## Commands/checks run and results
 
 - GitHub repository metadata lookup: succeeded; authenticated integration has admin/push access.
 - Repository tree inspection through GitHub API: succeeded.
 - Latest commit history inspection: succeeded.
-- Combined status lookup for `f499161...`: no commit statuses were reported by the connector.
-- Pull-request-triggered workflow-run lookup for `f499161...`: no workflow runs were reported by that endpoint.
-- Direct local `git clone` attempt: could not run because the execution sandbox cannot resolve `github.com`; repository reads/writes therefore use the authenticated GitHub connector.
+- Combined status lookup for baseline `f499161...`: no commit statuses were reported by the connector.
+- Pull-request-triggered workflow-run lookup for baseline `f499161...`: no workflow runs were reported by that endpoint.
+- Combined status lookup after this continuation (`1d891d0...`): no commit statuses were reported by the connector at check time.
+- Direct local `git clone` attempt: failed because the execution sandbox cannot resolve `github.com`; repository reads/writes therefore used the authenticated GitHub connector.
 
 ## Verification limitation
 
-The GitHub connector used for repository writes exposes commit messages but does not expose commit author/email parameters on file create/update operations. Therefore `sanskarin@outlook.in` cannot be forced as the commit email from this interface. Existing local Git workflows should keep `git config user.email sanskarin@outlook.in` when commits are made outside this connector.
+The GitHub connector used for repository writes exposes commit messages but does not expose commit author/email parameters on file create/update operations. Therefore `sanskarin@outlook.in` cannot be forced as the commit email from this interface. Existing local Git workflows should keep:
 
-The execution sandbox also has no outbound DNS access to GitHub, so a clean local clone/build cannot be performed from that sandbox in this session. Code changes must therefore be kept small, typed, and covered by repository tests, with GitHub Actions serving as the clean-checkout verification path when runs are available.
+```bash
+git config user.email sanskarin@outlook.in
+```
+
+The execution sandbox has no outbound DNS access to GitHub, so a clean local clone/build could not be performed in this continuation. Changes were kept narrowly scoped and covered by repository tests, but final clean-checkout verification must run in GitHub Actions or another network-enabled development machine.
 
 ## Known limitations / open issues
 
 - Clean-checkout `npm ci && npm run build && npm test && npm run lint && npm run format` still needs a runner with repository network access.
-- Tagged Tauri packaging remains dependent on the existing GitHub Actions release workflow and platform toolchains.
-- Final Phase 6 cannot be truthfully marked complete until clean-checkout CI and release-candidate verification are observed passing.
+- Tauri/Rust checks and platform builds should be observed on Windows, macOS, and Linux before the release candidate is tagged.
+- The repository still needs final real screenshots/demo captures if placeholders remain in README/docs.
+- Final Phase 6 cannot be truthfully marked complete until clean-checkout CI, dependency/security checks, documentation-link checks, and release-candidate packaging are observed passing.
 
 ## Next exact tasks
 
-1. Update `src/services/export.ts` to neutralize spreadsheet formula prefixes in exported CSV cells.
-2. Extend `src/services/export.test.ts` with regression coverage for formula-like user-controlled values and existing RFC-style quoting behavior.
-3. Strengthen `parseBackupJson` roll validation and add malformed-backup regression cases.
-4. Re-check repository status/workflows after the changes.
+1. Observe/run the full GitHub Actions quality suite for the latest `main` commit and fix any reported TypeScript, formatting, lint, Rust, or packaging failures.
+2. Add UI/integration tests for the primary roll → history → export and settings → backup restore journeys.
+3. Add accessibility automation for core React surfaces where practical and manually review keyboard/focus behavior.
+4. Inspect README screenshot/demo placeholders and replace them with real captures before release.
+5. Run release-candidate builds on all supported desktop platforms and verify generated artifacts.
+6. Perform Phase 6 documentation-link, secret, dependency, and clean-clone audits before tagging `0.1.0`.
 
 ## Migration notes
 
-No storage schema migration is required for the planned hardening work. Backup schema remains version `1` unless a future incompatible data-model change requires a new schema.
+No storage schema migration is required by this continuation. Backup schema remains version `1`; validation is stricter but the data model is unchanged.
 
 ## Release notes draft
 
 ### Unreleased
 
-- Security: planned hardening for CSV exports opened in spreadsheet applications.
-- Reliability: planned stricter validation for imported backup data.
-- Quality: expanded regression coverage and explicit repository handoff state.
+- Security: CSV history export now neutralizes spreadsheet-formula prefixes before CSV quoting.
+- Security/Reliability: backup restore now rejects internally inconsistent or malformed roll records before state replacement.
+- Quality: expanded backup, export, statistics, deterministic RNG, and seed-hashing regression coverage.
+- Documentation: changelog and continuation handoff now reflect the current Phase 4 state.
 
-## Recent meaningful commits
+## Meaningful commits created in this continuation
 
-- `f499161b0ddb8bbf82532e2ec4967a7fa9bca21f` — `build: lock application dependencies`
-- `d542e96b3eda36c3f1affec9ef209969beea7715` — `ci: add cross-platform tagged release builds`
-- `dbf64d021e13b35893c17037effdc400f9c35216` — `ci: add CodeQL static analysis`
+- `7fbd2682b885a68631e6e869524679ff1abd6dd5` — `docs: add continuation handoff for phase 4`
+- `cbf7b1219d31c612c10f969c5e99105ccbef20e0` — `fix: neutralize spreadsheet formulas in csv export`
+- `8b4cd6c1c078ca20d5d238a9bed4152de2c10975` — `test: cover csv formula injection regression`
+- `2e9bc0c226ded26191ce0e923ef9f027a6c5dbd3` — `fix: reject inconsistent imported roll records`
+- `8342e0c0102a0ef554a16598b446471ab0f5e8d3` — `refactor: keep imported expression typing explicit`
+- `c5dad5b4d1d1eed08104a8d67b1188380ea036d2` — `test: cover malformed backup roll records`
+- `9b39316386d7ec8757bea2bd0eaa7809c920d8a9` — `fix: correct csv regression test quoting`
+- `30e2f9dcc76fe9bfd32b73c735a75d38594e953c` — `test: cover roll statistics edge cases`
+- `44ac9c6c33461b7d42668cee7d9f12edb09c518d` — `test: cover deterministic random source boundaries`
+- `1d891d0fc7f552e6c9da86b343c9b8a9842b14c3` — `docs: record import and export hardening`
 
 Update this file after every meaningful continuation.
