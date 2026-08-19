@@ -51,6 +51,8 @@ The command palette receives the same navigation setter, so keyboard navigation 
 
 Navigation item labels are constructed during `AppShell` rendering rather than captured once at module import. This is required because language changes are live: a rerender after `setLocale()` must refresh persistent shell labels without requiring a page reload.
 
+The persistent shortcut hint is rendered as `Ctrl/⌘ K`, matching the global Ctrl-or-Command keyboard handler on Windows/Linux and macOS.
+
 ## 3. Roll flow
 
 ### Input
@@ -123,6 +125,8 @@ The parser converts `kh`, `kl`, `dh`, and `dl` syntax into a typed `DiceSelectio
 The engine rolls all dice first, then applies selection semantics using deterministic index tie-breaking when values are equal. Each die retains its original index and a `kept` boolean so presentation/export/statistics can distinguish selected and dropped values without reconstructing the selection later.
 
 The native Rust implementation independently validates and applies the same conceptual rules rather than trusting renderer-parsed structures.
+
+Persisted/imported roll validation reconstructs the dice by original index and recalculates the expected kept-index set with the same deterministic selection rule. A forged record with the right kept-die count but the wrong actual kept dice is rejected.
 
 ## 5. Preset flow
 
@@ -284,7 +288,7 @@ CSS consumes the root data attributes rather than components implementing indepe
 - seed;
 - flattened dice values/kept state.
 
-CSV cells beginning with common spreadsheet-formula prefixes (`=`, `+`, `-`, `@`) are neutralized before quoting/escaping.
+CSV formula-injection protection applies to the untrusted text-bearing `id` and `seed` columns. A formula marker (`=`, `+`, `-`, `@`) after optional leading whitespace is prefixed with an apostrophe before normal CSV quoting/escaping. Application-generated numeric `total` and `modifier` columns remain numeric, including negative values.
 
 `historyToJson()` emits pretty-printed JSON plus a trailing newline.
 
@@ -343,18 +347,21 @@ When serialization succeeds, the same browser/native `saveTextExport()` boundary
 
 ## 13. Backup import flow
 
-`SettingsPanel` reads a user-selected file and passes it to `App.importBackup()`.
+`SettingsPanel` receives a user-selected file and passes it to `App.importBackup()`.
 
-The coordinator obtains file text and passes it to `parseBackupJson()`.
+The coordinator passes the `File` object to `parseBackupFile()` before reading its contents. `parseBackupFile()` rejects metadata sizes above 5,000,000 bytes immediately, then reads the file only when that precondition passes and delegates the resulting text to `parseBackupJson()`.
+
+`parseBackupJson()` independently measures the decoded text with `TextEncoder`. This second check preserves the exact UTF-8 byte contract even if file metadata or text decoding behavior differs from the decoded string's byte size.
 
 Validation includes:
 
-- maximum 5,000,000-byte UTF-8 input size using the same `assertBackupSize()` rule as backup export;
+- pre-read `File.size` rejection above 5,000,000 bytes;
+- maximum 5,000,000-byte decoded UTF-8 input size using the same `assertBackupSize()` rule as backup export;
 - valid JSON/object root;
 - schema version 1;
 - history array and maximum 5,000 entries;
 - preset array and maximum 500 entries;
-- valid persisted roll records;
+- valid persisted roll records, including exact keep/drop selection semantics;
 - valid persisted preset records;
 - no duplicate roll IDs;
 - no duplicate preset IDs;
