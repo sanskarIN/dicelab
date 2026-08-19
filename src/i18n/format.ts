@@ -42,3 +42,11 @@ export function formatDateTime(value: string | Date, locale: SupportedLocale = g
     timeStyle: 'short',
   }).format(date);
 }
+
+export function formatTime(value: string | Date, locale: SupportedLocale = getActiveLocale()): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  return new Intl.DateTimeFormat(getIntlLocale(locale), {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date);
+}
