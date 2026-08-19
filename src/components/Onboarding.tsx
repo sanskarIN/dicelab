@@ -1,5 +1,6 @@
 import { BarChart3, Dices, ShieldCheck } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { messages } from '../i18n';
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -25,26 +26,26 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         <div className="about-logo" aria-hidden="true">
           ◆
         </div>
-        <p className="eyebrow">Welcome to DiceLab</p>
-        <h1 id="onboarding-title">A calmer way to roll.</h1>
+        <p className="eyebrow">{messages.onboarding.eyebrow}</p>
+        <h1 id="onboarding-title">{messages.onboarding.heading}</h1>
         <p id="onboarding-description" className="onboarding-lead">
-          Fast tabletop dice, reproducible tests, and probability tools—designed to work offline from the first roll.
+          {messages.onboarding.lead}
         </p>
         <div className="onboarding-grid">
           <div>
             <Dices size={22} aria-hidden="true" />
-            <strong>Powerful expressions</strong>
-            <span>Use modifiers and keep/drop syntax such as 4d6kh3.</span>
+            <strong>{messages.onboarding.expressionsHeading}</strong>
+            <span>{messages.onboarding.expressionsBody}</span>
           </div>
           <div>
             <ShieldCheck size={22} aria-hidden="true" />
-            <strong>Private by default</strong>
-            <span>No account is required. Everyday data stays on this device.</span>
+            <strong>{messages.onboarding.privacyHeading}</strong>
+            <span>{messages.onboarding.privacyBody}</span>
           </div>
           <div>
             <BarChart3 size={22} aria-hidden="true" />
-            <strong>Understand outcomes</strong>
-            <span>Inspect history, histograms, exports, and exact probability distributions.</span>
+            <strong>{messages.onboarding.outcomesHeading}</strong>
+            <span>{messages.onboarding.outcomesBody}</span>
           </div>
         </div>
         <button
@@ -53,9 +54,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           className="primary-button onboarding-button"
           onClick={onComplete}
         >
-          Start rolling
+          {messages.onboarding.start}
         </button>
-        <small>Made by the Sanskar · MIT licensed</small>
+        <small>{messages.onboarding.footer}</small>
       </section>
     </div>
   );
