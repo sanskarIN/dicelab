@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "DiceLab",
+  "version": "0.1.0",
+  "identifier": "in.sanskar.dicelab",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "DiceLab",
+        "width": 1180,
+        "height": 780,
+        "minWidth": 760,
+        "minHeight": 560,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; frame-ancestors 'none'",
+      "devCsp": "default-src 'self' http://localhost:1420; connect-src ipc: http://ipc.localhost http://localhost:1420 ws://localhost:1421; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Utility",
+    "shortDescription": "Offline-first dice simulator",
+    "longDescription": "DiceLab is a polished offline-first dice simulator with expressions, statistics, presets, exports, and probability tools.",
+    "copyright": "Copyright © 2026 Sanskar",
+    "icon": ["icons/icon.png"]
+  }
+}
