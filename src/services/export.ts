@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS, type DicePreset, type DiceLabSettings, type RollResul
 const MAX_BACKUP_BYTES = 5_000_000;
 const MAX_BACKUP_HISTORY = 5_000;
 const MAX_BACKUP_PRESETS = 500;
+const MAX_STORED_ROLL_SEED_LENGTH = 200;
 
 export interface DiceLabBackup {
   schemaVersion: 1;
@@ -143,7 +144,7 @@ function isRollResult(value: unknown): value is RollResult {
     typeof roll.rolledAt !== 'string' ||
     !isIsoDate(roll.rolledAt) ||
     (roll.mode !== 'secure' && roll.mode !== 'seeded') ||
-    (roll.seed !== undefined && (typeof roll.seed !== 'string' || roll.seed.length > 120)) ||
+    (roll.seed !== undefined && (typeof roll.seed !== 'string' || roll.seed.length > MAX_STORED_ROLL_SEED_LENGTH)) ||
     (roll.mode === 'seeded' && typeof roll.seed !== 'string')
   ) return false;
 
