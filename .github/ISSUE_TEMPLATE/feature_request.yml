@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest a focused improvement to DiceLab
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Good DiceLab features should improve tabletop, testing, teaching, probability, accessibility, privacy, or maintainability without compromising offline-first use.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or user need
+      description: Describe the problem before proposing implementation details.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Explain the workflow and expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: implications
+    attributes:
+      label: Accessibility, privacy, security, or performance implications
+      description: Note any new permissions, network access, data storage, motion, or large-computation concerns.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and roadmap items.
+          required: true
+        - label: This proposal does not require core DiceLab functionality to depend on a donation.
+          required: true
