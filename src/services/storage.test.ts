@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SETTINGS, type DicePreset, type RollResult } from '../domain/types';
-import { BUILTIN_PRESETS, loadHistory, loadPresets, loadSettings, saveCustomPresets, saveHistory } from './storage';
+import {
+  BUILTIN_PRESETS,
+  getBuiltinPresets,
+  loadHistory,
+  loadPresets,
+  loadSettings,
+  saveCustomPresets,
+  saveHistory,
+} from './storage';
 
 const HISTORY_KEY = 'dicelab.history.v1';
 const PRESETS_KEY = 'dicelab.presets.v1';
@@ -51,6 +59,7 @@ describe('local storage recovery', () => {
       SETTINGS_KEY,
       JSON.stringify({
         theme: 'neon',
+        locale: 'xx',
         reducedMotion: true,
         animations: true,
         randomMode: 'predictable',
@@ -66,6 +75,11 @@ describe('local storage recovery', () => {
       seed: 's'.repeat(120),
       historyLimit: 5_000,
     });
+  });
+
+  it('loads a supported persisted locale', () => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...DEFAULT_SETTINGS, locale: 'hi' }));
+    expect(loadSettings().locale).toBe('hi');
   });
 
   it('drops inconsistent rolls and duplicate ids from persisted history', () => {
@@ -97,6 +111,16 @@ describe('local storage recovery', () => {
     expect(loaded).toHaveLength(BUILTIN_PRESETS.length + 1);
     expect(loaded.slice(0, BUILTIN_PRESETS.length)).toEqual(BUILTIN_PRESETS);
     expect(loaded.at(-1)).toEqual(customPreset);
+  });
+
+  it('localizes only built-in presets while retaining custom copy', () => {
+    localStorage.setItem(PRESETS_KEY, JSON.stringify([customPreset]));
+
+    const loaded = loadPresets('hi');
+    const hindiBuiltins = getBuiltinPresets('hi');
+    expect(loaded.slice(0, hindiBuiltins.length)).toEqual(hindiBuiltins);
+    expect(loaded.at(-1)).toEqual(customPreset);
+    expect(loaded[0].name).toBe('D20 जाँच');
   });
 
   it('sanitizes persisted history and presets before writing them back', () => {
