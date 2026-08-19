@@ -41,7 +41,7 @@ try {
     await waitForText('Welcome to DiceLab');
     await clickButton('Start rolling');
     await waitForText('Roll with confidence.');
-    await waitFor(() => !documentContains('Start rolling'), 'onboarding to close');
+    await waitFor(async () => !(await documentContains('Start rolling')), 'onboarding to close');
   });
 
   await step('roll a custom expression', async () => {
@@ -96,7 +96,7 @@ try {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
       return true;
     })()`);
-    await waitFor(() => !documentContains('Search actions…'), 'command palette to close');
+    await waitFor(async () => !(await documentContains('Search actions…')), 'command palette to close');
   });
 
   await step('verify exact probability workflow', async () => {
@@ -124,11 +124,15 @@ try {
     backupPath = await waitForDownloadedFile(downloadsDir, 'dicelab-backup.json');
     const backup = JSON.parse(await fs.readFile(backupPath, 'utf8'));
     assert(backup.schemaVersion === 1, 'Exported backup schema version was not 1.');
-    assert(Array.isArray(backup.history) && backup.history.some((item) => item.expression === '2d6+1'), 'Exported backup did not contain roll history.');
+    assert(
+      Array.isArray(backup.history) && backup.history.some((item) => item.expression === '2d6+1'),
+      'Exported backup did not contain roll history.',
+    );
   });
 
   await step('clear local data deliberately', async () => {
     await clickButton('Clear local data');
+    await waitForText('Click again to clear');
     await clickButton('Click again to clear');
     await waitForText('Welcome to DiceLab');
     await clickButton('Start rolling');
@@ -209,7 +213,8 @@ async function findBrowserBinary() {
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
     '/Applications/Chromium.app/Contents/MacOS/Chromium',
     process.env.PROGRAMFILES && path.join(process.env.PROGRAMFILES, 'Google', 'Chrome', 'Application', 'chrome.exe'),
-    process.env['PROGRAMFILES(X86)'] && path.join(process.env['PROGRAMFILES(X86)'], 'Google', 'Chrome', 'Application', 'chrome.exe'),
+    process.env['PROGRAMFILES(X86)'] &&
+      path.join(process.env['PROGRAMFILES(X86)'], 'Google', 'Chrome', 'Application', 'chrome.exe'),
     process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Google', 'Chrome', 'Application', 'chrome.exe'),
   ].filter(Boolean);
 
@@ -336,9 +341,7 @@ async function waitForText(text, timeoutMs = STEP_TIMEOUT_MS) {
 }
 
 async function documentContains(text) {
-  return Boolean(
-    await evaluateValue(`document.body?.innerText?.includes(${JSON.stringify(text)}) ?? false`),
-  );
+  return Boolean(await evaluateValue(`document.body?.innerText?.includes(${JSON.stringify(text)}) ?? false`));
 }
 
 async function waitForDownloadedFile(directory, filename, timeoutMs = STEP_TIMEOUT_MS) {
@@ -379,7 +382,9 @@ async function waitFor(predicate, description, timeoutMs = STEP_TIMEOUT_MS) {
     }
     await delay(100);
   }
-  throw new Error(`Timed out waiting for ${description}.${lastError instanceof Error ? ` Last error: ${lastError.message}` : ''}`);
+  throw new Error(
+    `Timed out waiting for ${description}.${lastError instanceof Error ? ` Last error: ${lastError.message}` : ''}`,
+  );
 }
 
 async function step(name, action) {
@@ -419,14 +424,22 @@ class CdpSession {
     const socket = new WebSocket(url);
     await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('Timed out opening DevTools WebSocket.')), 10_000);
-      socket.addEventListener('open', () => {
-        clearTimeout(timeout);
-        resolve();
-      }, { once: true });
-      socket.addEventListener('error', () => {
-        clearTimeout(timeout);
-        reject(new Error('Could not open DevTools WebSocket.'));
-      }, { once: true });
+      socket.addEventListener(
+        'open',
+        () => {
+          clearTimeout(timeout);
+          resolve();
+        },
+        { once: true },
+      );
+      socket.addEventListener(
+        'error',
+        () => {
+          clearTimeout(timeout);
+          reject(new Error('Could not open DevTools WebSocket.'));
+        },
+        { once: true },
+      );
     });
     return new CdpSession(socket);
   }
