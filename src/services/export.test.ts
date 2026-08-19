@@ -36,6 +36,6 @@ describe('history exports', () => {
 
   it('neutralizes formula prefixes before applying normal CSV quoting', () => {
     const output = historyToCsv([{ ...roll, seed: '=HYPERLINK("https://example.invalid","click")' }]);
-    expect(output).toContain('"\'=HYPERLINK(""https://example.invalid"",""click"")"');
+    expect(output).toContain("\"'=HYPERLINK(\"\"https://example.invalid\"\",\"\"click\"\")\"");
   });
 });
