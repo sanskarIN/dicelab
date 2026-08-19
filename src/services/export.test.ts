@@ -48,6 +48,18 @@ describe('history exports', () => {
     expect(output).toContain(`'${seed}`);
   });
 
+  it('neutralizes a formula-like imported roll id', () => {
+    const output = historyToCsv([{ ...roll, id: '=HYPERLINK("https://example.invalid")' }]);
+    expect(output).toContain("\"'=HYPERLINK(\"\"https://example.invalid\"\")\"");
+  });
+
+  it('preserves negative totals and modifiers as numeric CSV fields', () => {
+    const output = historyToCsv([{ ...roll, total: -4, modifier: -10 }]);
+    const row = output.trimEnd().split('\n')[1].split(',');
+    expect(row[3]).toBe('-4');
+    expect(row[4]).toBe('-10');
+  });
+
   it('neutralizes formula prefixes before applying normal CSV quoting', () => {
     const output = historyToCsv([{ ...roll, seed: '=HYPERLINK("https://example.invalid","click")' }]);
     expect(output).toContain("\"'=HYPERLINK(\"\"https://example.invalid\"\",\"\"click\"\")\"");
