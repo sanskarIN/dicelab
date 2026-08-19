@@ -1,6 +1,7 @@
 name: Dependency lockfiles
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
