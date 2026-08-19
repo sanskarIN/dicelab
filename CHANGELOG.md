@@ -20,10 +20,11 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - First-run onboarding, responsive navigation, and keyboard command palette.
 - Settings surface for release/version information and direct About navigation.
 - About/privacy/support surfaces and **Made by the Sanskar** credit.
+- Localized application-level recovery UI for unexpected React render failures without clearing local data.
 - Typed English message catalog and locale boundary for migrated user-facing React/preset copy.
 - Localization contributor guide and locale-contract tests.
 - Browser integration coverage for roll → history → export, backup restore, and Settings → About journeys.
-- Component keyboard/accessibility regression tests for command palette, onboarding, settings, and large-history behavior.
+- Component keyboard/accessibility regression tests for command palette, onboarding, settings, large-history behavior, and root error recovery.
 - Generated parser normalization/case/whitespace invariants.
 - Corrupted local-storage recovery tests and persisted-data validation.
 - Rust/TypeScript cross-runtime deterministic RNG reference-vector tests.
@@ -49,6 +50,7 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - Backups produced from a maximum-length 120-character user seed can be restored after DiceLab appends the deterministic sequence suffix.
 - Corrupted or forged local-storage entries no longer flow directly into application state.
 - Command-palette focus is trapped while open and restored to the invoking control after dismissal.
+- Unexpected React render failures now show a recovery surface instead of leaving the product with an unhandled blank interface.
 
 ### Security
 
@@ -57,6 +59,7 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - CSV exports neutralize formula-like cell prefixes before spreadsheet applications can interpret them as formulas.
 - Imported backups are schema-bounded and validated before replacing local state.
 - Duplicate restored identifiers are rejected to avoid ambiguous application state.
+- The application recovery boundary logs only a redacted fixed event message from DiceLab rather than serializing raw exception contents.
 - Desktop content is constrained by a restrictive CSP.
 - No broad filesystem, shell, or network plugin permissions are granted.
 
