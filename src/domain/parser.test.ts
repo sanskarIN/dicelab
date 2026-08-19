@@ -20,8 +20,32 @@ describe('parseDiceExpression', () => {
     expect(parseDiceExpression('5d10dl2').selection).toEqual({ kind: 'drop-lowest', count: 2 });
   });
 
-  it.each(['0d6', '1001d6', '1d1', '2d6kh3', '2d6dl2', 'dice'])('rejects invalid expression %s', (expression) => {
-    expect(() => parseDiceExpression(expression)).toThrow(DiceExpressionError);
+  it.each([
+    ['dice', 'invalid-format'],
+    ['0d6', 'dice-count-out-of-range'],
+    ['1001d6', 'dice-count-out-of-range'],
+    ['1d1', 'side-count-out-of-range'],
+    ['2d6kh3', 'keep-count-exceeds-dice'],
+    ['2d6dl2', 'drop-count-removes-all'],
+  ] as const)('rejects %s with stable code %s', (expression, code) => {
+    try {
+      parseDiceExpression(expression);
+      throw new Error('expected parser to reject invalid expression');
+    } catch (cause) {
+      expect(cause).toBeInstanceOf(DiceExpressionError);
+      expect((cause as DiceExpressionError).code).toBe(code);
+    }
+  });
+
+  it('exposes immutable range context for localization', () => {
+    try {
+      parseDiceExpression('1001d6');
+      throw new Error('expected range failure');
+    } catch (cause) {
+      const error = cause as DiceExpressionError;
+      expect(error.context).toEqual({ min: 1, max: 1000 });
+      expect(Object.isFrozen(error.context)).toBe(true);
+    }
   });
 
   it('keeps generated normalized expressions idempotent', () => {
