@@ -5,10 +5,25 @@ import type { DiceExpression, ProbabilityDistribution, ProbabilityPoint } from '
 const MAX_DP_CELLS = 250_000;
 const MAX_ENUMERATED_OUTCOMES = 2_000_000;
 
+export type ProbabilityErrorCode =
+  | 'distribution-too-large'
+  | 'unsafe-outcome-count'
+  | 'keep-drop-too-complex'
+  | 'empty-distribution';
+
+export interface ProbabilityErrorContext {
+  limit?: number;
+}
+
 export class ProbabilityComplexityError extends Error {
-  constructor(message: string) {
+  readonly code: ProbabilityErrorCode;
+  readonly context: Readonly<ProbabilityErrorContext>;
+
+  constructor(code: ProbabilityErrorCode, message: string, context: ProbabilityErrorContext = {}) {
     super(message);
     this.name = 'ProbabilityComplexityError';
+    this.code = code;
+    this.context = Object.freeze({ ...context });
   }
 }
 
@@ -19,13 +34,19 @@ export function calculateProbability(input: string): ProbabilityDistribution {
 
 function calculateSumDistribution(expression: DiceExpression): ProbabilityDistribution {
   if (expression.count * expression.sides > MAX_DP_CELLS) {
-    throw new ProbabilityComplexityError('This distribution is too large for the interactive exact calculator.');
+    throw new ProbabilityComplexityError(
+      'distribution-too-large',
+      'This distribution is too large for the interactive exact calculator.',
+      { limit: MAX_DP_CELLS },
+    );
   }
 
   const totalOutcomes = Math.pow(expression.sides, expression.count);
   if (!Number.isSafeInteger(totalOutcomes)) {
     throw new ProbabilityComplexityError(
+      'unsafe-outcome-count',
       'This expression has too many raw outcomes to preserve exact integer counts safely.',
+      { limit: Number.MAX_SAFE_INTEGER },
     );
   }
 
@@ -60,7 +81,9 @@ function enumerateSelectionDistribution(expression: DiceExpression): Probability
   const totalOutcomes = Math.pow(expression.sides, expression.count);
   if (!Number.isFinite(totalOutcomes) || totalOutcomes > MAX_ENUMERATED_OUTCOMES) {
     throw new ProbabilityComplexityError(
+      'keep-drop-too-complex',
       `Exact keep/drop calculation is limited to ${MAX_ENUMERATED_OUTCOMES.toLocaleString('en-US')} raw outcomes.`,
+      { limit: MAX_ENUMERATED_OUTCOMES },
     );
   }
 
@@ -101,7 +124,7 @@ function finishDistribution(
   totalOutcomes: number,
 ): ProbabilityDistribution {
   if (points.length === 0) {
-    throw new Error('Probability calculation produced no outcomes.');
+    throw new ProbabilityComplexityError('empty-distribution', 'Probability calculation produced no outcomes.');
   }
   return {
     expression: expression.normalized,
