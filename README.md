@@ -16,6 +16,12 @@
 
 DiceLab goes beyond a one-button dice demo. It combines expressive dice notation, secure and cross-runtime reproducible randomness modes, roll history, statistics, presets, exports, exact probability tools, hardened local persistence, localization, and release-focused engineering in a desktop-first product that remains useful without an account or network connection.
 
+## Current release status
+
+The repository is preparing **DiceLab 2.0.12** with intended tag `v2.0.12`. The application manifests/configuration have been advanced to 2.0.12, but the candidate is **not yet publishable** until generated npm/Cargo lockfiles and the required CI, browser, fuzz, platform, accessibility, security, screenshot, checksum, and provenance evidence are observed for the same candidate commit.
+
+`npm run version:check` deliberately includes generated lockfile package-version metadata, so a version bump cannot pass release verification while `package-lock.json` or DiceLab's `Cargo.lock` package entry still carries an older version. Current blockers are maintained in [`docs/release-blockers-current.md`](docs/release-blockers-current.md).
+
 ## Screenshots
 
 Real release screenshots will be captured from a verified release-candidate build. Until then, the repository intentionally avoids mock screenshots that could misrepresent the shipping UI.
@@ -45,7 +51,7 @@ Real release screenshots will be captured from a verified release-candidate buil
 - Reviewed English and Hindi interface catalogs with a persisted language preference, localized built-in presets, backup compatibility, document-language metadata, and explicit locale-aware number/date/time formatting.
 - Light, dark, and system themes.
 - Reduced-motion and non-animation modes with normalized persisted settings.
-- Keyboard command palette (`Ctrl/Cmd + K`) with modal focus trapping/restoration and keyboard-first navigation.
+- Keyboard command palette (`Ctrl/⌘ K`) with modal focus trapping/restoration and keyboard-first navigation.
 - Responsive desktop/web UI with accessible labels, focus styles, scalable layouts, and non-color-only states.
 - Structured local diagnostic logging with sensitive-key redaction, bounded context, and raw-error omission.
 - Coverage-guided Rust parser fuzz target with a bounded scheduled/manual GitHub Actions campaign.
@@ -54,7 +60,8 @@ Real release screenshots will be captured from a verified release-candidate buil
 - Executable benchmark suites for parser, RNG, probability, history filtering, and statistics.
 - Automated architecture/security policy gates for Tauri capabilities, CSP/offline network sources, localized formatting, runtime boundaries, native command contracts, and direct dependency-lock consistency.
 - Exhaustive tracked-file documentation inventory checked against `git ls-files` so new repository files cannot be silently omitted from the file reference.
-- Automated version synchronization checks across npm/frontend/Cargo/Tauri metadata and tag/version agreement on releases.
+- Automated version synchronization checks across npm/frontend/Cargo/Tauri metadata **and generated npm/Cargo lock package versions**, plus tag/version agreement on releases.
+- Tag-driven releases directly gate artifact creation on documentation inventory, repository policy, lock/version consistency, tests, real-browser E2E, and locked Rust checks.
 - Release provenance metadata and SHA-256 checksums for draft artifact review.
 - No required sign-in, analytics service, advertising SDK, remote telemetry, or donation gate.
 
@@ -74,7 +81,7 @@ Real release screenshots will be captured from a verified release-candidate buil
 - **Localization:** typed in-repository English/Hindi catalogs with stable error-code mappings, persisted locale state, and explicit `en-US`/`hi-IN` presentation formatting
 - **Tests:** Vitest, Testing Library, Node built-in quality/security/CDP/policy tests, dependency-free real-browser CDP E2E, Rust unit/generated/adversarial parser tests, cargo-fuzz parser target
 - **Benchmarks:** Vitest benchmark suites using the existing locked toolchain
-- **Quality:** ESLint, Prettier, rustfmt, Clippy, Markdown link audit, exhaustive file-reference audit, secret audit, version audit, repository policy audits, GitHub Actions
+- **Quality:** ESLint, Prettier, rustfmt, Clippy, Markdown link audit, exhaustive file-reference audit, secret audit, lock-aware version audit, repository policy audits, GitHub Actions
 - **Security:** restrictive/offline Tauri CSP, minimal capabilities, static native command allowlist, bounded native export command, CodeQL/dependency update configuration, validated persistence/import boundaries, redacted local logging
 - **Persistence:** browser/webview local storage; no remote database is required
 
@@ -138,7 +145,7 @@ cargo test --locked
 cargo clippy --all-targets --all-features --locked -- -D warnings
 ```
 
-The local secret audit reports only file/line/rule metadata and intentionally does not print matched credential values. The repository policy audits protect documented architecture/security boundaries; `policy:lockfiles` is an early structural check and does not replace normal package-manager lock generation or locked Rust checks. GitHub CodeQL runs separately, and repository-level secret scanning/push protection should be enabled where available.
+The local secret audit reports only file/line/rule metadata and intentionally does not print matched credential values. The repository policy audits protect documented architecture/security boundaries; `policy:lockfiles` is an early structural dependency check and does not replace package-manager lock generation. `version:check` separately verifies that generated npm/Cargo package versions agree with the manifests/configuration. GitHub CodeQL runs separately, and repository-level secret scanning/push protection should be enabled where available.
 
 The real-browser E2E test requires the production build and a Chromium-compatible browser; set `CHROME_BIN` if auto-discovery cannot find one. It covers onboarding, roll/history, actual browser downloads, reload persistence, keyboard command navigation, probability, clear-data, and actual backup file restore. See [`docs/e2e.md`](docs/e2e.md).
 
@@ -178,7 +185,7 @@ Desktop bundle:
 npm run tauri:build
 ```
 
-Version tags run the release workflow, require the tag to match the synchronized application version, verify web quality/security/browser checks, build web plus Windows/macOS/Linux desktop artifacts, package successful artifacts into ZIP files, generate `RELEASE-METADATA.json` plus `SHA256SUMS.txt`, and create/update a **draft** GitHub release for manual artifact verification. Platform-specific prerequisites, signing expectations, versioning, and release verification are documented in [`docs/release.md`](docs/release.md).
+The intended next tag is `v2.0.12`, but it should be created only after the generated lockfiles are current and candidate checks have been observed. Version tags run the release workflow, require the tag to match manifest/configuration/generated-lock application versions, directly run documentation inventory and repository policy gates, verify web quality/security/browser checks, build web plus Windows/macOS/Linux desktop artifacts, package successful artifacts into ZIP files, generate `RELEASE-METADATA.json` plus `SHA256SUMS.txt`, and create/update a **draft** GitHub release for manual artifact verification. Platform-specific prerequisites, signing expectations, versioning, and release verification are documented in [`docs/release.md`](docs/release.md).
 
 Configured workflows are not the same as observed release evidence. Current blockers are tracked in [`docs/release-blockers-current.md`](docs/release-blockers-current.md), and real candidate results belong in a copy of [`docs/release-candidate-evidence-template.md`](docs/release-candidate-evidence-template.md).
 
@@ -201,7 +208,7 @@ scripts/
 ├── check-doc-links*             # local Markdown link/anchor audit
 ├── check-file-reference*        # exhaustive tracked-file documentation audit
 ├── check-secrets*               # high-confidence credential audit + self-test
-├── check-version-sync*          # application/tag version audit + self-test
+├── check-version-sync*          # manifest/config/generated-lock/tag version audit + self-test
 ├── check-*-policy/boundary*     # executable security/architecture invariants
 └── verify-release-packages*     # release checksum/provenance verification
 
