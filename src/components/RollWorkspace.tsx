@@ -3,6 +3,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { parseDiceExpression } from '../domain/parser';
 import type { DicePreset, RandomMode, RollResult } from '../domain/types';
 import { messages } from '../i18n';
+import { formatDomainError } from '../i18n/errors';
 
 interface RollWorkspaceProps {
   expression: string;
@@ -36,7 +37,7 @@ export function RollWorkspace({
     try {
       return { parsed: parseDiceExpression(expression), error: null };
     } catch (cause) {
-      return { parsed: null, error: cause instanceof Error ? cause.message : messages.roll.invalidExpression };
+      return { parsed: null, error: formatDomainError(cause, messages.roll.invalidExpression) };
     }
   }, [expression]);
 
