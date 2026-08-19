@@ -12,6 +12,7 @@ import {
 import { useState, type ChangeEvent } from 'react';
 import { APP_NAME, APP_VERSION, RELEASES_URL } from '../config/app';
 import type { DiceLabSettings } from '../domain/types';
+import { messages } from '../i18n';
 
 interface SettingsPanelProps {
   settings: DiceLabSettings;
@@ -39,11 +40,11 @@ export function SettingsPanel({
     event.target.value = '';
     if (!file) return;
     try {
-      setImportStatus('Importing…');
+      setImportStatus(messages.settings.importing);
       await onImportBackup(file);
-      setImportStatus('Backup restored successfully.');
+      setImportStatus(messages.settings.importSuccess);
     } catch (cause) {
-      setImportStatus(cause instanceof Error ? cause.message : 'Backup import failed.');
+      setImportStatus(cause instanceof Error ? cause.message : messages.settings.importFailed);
     }
   };
 
@@ -60,9 +61,9 @@ export function SettingsPanel({
     <section className="view-stack" aria-labelledby="settings-heading">
       <header className="view-header">
         <div>
-          <p className="eyebrow">Your preferences</p>
-          <h1 id="settings-heading">Settings</h1>
-          <p>DiceLab keeps its everyday data on this device and does not require an account.</p>
+          <p className="eyebrow">{messages.settings.eyebrow}</p>
+          <h1 id="settings-heading">{messages.settings.heading}</h1>
+          <p>{messages.settings.intro}</p>
         </div>
       </header>
 
@@ -70,22 +71,22 @@ export function SettingsPanel({
         <div className="settings-section-title">
           <MoonStar size={20} aria-hidden="true" />
           <div>
-            <h2 id="appearance-heading">Appearance</h2>
-            <p>Choose how DiceLab fits your system.</p>
+            <h2 id="appearance-heading">{messages.settings.appearance}</h2>
+            <p>{messages.settings.appearanceBody}</p>
           </div>
         </div>
         <label className="setting-row">
           <span>
-            <strong>Theme</strong>
-            <small>Light, dark, or follow your operating system.</small>
+            <strong>{messages.settings.theme}</strong>
+            <small>{messages.settings.themeBody}</small>
           </span>
           <select
             value={settings.theme}
             onChange={(event) => patch({ theme: event.target.value as DiceLabSettings['theme'] })}
           >
-            <option value="system">System</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
+            <option value="system">{messages.settings.system}</option>
+            <option value="light">{messages.settings.light}</option>
+            <option value="dark">{messages.settings.dark}</option>
           </select>
         </label>
       </section>
@@ -94,19 +95,19 @@ export function SettingsPanel({
         <div className="settings-section-title">
           <Accessibility size={20} aria-hidden="true" />
           <div>
-            <h2 id="accessibility-heading">Accessibility</h2>
-            <p>Control motion without losing information.</p>
+            <h2 id="accessibility-heading">{messages.settings.accessibility}</h2>
+            <p>{messages.settings.accessibilityBody}</p>
           </div>
         </div>
         <ToggleRow
-          label="Reduced motion"
-          detail="Minimize transitions and movement across the interface."
+          label={messages.settings.reducedMotion}
+          detail={messages.settings.reducedMotionBody}
           checked={settings.reducedMotion}
           onChange={(checked) => patch({ reducedMotion: checked, animations: checked ? false : settings.animations })}
         />
         <ToggleRow
-          label="Dice animations"
-          detail="Allow subtle result transitions when reduced motion is off."
+          label={messages.settings.diceAnimations}
+          detail={messages.settings.diceAnimationsBody}
           checked={settings.animations}
           disabled={settings.reducedMotion}
           onChange={(checked) => patch({ animations: checked })}
@@ -117,28 +118,28 @@ export function SettingsPanel({
         <div className="settings-section-title">
           <ShieldCheck size={20} aria-hidden="true" />
           <div>
-            <h2 id="random-heading">Randomness</h2>
-            <p>Secure mode is the default; seeded mode makes testing reproducible.</p>
+            <h2 id="random-heading">{messages.settings.randomness}</h2>
+            <p>{messages.settings.randomnessBody}</p>
           </div>
         </div>
         <label className="setting-row">
           <span>
-            <strong>Random mode</strong>
-            <small>Seeded mode is deterministic and is not intended for security-sensitive draws.</small>
+            <strong>{messages.settings.randomMode}</strong>
+            <small>{messages.settings.randomModeBody}</small>
           </span>
           <select
             value={settings.randomMode}
             onChange={(event) => patch({ randomMode: event.target.value as DiceLabSettings['randomMode'] })}
           >
-            <option value="secure">Secure</option>
-            <option value="seeded">Seeded</option>
+            <option value="secure">{messages.settings.secure}</option>
+            <option value="seeded">{messages.settings.seeded}</option>
           </select>
         </label>
         {settings.randomMode === 'seeded' ? (
           <label className="setting-row stacked">
             <span>
-              <strong>Seed</strong>
-              <small>Each roll combines this value with a local sequence number.</small>
+              <strong>{messages.settings.seed}</strong>
+              <small>{messages.settings.seedBody}</small>
             </span>
             <input
               value={settings.seed}
@@ -153,14 +154,14 @@ export function SettingsPanel({
         <div className="settings-section-title">
           <Database size={20} aria-hidden="true" />
           <div>
-            <h2 id="data-heading">Data & privacy</h2>
-            <p>History, presets, and settings are stored locally.</p>
+            <h2 id="data-heading">{messages.settings.dataPrivacy}</h2>
+            <p>{messages.settings.dataPrivacyBody}</p>
           </div>
         </div>
         <label className="setting-row">
           <span>
-            <strong>History limit</strong>
-            <small>Keep between 10 and 5,000 recent rolls.</small>
+            <strong>{messages.settings.historyLimit}</strong>
+            <small>{messages.settings.historyLimitBody}</small>
           </span>
           <input
             className="number-input"
@@ -174,14 +175,15 @@ export function SettingsPanel({
         </label>
         <div className="setting-actions">
           <button type="button" className="secondary-button" onClick={onExportBackup}>
-            <Download size={16} aria-hidden="true" /> Export backup
+            <Download size={16} aria-hidden="true" /> {messages.settings.exportBackup}
           </button>
           <label className="secondary-button file-button">
-            <Upload size={16} aria-hidden="true" /> Import backup
+            <Upload size={16} aria-hidden="true" /> {messages.settings.importBackup}
             <input
               className="sr-only"
               type="file"
               accept="application/json,.json"
+              aria-label={messages.settings.importBackup}
               onChange={(event) => void importBackup(event)}
             />
           </label>
@@ -191,7 +193,8 @@ export function SettingsPanel({
             onClick={clearData}
             onBlur={() => setConfirmClear(false)}
           >
-            <Trash2 size={16} aria-hidden="true" /> {confirmClear ? 'Click again to clear' : 'Clear local data'}
+            <Trash2 size={16} aria-hidden="true" />
+            {confirmClear ? messages.settings.confirmClear : messages.settings.clearData}
           </button>
         </div>
         {importStatus ? (
@@ -205,22 +208,22 @@ export function SettingsPanel({
         <div className="settings-section-title">
           <Info size={20} aria-hidden="true" />
           <div>
-            <h2 id="updates-heading">Updates & About</h2>
-            <p>Review the installed version, release notes, license, support, and project credits.</p>
+            <h2 id="updates-heading">{messages.settings.updatesAbout}</h2>
+            <p>{messages.settings.updatesAboutBody}</p>
           </div>
         </div>
         <div className="setting-row">
           <span>
             <strong>{APP_NAME} {APP_VERSION}</strong>
-            <small>Desktop update packages and release notes are published through the project releases page.</small>
+            <small>{messages.settings.releaseBody}</small>
           </span>
           <a className="secondary-button" href={RELEASES_URL} target="_blank" rel="noreferrer">
-            Releases <ExternalLink size={15} aria-hidden="true" />
+            {messages.settings.releases} <ExternalLink size={15} aria-hidden="true" />
           </a>
         </div>
         <div className="setting-actions">
           <button type="button" className="secondary-button" onClick={onOpenAbout}>
-            <Info size={16} aria-hidden="true" /> Open About
+            <Info size={16} aria-hidden="true" /> {messages.settings.openAbout}
           </button>
         </div>
       </section>
