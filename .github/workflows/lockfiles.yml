@@ -28,9 +28,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: package-lock.json
-        continue-on-error: true
 
       - name: Generate npm lockfile
         run: npm install --package-lock-only --ignore-scripts
@@ -52,4 +49,5 @@ jobs:
             exit 0
           fi
           git commit -m "build: lock application dependencies"
-          git push
+          git pull --rebase origin main
+          git push origin HEAD:main
