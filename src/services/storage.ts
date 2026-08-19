@@ -4,7 +4,7 @@ import { getMessages, type SupportedLocale } from '../i18n';
 import { logger } from './logger';
 
 const MAX_HISTORY = 5_000;
-const MAX_CUSTOM_PRESETS = 500;
+export const MAX_CUSTOM_PRESETS = 500;
 
 const KEYS = {
   history: 'dicelab.history.v1',
@@ -36,29 +36,26 @@ export function loadHistory(): RollResult[] {
 }
 
 export function saveHistory(history: RollResult[], limit: number): void {
-  const safeLimit = Number.isSafeInteger(limit) ? Math.min(Math.max(limit, 10), MAX_HISTORY) : DEFAULT_SETTINGS.historyLimit;
+  const safeLimit = Number.isSafeInteger(limit)
+    ? Math.min(Math.max(limit, 10), MAX_HISTORY)
+    : DEFAULT_SETTINGS.historyLimit;
   const safeHistory = uniqueById(history.filter(isPersistedRollResult)).slice(0, safeLimit);
   writeJson('history', safeHistory);
 }
 
 export function loadPresets(locale: SupportedLocale = 'en'): DicePreset[] {
   const parsed = readJson<unknown>('presets', []);
-  const custom = Array.isArray(parsed)
-    ? uniqueById(
-        parsed
-          .slice(0, MAX_CUSTOM_PRESETS)
-          .filter(isPersistedPreset)
-          .filter((item) => !item.id.startsWith('builtin-')),
-      )
-    : [];
+  const custom = Array.isArray(parsed) ? sanitizeCustomPresets(parsed) : [];
   return [...getBuiltinPresets(locale), ...custom];
 }
 
+export function limitPresetCollection(presets: DicePreset[]): DicePreset[] {
+  const builtins = presets.filter((preset) => preset.id.startsWith('builtin-'));
+  return [...builtins, ...sanitizeCustomPresets(presets)];
+}
+
 export function saveCustomPresets(presets: DicePreset[]): void {
-  const custom = uniqueById(
-    presets.filter(isPersistedPreset).filter((item) => !item.id.startsWith('builtin-')),
-  ).slice(0, MAX_CUSTOM_PRESETS);
-  writeJson('presets', custom);
+  writeJson('presets', sanitizeCustomPresets(presets));
 }
 
 export function loadSettings(): DiceLabSettings {
@@ -122,6 +119,12 @@ export function clearDiceLabData(): void {
 
 function preset(id: string, name: string, expression: string, description: string): DicePreset {
   return { id, name, expression, description, createdAt: '2026-08-19T00:00:00.000Z' };
+}
+
+function sanitizeCustomPresets(presets: unknown[]): DicePreset[] {
+  return uniqueById(
+    presets.filter(isPersistedPreset).filter((item) => !item.id.startsWith('builtin-')),
+  ).slice(-MAX_CUSTOM_PRESETS);
 }
 
 function readJson<T>(keyClass: StorageKeyClass, fallback: T): T {
