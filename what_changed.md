@@ -196,7 +196,8 @@ Migrated user-facing copy from the main React surfaces into the catalog:
 - settings;
 - About;
 - built-in preset names/descriptions;
-- user-facing accessibility labels and dynamic notices.
+- user-facing accessibility labels and dynamic notices;
+- application recovery/fatal-interface messages.
 
 Added `docs/localization.md` with the exact second-locale workflow and catalog requirements.
 
@@ -273,9 +274,9 @@ The check is wired into normal CI and the tagged release workflow.
 
 Updated documentation to match the real implementation:
 
-- README now reflects seeded parity, persistence hardening, progressive history, typed i18n, exactness guards, quality commands, and draft-release/checksum workflow.
+- README now reflects seeded parity, persistence hardening, progressive history, typed i18n, exactness guards, quality commands, and draft-release/checksum workflow;
 - architecture docs now describe `config/`, `i18n/`, persistence validation, backup trust boundaries, and cross-runtime seeded compatibility;
-- testing docs now list integration, storage, i18n, parser-invariant, accessibility, and progressive-history coverage;
+- testing docs now list integration, storage, i18n, parser-invariant, accessibility, progressive-history, and root-recovery coverage;
 - accessibility docs now document modal focus guarantees and reduced-motion normalization;
 - performance docs now describe progressive history rendering and numeric exactness safeguards;
 - release docs now document version locations, clean-checkout commands, checksum review, draft publication, and artifact smoke tests;
@@ -284,6 +285,20 @@ Updated documentation to match the real implementation:
 - roadmap/changelog now distinguish implemented work from external verification still required.
 
 A repository-tree typo introduced during the development-guide edit was detected in the same pass and corrected immediately in a separate `fix:` commit.
+
+### 15. Application-level render recovery
+
+Added a root React error boundary so an unexpected render failure no longer leaves DiceLab with an unhandled blank interface.
+
+The recovery boundary:
+
+- wraps the entire `<App />` at the React root;
+- shows a localized recovery surface with `role="alert"`;
+- tells the user that DiceLab local data has not been cleared;
+- provides an explicit reload action;
+- logs only a fixed DiceLab recovery event from the boundary rather than serializing raw exception contents into the project’s own logging call.
+
+Regression tests verify healthy children render normally and a synthetic render failure is replaced by the recovery UI.
 
 ## Files added in this continuation
 
@@ -294,6 +309,8 @@ A repository-tree typo introduced during the development-guide edit was detected
 - `src/i18n/index.ts`
 - `src/i18n/index.test.ts`
 - `src/services/storage.test.ts`
+- `src/components/AppErrorBoundary.tsx`
+- `src/components/AppErrorBoundary.test.tsx`
 - `src/components/CommandPalette.test.tsx`
 - `src/components/Onboarding.test.tsx`
 - `src/components/SettingsPanel.test.tsx`
@@ -304,6 +321,7 @@ A repository-tree typo introduced during the development-guide edit was detected
 ## Existing files changed in this continuation
 
 - `src/test/setup.ts`
+- `src/main.tsx`
 - `src/App.tsx`
 - `src/domain/parser.test.ts`
 - `src/domain/probability.ts`
@@ -364,7 +382,8 @@ A repository-tree typo introduced during the development-guide edit was detected
 - generated parser normalization invariants;
 - parser case/whitespace equivalence;
 - locale catalog default/dynamic-message behavior;
-- progressive history rendering and filter-window reset.
+- progressive history rendering and filter-window reset;
+- application root error recovery boundary.
 
 ## Verification/checks performed in this continuation
 
@@ -378,9 +397,9 @@ A repository-tree typo introduced during the development-guide edit was detected
 
 ### GitHub status visibility
 
-The connector’s combined-status endpoint returned an empty status list for the checked current commits, including the pre-handoff latest code/docs commit `bc08b04cdd0dc80c1b83611f34461bd6b332defe`.
+The connector’s combined-status endpoint returned an empty status list for the checked current commits, including `bc08b04cdd0dc80c1b83611f34461bd6b332defe` before the final recovery-boundary commits.
 
-This means **CI is not being claimed green** from this environment. An empty connector response is treated as “status not observable,” not as a passing result.
+This means **CI is not being claimed green** from this environment. An empty connector response is treated as “status not observable,” not as a passing result. Re-check the final handoff commit in the next continuation or through the GitHub Actions UI.
 
 ### Local isolated verification
 
@@ -389,7 +408,7 @@ The repository could not be cloned into the execution sandbox because outbound D
 Two isolated checks were still performed using the exact implementation patterns committed:
 
 1. `scripts/check-doc-links.mjs`
-   - `node --check` passed.
+   - `node --check` passed;
    - synthetic Markdown repository smoke test passed and correctly resolved relative/external link handling.
 2. `MessageCatalog` TypeScript widening pattern
    - compiled with global TypeScript `5.8.3` using `tsc --noEmit --strict --target ES2022` against a representative second-locale structure;
@@ -436,7 +455,7 @@ Resume in this order:
 2. Run the tagged release workflow on a release-candidate tag only after normal CI is green; keep the generated GitHub release as a draft.
 3. Download each draft artifact package, verify it against `SHA256SUMS.txt`, and install/smoke-test Windows, macOS, and Linux builds.
 4. Capture **real** screenshots from the verified release candidate and replace the README screenshot-description table only when genuine captures exist.
-5. Add a real-browser E2E suite for onboarding → roll → history, persistence across reload, actual file download/import, probability calculation, command palette, and keyboard behavior.
+5. Add a real-browser E2E suite for onboarding → roll → history, persistence across reload, actual file download/import, probability calculation, command palette, keyboard behavior, and controlled recovery-page reload behavior.
 6. Add executable benchmarks for parser, probability, 5,000-record search/statistics, progressive rendering, and Rust roll throughput with documented machine/runtime metadata.
 7. Add a dedicated Rust parser fuzz target if the chosen fuzz tooling can be introduced with generated lockfile changes from a network-enabled environment.
 8. Migrate remaining translatable parser/domain error prose to stable error codes before shipping a second locale.
@@ -451,6 +470,7 @@ Resume in this order:
 - Backup validation is stricter; malformed/ambiguous schema-1 backups may now be rejected instead of silently loading inconsistent state.
 - Seeded deterministic output is now intentionally standardized across TypeScript and Rust. Any future seeded-algorithm change is a compatibility change and must update both reference-vector suites plus release notes.
 - No database migration exists because DiceLab still intentionally uses bounded local storage for its current data model.
+- The root error boundary does not clear, rewrite, or migrate local user data.
 
 ## Release notes draft
 
@@ -464,6 +484,7 @@ Resume in this order:
 - Documentation-link audit in CI/release workflows.
 - Draft-release ZIP/checksum packaging.
 - Cross-runtime seeded RNG reference-vector coverage.
+- Localized root application recovery surface for unexpected React render failures.
 
 ### Unreleased — Changed
 
@@ -471,7 +492,7 @@ Resume in this order:
 - Probability results advertised as exact now refuse unsafe integer-outcome ranges.
 - Main CI/release checks use committed lockfiles and locked package-manager behavior.
 - Backup/local-persistence handling now treats stored data as untrusted runtime input.
-- User-facing React/preset copy is externalized through the English message catalog.
+- User-facing React/preset/recovery copy is externalized through the English message catalog.
 
 ### Unreleased — Fixed
 
@@ -480,6 +501,7 @@ Resume in this order:
 - Reduced-motion state cannot restore with contradictory animations enabled.
 - Command-palette focus no longer escapes the modal and returns to the trigger when closed.
 - Large histories no longer mount all retained rows immediately.
+- Unexpected React render failures now show a recovery action instead of leaving an unhandled blank UI.
 
 ### Unreleased — Security
 
@@ -487,13 +509,21 @@ Resume in this order:
 - Corrupted local persistence is filtered/normalized before use.
 - Existing spreadsheet-safe CSV export remains enforced.
 - Draft releases are generated only after prerequisite jobs and include SHA-256 checksum metadata.
+- The DiceLab error boundary records only a fixed redacted recovery event instead of logging raw exception contents from its own handler.
 
 ## Recent meaningful commits from this continuation
 
-This continuation intentionally used many small, atomic commits. It produced **78 meaningful commits before this handoff update**, rather than combining unrelated features into a few large commits.
+This continuation intentionally used many small, atomic commits. It produced **86 meaningful commits before this final handoff update**, rather than combining unrelated features into a few large commits.
 
 Most recent/current examples:
 
+- `0ff74bc03c9402d7a48227ba8de8c71ec0ad722c` — `docs: add application recovery test coverage`
+- `58986a68ee91e7762817aed05eb731f0e59ab4d9` — `docs: record application recovery boundary`
+- `005f6896c762ac504406da43793c003893966eca` — `test: avoid depending on react internal error logging`
+- `080b0907eecaabd6baffca9d7324dfcdfb41ad7c` — `feat: protect root with recovery boundary`
+- `b7386e09368fa57f50054129dc132d09460a5fcb` — `test: cover application recovery boundary`
+- `68e8a994a4cab66b3b22754e7a22bde950ff529f` — `feat: add application error recovery boundary`
+- `6ea79d72fbe5b2d149211d0363a33d1904840314` — `feat: add application recovery messages`
 - `bc08b04cdd0dc80c1b83611f34461bd6b332defe` — `docs: align contribution quality gates`
 - `08ba12d544a5a8486dbf6a98f3e8989e7ba4aaea` — `fix: correct development guide repository tree`
 - `34d757870a906b2094c8b85226d9b624e9f3fd0d` — `docs: align contributor development workflow`
