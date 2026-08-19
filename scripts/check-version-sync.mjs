@@ -12,7 +12,7 @@ export function extractFrontendVersion(source) {
 }
 
 export function extractCargoPackageVersion(source) {
-  const packageSection = /^\[package\]\s*$([\s\S]*?)(?=^\[|\Z)/m.exec(source)?.[1];
+  const packageSection = /^\[package\]\s*$([\s\S]*?)(?=^\[|$)/m.exec(source)?.[1];
   if (!packageSection) throw new Error('Could not find [package] in src-tauri/Cargo.toml.');
   const match = /^version\s*=\s*['"]([^'"]+)['"]\s*$/m.exec(packageSection);
   if (!match) throw new Error('Could not find package version in src-tauri/Cargo.toml.');
@@ -29,7 +29,10 @@ export function extractPackageLockVersions(source) {
 }
 
 export function extractCargoLockPackageVersion(source, packageName = 'dicelab') {
-  const packageBlocks = source.match(/^\[\[package\]\]\s*$[\s\S]*?(?=^\[\[package\]\]\s*$|\Z)/gm) ?? [];
+  const packageBlocks = source
+    .split(/(?=^\[\[package\]\]\s*$)/m)
+    .filter((block) => /^\[\[package\]\]\s*$/m.test(block));
+
   for (const block of packageBlocks) {
     const name = /^name\s*=\s*"([^"]+)"\s*$/m.exec(block)?.[1];
     if (name !== packageName) continue;
