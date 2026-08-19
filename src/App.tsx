@@ -30,12 +30,12 @@ import {
 export default function App() {
   const [view, setView] = useState<AppView>('roll');
   const [expression, setExpression] = useState('1d20');
-  const [history, setHistory] = useState<RollResult[]>(loadHistory);
   const [settings, setSettings] = useState<DiceLabSettings>(() => {
     const loaded = loadSettings();
     setLocale(loaded.locale);
     return loaded;
   });
+  const [history, setHistory] = useState<RollResult[]>(() => loadHistory().slice(0, settings.historyLimit));
   const [presets, setPresets] = useState<DicePreset[]>(() => loadPresets(settings.locale));
   const [commandOpen, setCommandOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => !hasCompletedOnboarding());
