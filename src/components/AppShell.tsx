@@ -23,7 +23,7 @@ export function AppShell({ view, onNavigate, onOpenCommands, children }: AppShel
   return (
     <div className="app-shell">
       <aside className="sidebar" aria-label={messages.common.primaryNavigation}>
-        <div className="brand" aria-label={`${messages.common.appName} home`}>
+        <div className="brand" aria-label={messages.common.appName}>
           <span className="brand-mark" aria-hidden="true">◆</span>
           <div>
             <strong>{messages.common.appName}</strong>
