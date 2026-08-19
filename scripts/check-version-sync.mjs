@@ -19,7 +19,12 @@ export function extractCargoPackageVersion(source) {
   return match[1];
 }
 
-export function validateVersions(entries) {
+export function normalizeExpectedVersion(value) {
+  if (!value) return undefined;
+  return value.startsWith('v') ? value.slice(1) : value;
+}
+
+export function validateVersions(entries, expectedVersion) {
   const invalid = entries.filter((entry) => !VERSION_PATTERN.test(entry.version));
   if (invalid.length) {
     throw new Error(`Invalid semantic version format in: ${invalid.map((entry) => entry.source).join(', ')}.`);
@@ -31,6 +36,17 @@ export function validateVersions(entries) {
     const values = entries.map((entry) => `${entry.source}=${entry.version}`).join(', ');
     throw new Error(`DiceLab version mismatch: ${values}`);
   }
+
+  const normalizedExpected = normalizeExpectedVersion(expectedVersion);
+  if (normalizedExpected) {
+    if (!VERSION_PATTERN.test(normalizedExpected)) {
+      throw new Error(`Expected release version is not valid SemVer: ${expectedVersion}.`);
+    }
+    if (expected !== normalizedExpected) {
+      throw new Error(`Release tag/version mismatch: tag=${expectedVersion}, application=${expected}.`);
+    }
+  }
+
   return expected;
 }
 
@@ -54,8 +70,13 @@ export async function readRepositoryVersions(root = ROOT) {
 
 async function main() {
   const entries = await readRepositoryVersions();
-  const version = validateVersions(entries);
-  console.log(`Version sync passed: ${version}.`);
+  const expectedVersion = process.env.DICELAB_EXPECT_VERSION || undefined;
+  const version = validateVersions(entries, expectedVersion);
+  console.log(
+    expectedVersion
+      ? `Version sync passed: ${version} matches ${expectedVersion}.`
+      : `Version sync passed: ${version}.`,
+  );
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
