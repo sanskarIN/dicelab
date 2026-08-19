@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS, type RollResult } from '../domain/types';
-import { BackupValidationError, backupToJson, createBackup, parseBackupJson } from './export';
+import {
+  BackupValidationError,
+  type BackupValidationErrorCode,
+  backupToJson,
+  createBackup,
+  parseBackupJson,
+} from './export';
 
 const roll: RollResult = {
   id: 'roll-restore',
@@ -20,6 +26,17 @@ function backupWith(historyEntry: unknown): string {
     presets: [],
     settings: DEFAULT_SETTINGS,
   });
+}
+
+function expectBackupCode(contents: string, code: BackupValidationErrorCode): BackupValidationError {
+  try {
+    parseBackupJson(contents);
+    throw new Error(`expected backup to fail with ${code}`);
+  } catch (cause) {
+    expect(cause).toBeInstanceOf(BackupValidationError);
+    expect((cause as BackupValidationError).code).toBe(code);
+    return cause as BackupValidationError;
+  }
 }
 
 describe('DiceLab backups', () => {
@@ -57,38 +74,36 @@ describe('DiceLab backups', () => {
     expect(restored.settings.animations).toBe(false);
   });
 
-  it('rejects unsupported schemas', () => {
-    expect(() => parseBackupJson('{"schemaVersion":99,"history":[],"presets":[],"settings":{}}')).toThrow(
-      BackupValidationError,
+  it('rejects unsupported schemas with a stable code', () => {
+    expectBackupCode('{"schemaVersion":99,"history":[],"presets":[],"settings":{}}', 'unsupported-schema');
+  });
+
+  it('rejects malformed export timestamps with a stable code', () => {
+    expectBackupCode(
+      JSON.stringify({
+        schemaVersion: 1,
+        exportedAt: 'yesterday',
+        history: [],
+        presets: [],
+        settings: DEFAULT_SETTINGS,
+      }),
+      'invalid-export-timestamp',
     );
   });
 
-  it('rejects malformed export timestamps when present', () => {
-    expect(() =>
-      parseBackupJson(
-        JSON.stringify({
-          schemaVersion: 1,
-          exportedAt: 'yesterday',
-          history: [],
-          presets: [],
-          settings: DEFAULT_SETTINGS,
-        }),
-      ),
-    ).toThrow(/export timestamp is invalid/i);
-  });
-
   it('rejects malformed roll expressions in imported history', () => {
-    expect(() => parseBackupJson(backupWith({ ...roll, expression: 'not-dice' }))).toThrow(BackupValidationError);
+    expectBackupCode(backupWith({ ...roll, expression: 'not-dice' }), 'invalid-history-entry');
   });
 
   it('rejects die values outside the expression sides', () => {
-    expect(() => parseBackupJson(backupWith({ ...roll, dice: [{ value: 21, kept: true, index: 0 }], total: 23 }))).toThrow(
-      BackupValidationError,
+    expectBackupCode(
+      backupWith({ ...roll, dice: [{ value: 21, kept: true, index: 0 }], total: 23 }),
+      'invalid-history-entry',
     );
   });
 
   it('rejects totals that do not match kept dice and modifier', () => {
-    expect(() => parseBackupJson(backupWith({ ...roll, total: 999 }))).toThrow(BackupValidationError);
+    expectBackupCode(backupWith({ ...roll, total: 999 }), 'invalid-history-entry');
   });
 
   it('rejects duplicate die indices', () => {
@@ -101,7 +116,7 @@ describe('DiceLab backups', () => {
         { value: 12, kept: true, index: 0 },
       ],
     };
-    expect(() => parseBackupJson(backupWith(duplicated))).toThrow(BackupValidationError);
+    expectBackupCode(backupWith(duplicated), 'invalid-history-entry');
   });
 
   it('rejects duplicate roll ids', () => {
@@ -112,7 +127,7 @@ describe('DiceLab backups', () => {
       presets: [],
       settings: DEFAULT_SETTINGS,
     });
-    expect(() => parseBackupJson(duplicateHistory)).toThrow(/duplicate roll ids/i);
+    expectBackupCode(duplicateHistory, 'duplicate-roll-ids');
   });
 
   it('rejects duplicate custom preset ids', () => {
@@ -129,7 +144,7 @@ describe('DiceLab backups', () => {
       presets: [preset, { ...preset }],
       settings: DEFAULT_SETTINGS,
     });
-    expect(() => parseBackupJson(duplicatePresets)).toThrow(/duplicate ids/i);
+    expectBackupCode(duplicatePresets, 'duplicate-preset-ids');
   });
 
   it('rejects incorrect keep/drop state', () => {
@@ -142,14 +157,29 @@ describe('DiceLab backups', () => {
         { value: 12, kept: true, index: 1 },
       ],
     };
-    expect(() => parseBackupJson(backupWith(invalidSelection))).toThrow(BackupValidationError);
+    expectBackupCode(backupWith(invalidSelection), 'invalid-history-entry');
   });
 
   it('requires a seed for deterministic imported rolls', () => {
-    expect(() => parseBackupJson(backupWith({ ...roll, mode: 'seeded' }))).toThrow(BackupValidationError);
+    expectBackupCode(backupWith({ ...roll, mode: 'seeded' }), 'invalid-history-entry');
   });
 
   it('rejects non-canonical timestamps', () => {
-    expect(() => parseBackupJson(backupWith({ ...roll, rolledAt: '19 August 2026' }))).toThrow(BackupValidationError);
+    expectBackupCode(backupWith({ ...roll, rolledAt: '19 August 2026' }), 'invalid-history-entry');
+  });
+
+  it('exposes immutable size context for localized limit messages', () => {
+    const oversizedHistory = Array.from({ length: 5_001 }, (_, index) => ({ ...roll, id: `roll-${index}` }));
+    const error = expectBackupCode(
+      JSON.stringify({
+        schemaVersion: 1,
+        history: oversizedHistory,
+        presets: [],
+        settings: DEFAULT_SETTINGS,
+      }),
+      'invalid-history-shape',
+    );
+    expect(error.context.limit).toBe(5_000);
+    expect(Object.isFrozen(error.context)).toBe(true);
   });
 });
