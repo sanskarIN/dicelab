@@ -4,7 +4,7 @@ import { filterRollHistory } from '../domain/history';
 import { summarizeRolls } from '../domain/statistics';
 import type { RollResult } from '../domain/types';
 import { messages } from '../i18n';
-import { downloadText, historyToCsv, historyToJson } from '../services/export';
+import { historyToCsv, historyToJson, saveTextExport, type TextExportFormat } from '../services/export';
 
 interface HistoryPanelProps {
   history: RollResult[];
@@ -18,6 +18,7 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
   const [query, setQuery] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
   const [visibleLimit, setVisibleLimit] = useState(INITIAL_VISIBLE_HISTORY);
+  const [exportStatus, setExportStatus] = useState<string | null>(null);
   const filtered = useMemo(() => filterRollHistory(history, query), [history, query]);
   const visibleHistory = filtered.slice(0, visibleLimit);
   const stats = useMemo(() => summarizeRolls(filtered), [filtered]);
@@ -30,6 +31,21 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
     }
     onClear();
     setConfirmClear(false);
+  };
+
+  const exportHistory = async (
+    filename: string,
+    contents: string,
+    mimeType: string,
+    format: TextExportFormat,
+  ) => {
+    setExportStatus(null);
+    try {
+      const saved = await saveTextExport(filename, contents, mimeType, format);
+      if (saved) setExportStatus(messages.history.exportSuccess);
+    } catch {
+      setExportStatus(messages.history.exportFailed);
+    }
   };
 
   return (
@@ -45,7 +61,7 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
             type="button"
             className="secondary-button"
             disabled={!filtered.length}
-            onClick={() => downloadText('dicelab-rolls.csv', historyToCsv(filtered), 'text/csv')}
+            onClick={() => void exportHistory('dicelab-rolls.csv', historyToCsv(filtered), 'text/csv', 'csv')}
           >
             <Download size={16} aria-hidden="true" /> {messages.history.csv}
           </button>
@@ -53,12 +69,20 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
             type="button"
             className="secondary-button"
             disabled={!filtered.length}
-            onClick={() => downloadText('dicelab-rolls.json', historyToJson(filtered), 'application/json')}
+            onClick={() =>
+              void exportHistory('dicelab-rolls.json', historyToJson(filtered), 'application/json', 'json')
+            }
           >
             <FileJson size={16} aria-hidden="true" /> {messages.history.json}
           </button>
         </div>
       </header>
+
+      {exportStatus ? (
+        <p className="panel-note" role="status">
+          {exportStatus}
+        </p>
+      ) : null}
 
       <div className="stats-grid" aria-label={messages.history.summaryLabel}>
         <StatCard label={messages.history.rolls} value={String(stats.count)} />
