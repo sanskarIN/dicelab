@@ -9,6 +9,7 @@ import { RollWorkspace } from './components/RollWorkspace';
 import { SettingsPanel } from './components/SettingsPanel';
 import { parseDiceExpression } from './domain/parser';
 import { DEFAULT_SETTINGS, type DiceLabSettings, type DicePreset, type RollResult } from './domain/types';
+import { messages } from './i18n';
 import { backupToJson, createBackup, downloadText, parseBackupJson } from './services/export';
 import { rollDice } from './services/roll-service';
 import {
@@ -79,7 +80,7 @@ export default function App() {
       const result = await rollDice(expression, settings.randomMode, settings.seed || 'dicelab', sequenceRef.current++);
       setHistory((current) => [result, ...current].slice(0, settings.historyLimit));
     } catch (cause) {
-      setRollError(cause instanceof Error ? cause.message : 'DiceLab could not complete the roll.');
+      setRollError(cause instanceof Error ? cause.message : messages.roll.genericRollError);
     } finally {
       setBusy(false);
     }
@@ -87,16 +88,17 @@ export default function App() {
 
   const savePreset = (name: string) => {
     const parsed = parseDiceExpression(expression);
-    const id = typeof globalThis.crypto.randomUUID === 'function'
-      ? globalThis.crypto.randomUUID()
-      : `preset-${Date.now()}`;
+    const id =
+      typeof globalThis.crypto.randomUUID === 'function'
+        ? globalThis.crypto.randomUUID()
+        : `preset-${Date.now()}`;
     setPresets((current) => [
       ...current,
       {
         id,
         name,
         expression: parsed.normalized,
-        description: 'Custom preset',
+        description: messages.common.customPresetDescription,
         createdAt: new Date().toISOString(),
       },
     ]);
@@ -142,7 +144,7 @@ export default function App() {
 
   return (
     <>
-      <a className="skip-link" href="#main-content">Skip to content</a>
+      <a className="skip-link" href="#main-content">{messages.common.skipToContent}</a>
       <AppShell view={view} onNavigate={setView} onOpenCommands={() => setCommandOpen(true)}>
         {view === 'roll' ? (
           <RollWorkspace
