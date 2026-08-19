@@ -1,10 +1,9 @@
-import { parseDiceExpression } from '../domain/parser';
-import { DEFAULT_SETTINGS, type DicePreset, type DiceLabSettings, type RollResult } from '../domain/types';
+import { isPersistedPreset, isPersistedRollResult } from '../domain/persistence';
+import { DEFAULT_SETTINGS, type DiceLabSettings, type DicePreset, type RollResult } from '../domain/types';
 
 const MAX_BACKUP_BYTES = 5_000_000;
 const MAX_BACKUP_HISTORY = 5_000;
 const MAX_BACKUP_PRESETS = 500;
-const MAX_STORED_ROLL_SEED_LENGTH = 200;
 
 export interface DiceLabBackup {
   schemaVersion: 1;
@@ -81,8 +80,12 @@ export function parseBackupJson(contents: string): DiceLabBackup {
   if (!Array.isArray(candidate.presets) || candidate.presets.length > MAX_BACKUP_PRESETS) {
     throw new BackupValidationError(`Backup presets must contain at most ${MAX_BACKUP_PRESETS.toLocaleString('en-US')} items.`);
   }
-  if (!candidate.history.every(isRollResult)) throw new BackupValidationError('Backup contains an invalid roll history entry.');
-  if (!candidate.presets.every(isPreset)) throw new BackupValidationError('Backup contains an invalid preset.');
+  if (!candidate.history.every(isPersistedRollResult)) {
+    throw new BackupValidationError('Backup contains an invalid roll history entry.');
+  }
+  if (!candidate.presets.every(isPersistedPreset)) {
+    throw new BackupValidationError('Backup contains an invalid preset.');
+  }
 
   const settings = normalizeSettings(candidate.settings);
   return {
@@ -114,103 +117,19 @@ function normalizeSettings(value: unknown): DiceLabSettings {
   const randomMode = settings.randomMode;
   if (theme !== 'system' && theme !== 'light' && theme !== 'dark') throw new BackupValidationError('Backup theme is invalid.');
   if (randomMode !== 'secure' && randomMode !== 'seeded') throw new BackupValidationError('Backup random mode is invalid.');
-  const historyLimit = typeof settings.historyLimit === 'number' && Number.isSafeInteger(settings.historyLimit)
-    ? Math.min(5_000, Math.max(10, settings.historyLimit))
-    : DEFAULT_SETTINGS.historyLimit;
+  const historyLimit =
+    typeof settings.historyLimit === 'number' && Number.isSafeInteger(settings.historyLimit)
+      ? Math.min(5_000, Math.max(10, settings.historyLimit))
+      : DEFAULT_SETTINGS.historyLimit;
   return {
     theme,
-    reducedMotion: typeof settings.reducedMotion === 'boolean' ? settings.reducedMotion : DEFAULT_SETTINGS.reducedMotion,
+    reducedMotion:
+      typeof settings.reducedMotion === 'boolean' ? settings.reducedMotion : DEFAULT_SETTINGS.reducedMotion,
     animations: typeof settings.animations === 'boolean' ? settings.animations : DEFAULT_SETTINGS.animations,
     randomMode,
     seed: typeof settings.seed === 'string' ? settings.seed.slice(0, 120) : DEFAULT_SETTINGS.seed,
     historyLimit,
   };
-}
-
-function isRollResult(value: unknown): value is RollResult {
-  if (!value || typeof value !== 'object') return false;
-  const roll = value as Partial<RollResult>;
-  if (
-    typeof roll.id !== 'string' ||
-    roll.id.length < 1 ||
-    roll.id.length > 200 ||
-    typeof roll.expression !== 'string' ||
-    typeof roll.total !== 'number' ||
-    !Number.isSafeInteger(roll.total) ||
-    typeof roll.modifier !== 'number' ||
-    !Number.isSafeInteger(roll.modifier) ||
-    !Array.isArray(roll.dice) ||
-    roll.dice.length > 1_000 ||
-    typeof roll.rolledAt !== 'string' ||
-    !isIsoDate(roll.rolledAt) ||
-    (roll.mode !== 'secure' && roll.mode !== 'seeded') ||
-    (roll.seed !== undefined && (typeof roll.seed !== 'string' || roll.seed.length > MAX_STORED_ROLL_SEED_LENGTH)) ||
-    (roll.mode === 'seeded' && typeof roll.seed !== 'string')
-  ) return false;
-
-  let expression: ReturnType<typeof parseDiceExpression>;
-  try {
-    expression = parseDiceExpression(roll.expression);
-  } catch {
-    return false;
-  }
-  if (roll.modifier !== expression.modifier || roll.dice.length !== expression.count) return false;
-
-  const seenIndices = new Set<number>();
-  for (const die of roll.dice) {
-    if (
-      !die ||
-      typeof die !== 'object' ||
-      typeof die.value !== 'number' ||
-      !Number.isSafeInteger(die.value) ||
-      die.value < 1 ||
-      die.value > expression.sides ||
-      typeof die.kept !== 'boolean' ||
-      typeof die.index !== 'number' ||
-      !Number.isSafeInteger(die.index) ||
-      die.index < 0 ||
-      die.index >= expression.count ||
-      seenIndices.has(die.index)
-    ) return false;
-    seenIndices.add(die.index);
-  }
-
-  const expectedKept = expression.selection
-    ? expression.selection.kind.startsWith('keep')
-      ? expression.selection.count
-      : expression.count - expression.selection.count
-    : expression.count;
-  if (roll.dice.filter((die) => die.kept).length !== expectedKept) return false;
-
-  const computedTotal = roll.dice.reduce((sum, die) => sum + (die.kept ? die.value : 0), expression.modifier);
-  return computedTotal === roll.total;
-}
-
-function isPreset(value: unknown): value is DicePreset {
-  if (!value || typeof value !== 'object') return false;
-  const preset = value as Partial<DicePreset>;
-  if (
-    typeof preset.id !== 'string' ||
-    preset.id.length > 200 ||
-    typeof preset.name !== 'string' ||
-    preset.name.length < 1 ||
-    preset.name.length > 80 ||
-    typeof preset.expression !== 'string' ||
-    typeof preset.createdAt !== 'string' ||
-    !isIsoDate(preset.createdAt) ||
-    (preset.description !== undefined && (typeof preset.description !== 'string' || preset.description.length > 240))
-  ) return false;
-  try {
-    parseDiceExpression(preset.expression);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function isIsoDate(value: string): boolean {
-  const timestamp = Date.parse(value);
-  return Number.isFinite(timestamp) && new Date(timestamp).toISOString() === value;
 }
 
 function csvCell(value: string): string {
