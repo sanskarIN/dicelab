@@ -1,15 +1,41 @@
-import { Accessibility, Database, Download, MoonStar, ShieldCheck, Trash2 } from 'lucide-react';
+import { Accessibility, Database, Download, MoonStar, ShieldCheck, Trash2, Upload } from 'lucide-react';
+import { useState, type ChangeEvent } from 'react';
 import type { DiceLabSettings } from '../domain/types';
 
 interface SettingsPanelProps {
   settings: DiceLabSettings;
   onChange: (settings: DiceLabSettings) => void;
   onExportBackup: () => void;
+  onImportBackup: (file: File) => Promise<void>;
   onClearData: () => void;
 }
 
-export function SettingsPanel({ settings, onChange, onExportBackup, onClearData }: SettingsPanelProps) {
+export function SettingsPanel({ settings, onChange, onExportBackup, onImportBackup, onClearData }: SettingsPanelProps) {
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
   const patch = (changes: Partial<DiceLabSettings>) => onChange({ ...settings, ...changes });
+
+  const importBackup = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    try {
+      setImportStatus('Importing…');
+      await onImportBackup(file);
+      setImportStatus('Backup restored successfully.');
+    } catch (cause) {
+      setImportStatus(cause instanceof Error ? cause.message : 'Backup import failed.');
+    }
+  };
+
+  const clearData = () => {
+    if (!confirmClear) {
+      setConfirmClear(true);
+      return;
+    }
+    onClearData();
+    setConfirmClear(false);
+  };
 
   return (
     <section className="view-stack" aria-labelledby="settings-heading">
@@ -95,8 +121,15 @@ export function SettingsPanel({ settings, onChange, onExportBackup, onClearData 
         </label>
         <div className="setting-actions">
           <button type="button" className="secondary-button" onClick={onExportBackup}><Download size={16} aria-hidden="true" /> Export backup</button>
-          <button type="button" className="danger-button" onClick={onClearData}><Trash2 size={16} aria-hidden="true" /> Clear local data</button>
+          <label className="secondary-button file-button">
+            <Upload size={16} aria-hidden="true" /> Import backup
+            <input className="sr-only" type="file" accept="application/json,.json" onChange={(event) => void importBackup(event)} />
+          </label>
+          <button type="button" className={confirmClear ? 'danger-button confirm' : 'danger-button'} onClick={clearData} onBlur={() => setConfirmClear(false)}>
+            <Trash2 size={16} aria-hidden="true" /> {confirmClear ? 'Click again to clear' : 'Clear local data'}
+          </button>
         </div>
+        {importStatus ? <p className="panel-note" role="status">{importStatus}</p> : null}
       </section>
     </section>
   );
