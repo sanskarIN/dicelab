@@ -59,7 +59,7 @@ Commands are declared in `package.json`.
 | `npm run policy:localized-formatting` | Ensure localized React surfaces use the shared formatting boundary |
 | `npm run policy:runtime` | Ensure Tauri runtime probing/core imports stay in approved service adapters |
 | `npm run policy:native-commands` | Audit renderer→Rust native command allowlist/routing synchronization |
-| `npm run policy:lockfiles` | Check direct manifest/lock consistency without regenerating lockfiles |
+| `npm run policy:lockfiles` | Check direct manifest/lock dependency consistency without regenerating lockfiles |
 | `npm run policy:boundaries` | Aggregate the original capability/Tauri/localization/runtime repository boundary audits |
 | `npm run policy:test` | Run synthetic and committed-source self-tests for policy auditors |
 | `npm run policy:all` | Run the aggregate boundary audit plus offline CSP, native command, and lockfile consistency checks |
@@ -68,8 +68,8 @@ Commands are declared in `package.json`.
 
 | Command | Purpose |
 | --- | --- |
-| `npm run version:check` | Verify synchronized application version metadata; can also verify an expected tag/version via environment variable |
-| `npm run version:check:test` | Self-test the version consistency script |
+| `npm run version:check` | Verify package/config/generated-lock version agreement and optionally an expected release tag/version |
+| `npm run version:check:test` | Self-test manifest/config/npm-lock/Cargo-lock version parsing and agreement logic |
 | `npm run release:verify` | Verify prepared release packages/checksums/provenance when supplied with the expected release directory/context |
 | `npm run release:verify:test` | Self-test the release package verifier |
 
@@ -124,11 +124,21 @@ Self-tests the scanner using safe synthetic fixtures/patterns.
 
 #### `scripts/check-version-sync.mjs`
 
-Checks version agreement across `package.json`, `src/config/app.ts`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`. When an expected release tag/version is supplied, it also validates tag agreement.
+Checks exact semantic-version agreement across:
+
+- `package.json`;
+- top-level `package-lock.json` version;
+- `package-lock.json` root package (`packages[""]`) version;
+- `src/config/app.ts`;
+- `src-tauri/Cargo.toml`;
+- the `dicelab` package entry in `src-tauri/Cargo.lock`;
+- `src-tauri/tauri.conf.json`.
+
+When `DICELAB_EXPECT_VERSION` is supplied, a conventional leading `v` is normalized and the expected tag/version must match the synchronized application version. This means a manifest bump cannot pass the version gate while generated lock metadata still carries an older application version.
 
 #### `scripts/check-version-sync.test.mjs`
 
-Self-tests version normalization/agreement logic.
+Self-tests frontend/Cargo manifest extraction, npm-lock top/root version extraction, Cargo-lock package extraction, end-of-file Cargo package-section parsing, semantic-version agreement, and tag agreement/error cases.
 
 #### `scripts/verify-release-packages.mjs`
 
@@ -241,7 +251,7 @@ Performs an early structural comparison:
 - direct npm dependencies/devDependencies/optionalDependencies versus package-lock root metadata;
 - direct Cargo dependencies/build/target dependencies versus package names present in Cargo.lock.
 
-It detects stale/missing direct lock coverage but deliberately does not synthesize Cargo's transitive graph.
+It detects stale/missing direct dependency lock coverage but deliberately does not synthesize Cargo's transitive graph or replace the separate version-agreement audit.
 
 #### `scripts/check-lockfile-consistency.test.mjs`
 
@@ -276,7 +286,7 @@ Runs:
 2. repository secret audit;
 3. E2E infrastructure self-test;
 4. version audit self-test;
-5. version consistency;
+5. version consistency, including generated lock version metadata;
 6. `npm ci`;
 7. documentation link audit;
 8. Prettier check;
@@ -295,7 +305,7 @@ On Ubuntu with Tauri Linux dependencies:
 4. `cargo test --locked`;
 5. `cargo clippy --all-targets --all-features --locked -- -D warnings`.
 
-A stale Cargo lock therefore blocks this job rather than being silently resolved.
+A stale generated lock therefore blocks CI instead of being silently treated as a synchronized release state.
 
 ## 14. GitHub workflow: `repository-audit.yml`
 
@@ -303,7 +313,7 @@ A stale Cargo lock therefore blocks this job rather than being silently resolved
 
 Runs dependency-free repository-level invariants before application dependency installation, including secret, documentation, E2E infrastructure, version, release-verifier, and exhaustive file-reference self-check/audit commands.
 
-This workflow is the appropriate home for checks that inspect repository metadata rather than application behavior.
+Because the version audit now reads generated lock metadata, this workflow also exposes a version bump whose lockfile metadata has not been regenerated.
 
 ## 15. GitHub workflow: `codeql.yml`
 
@@ -359,28 +369,52 @@ Responsibilities:
 
 The workflow uses the repository automation identity/email configured in its Git commit step. Its existence is configuration evidence only; a generated commit or successful run must still be observed before claiming the lockfile blocker is resolved.
 
+For the 2.0.12 bump, successful regeneration must update npm root version metadata and the DiceLab Cargo-lock package version as well as resolve the `tauri-plugin-dialog` dependency graph.
+
 ## 19. GitHub workflow: `release.yml`
 
 **Trigger:** `v*` tag push.
 
+The current intended candidate tag is `v2.0.12`. The workflow itself verifies that the tag matches all machine-readable version locations, including generated lock metadata, before installing dependencies or producing artifacts.
+
 ### Web artifact job
 
-Runs secret/version/browser infrastructure checks, locked npm install, docs/format/lint/tests/build/E2E, then uploads `dist/`.
+The job has a 30-minute timeout and runs:
+
+1. secret scanner self-test;
+2. repository secret audit;
+3. documentation link and tracked-file inventory self-tests;
+4. documentation link and tracked-file inventory audits;
+5. repository policy self-tests;
+6. all release-relevant repository policy boundaries, including direct lock consistency;
+7. browser E2E infrastructure self-test;
+8. version audit self-test;
+9. version/tag agreement across manifests/config/generated locks;
+10. release-verifier self-test;
+11. locked npm installation;
+12. Prettier check;
+13. ESLint;
+14. Vitest unit/integration suite;
+15. production web build;
+16. real-browser E2E smoke;
+17. web artifact upload.
+
+Because these repository audits run inside the same tag workflow, a draft release cannot rely solely on separately scheduled/path-filtered policy workflows for these boundaries.
 
 ### Desktop matrix
 
-Runs on Windows, macOS, and Ubuntu. Each platform:
+Runs on Windows, macOS, and Ubuntu with a 45-minute timeout per platform. Each platform:
 
-- installs npm dependencies;
+- installs npm dependencies from the committed lockfile;
 - verifies Rust formatting;
 - runs locked Rust tests;
-- runs Clippy with warnings denied;
+- runs Clippy with warnings denied and `--locked`;
 - runs `npm run tauri:build`;
 - uploads platform bundle output.
 
 ### Draft release job
 
-After web and all desktop jobs succeed:
+After web and all desktop jobs succeed, a 15-minute draft-release job:
 
 - downloads workflow artifacts;
 - ZIPs each artifact set;
@@ -389,7 +423,7 @@ After web and all desktop jobs succeed:
 - creates or updates a **draft** GitHub release;
 - uploads packages/checksums.
 
-It deliberately does not publish automatically.
+It deliberately does not publish automatically. Installed-platform smoke, screenshots, signing/notarization status, checksum/provenance review, and explicit maintainer approval remain human release evidence.
 
 ## 20. Repository policy workflows
 
@@ -427,7 +461,7 @@ Re-runs the core repository policy boundaries on `v*` tags or manual dispatch. T
 
 ### `release-lockfile-consistency.yml`
 
-Runs the lockfile auditor self-test and actual manifest/lock consistency check on release tags/manual dispatch. It fails stale candidates rather than regenerating their dependency graph during release verification.
+Runs the lockfile auditor self-test and actual manifest/lock dependency consistency check on release tags/manual dispatch. It fails stale candidates rather than regenerating their dependency graph during release verification.
 
 ## 21. GitHub workflow: release-notes configuration
 
@@ -435,7 +469,7 @@ Runs the lockfile auditor self-test and actual manifest/lock consistency check o
 
 ## 22. Dependabot
 
-`.github/dependabot.yml` configures automated dependency-update discovery for the repository's supported package ecosystems/workflows. Dependabot proposals still require normal CI, lockfile, security, and compatibility review.
+`.github/dependabot.yml` configures automated dependency-update discovery for the repository's supported package ecosystems/workflows. Dependabot proposals still require normal CI, lockfile, security, version, and compatibility review.
 
 ## 23. Issue/PR automation metadata
 
