@@ -19,15 +19,21 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - Reduced-motion and animation controls.
 - First-run onboarding, responsive navigation, and keyboard command palette.
 - About/privacy/support surfaces and **Made by the Sanskar** credit.
-- Rust, TypeScript, probability, parser, and export tests.
+- Rust, TypeScript, probability, parser, export, statistics, deterministic-random, and backup validation tests.
 - GitHub CI and dependency-lock automation foundations.
 - Tauri CSP and least-privilege capability configuration.
 - Professional project documentation baseline.
+
+### Changed
+
+- Backup import validation now rejects internally inconsistent roll totals, duplicate or out-of-range die indices, impossible die values, malformed timestamps, missing deterministic seeds, mismatched modifiers, and invalid keep/drop state.
 
 ### Security
 
 - Secure mode uses OS-backed native randomness on desktop and Web Crypto in the browser companion.
 - Untrusted dice expressions are bounded and validated.
+- CSV exports neutralize formula-like cell prefixes before spreadsheet applications can interpret them as formulas.
+- Imported backups are schema-bounded and validated before replacing local state.
 - Desktop content is constrained by a restrictive CSP.
 - No broad filesystem, shell, or network plugin permissions are granted.
 
