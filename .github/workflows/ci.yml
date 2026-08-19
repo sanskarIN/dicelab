@@ -22,14 +22,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+        run: npm ci
       - name: Format check
         run: npm run format
       - name: Lint
         run: npm run lint
-      - name: Unit tests
+      - name: Unit and integration tests
         run: npm run test
       - name: Production web build
         run: npm run build
@@ -56,18 +56,16 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
       - name: Rust format check
         working-directory: src-tauri
         run: cargo fmt --all -- --check
       - name: Rust tests
         working-directory: src-tauri
-        run: |
-          if [ -f Cargo.lock ]; then cargo test --locked; else cargo test; fi
+        run: cargo test --locked
       - name: Clippy
         working-directory: src-tauri
-        run: |
-          if [ -f Cargo.lock ]; then
-            cargo clippy --all-targets --all-features --locked -- -D warnings
-          else
-            cargo clippy --all-targets --all-features -- -D warnings
-          fi
+        run: cargo clippy --all-targets --all-features --locked -- -D warnings
