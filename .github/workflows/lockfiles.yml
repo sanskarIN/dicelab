@@ -51,4 +51,9 @@ jobs:
           fi
           git commit -m "build: lock application dependencies"
           git pull --rebase origin main
-          git push origin HEAD:main
+          if git push origin HEAD:main; then
+            echo "Lockfiles committed directly to main."
+          else
+            echo "Direct main push was rejected; publishing generated lockfiles to automation/lockfiles."
+            git push --force origin HEAD:refs/heads/automation/lockfiles
+          fi
