@@ -1,3 +1,4 @@
+import { copy } from '../i18n';
 import { selectKeptIndices } from './engine';
 import { parseDiceExpression } from './parser';
 import type { DiceExpression, ProbabilityDistribution, ProbabilityPoint } from './types';
@@ -19,7 +20,7 @@ export function calculateProbability(input: string): ProbabilityDistribution {
 
 function calculateSumDistribution(expression: DiceExpression): ProbabilityDistribution {
   if (expression.count * expression.sides > MAX_DP_CELLS) {
-    throw new ProbabilityComplexityError('This distribution is too large for the interactive exact calculator.');
+    throw new ProbabilityComplexityError(copy.errors.probabilityTooLarge);
   }
 
   let ways = new Float64Array(1);
@@ -53,9 +54,7 @@ function calculateSumDistribution(expression: DiceExpression): ProbabilityDistri
 function enumerateSelectionDistribution(expression: DiceExpression): ProbabilityDistribution {
   const totalOutcomes = Math.pow(expression.sides, expression.count);
   if (!Number.isFinite(totalOutcomes) || totalOutcomes > MAX_ENUMERATED_OUTCOMES) {
-    throw new ProbabilityComplexityError(
-      `Exact keep/drop calculation is limited to ${MAX_ENUMERATED_OUTCOMES.toLocaleString('en-US')} raw outcomes.`,
-    );
+    throw new ProbabilityComplexityError(copy.errors.probabilityKeepDropTooLarge(MAX_ENUMERATED_OUTCOMES));
   }
 
   const counts = new Map<number, number>();
@@ -95,7 +94,7 @@ function finishDistribution(
   totalOutcomes: number,
 ): ProbabilityDistribution {
   if (points.length === 0) {
-    throw new Error('Probability calculation produced no outcomes.');
+    throw new Error(copy.errors.probabilityNoOutcomes);
   }
   return {
     expression: expression.normalized,
