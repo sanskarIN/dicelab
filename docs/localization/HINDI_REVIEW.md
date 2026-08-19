@@ -28,11 +28,17 @@ This document records the repository-level review for the first non-English Dice
 - [x] Backup and privacy copy preserves the offline/local-data model.
 - [x] Accessibility labels remain understandable without relying on icons alone.
 - [x] Number-format helpers use `hi-IN` where locale-sensitive formatting is appropriate.
-- [x] The default exported `messages` catalog remains English until an explicit language-selection preference is implemented.
+- [x] Language selection persists through local settings.
+- [x] Backup import/export preserves a supported locale while legacy schema-v1 backups default safely to English.
+- [x] The document `lang` attribute follows the active locale.
+- [x] Built-in presets use the active catalog without translating user-created preset copy.
+- [x] Component and integration tests cover the language preference and live Hindi switch.
 
 ## Exposure policy
 
-The Hindi catalog is registered and testable through `getMessages('hi')`, but DiceLab continues to render English by default. Language selection should only be exposed after the settings persistence and document-language update paths are implemented and covered by component/integration tests.
+English remains the default locale. The Settings screen exposes English and Hindi as explicit local preferences. Changing the preference switches the live message catalog, updates the document language metadata, and regenerates only built-in preset labels and descriptions. User-created names, expressions, seeds, history entries, and exported values remain unchanged.
+
+Unsupported or missing locale values in persisted settings and compatible schema-v1 backups fall back to English. Adding another locale requires extending the typed locale preference, adding a complete catalog, recording a review, and adding storage/backup/interface regression coverage before exposing it in Settings.
 
 ## Future review
 
