@@ -16,8 +16,13 @@ Current automated coverage includes:
 - keep/drop selection and modifier totals;
 - deterministic seeded random sequences;
 - probability distributions for ordinary and keep/drop expressions;
-- CSV/JSON serialization;
-- backup validation and round trips.
+- CSV/JSON serialization and spreadsheet-safe seed export;
+- backup round trips plus imported roll-integrity rejection;
+- corrupted local history/preset/settings recovery;
+- native error-code normalization in the TypeScript adapter;
+- structured-log sensitive-key redaction and error-message omission;
+- first-run dialog semantics/keyboard activation;
+- settings control labels and native control behavior.
 
 Use `npm run test:watch` during development and `npm run test:coverage` when reviewing coverage gaps.
 
@@ -30,7 +35,7 @@ cd src-tauri
 cargo test
 ```
 
-Native tests cover parsing, invalid selection rules, deterministic seeded behavior, and keep/drop selection.
+Native tests cover parsing, stable error codes, invalid selection rules, extreme modifier rejection, deterministic seeded behavior, and keep/drop selection.
 
 ## Static quality checks
 
@@ -39,6 +44,7 @@ Frontend:
 ```bash
 npm run format
 npm run lint
+npm run test
 npm run build
 ```
 
@@ -48,8 +54,11 @@ Rust:
 
 ```bash
 cargo fmt --all -- --check
+cargo test
 cargo clippy --all-targets --all-features -- -D warnings
 ```
+
+When lockfiles are present, CI uses `npm ci` and Cargo `--locked` modes.
 
 ## Required regression tests
 
@@ -66,15 +75,17 @@ Before a release, verify at least:
 5. Keep/drop dice are visually and textually identifiable.
 6. History search, clear confirmation, CSV, and JSON export work.
 7. A valid backup restores settings/history/presets.
-8. An invalid or oversized backup is rejected safely.
+8. Invalid, oversized, or internally inconsistent backups are rejected safely.
 9. Probability calculator handles common expressions and rejects overly complex keep/drop calculations.
 10. Theme and reduced-motion preferences apply immediately.
 11. Command palette opens with `Ctrl/Cmd + K` and closes with Escape.
 12. About links and support details are correct.
+13. Corrupted local persistence does not prevent a fresh valid roll.
+14. Secure/native validation errors are presented as catalog-backed user messages rather than raw machine codes.
 
 ## Accessibility checks
 
-Automated component accessibility coverage should be expanded before 1.0, but automation does not replace manual review. Follow [`accessibility.md`](accessibility.md).
+Component smoke tests cover semantic onboarding/settings controls, but automation does not replace manual review. Follow [`accessibility.md`](accessibility.md) for keyboard, zoom, motion, contrast, and screen-reader checks.
 
 ## End-to-end roadmap
 
@@ -88,6 +99,10 @@ A browser E2E suite should cover:
 - keyboard command navigation.
 
 Desktop smoke coverage should verify the native Tauri command separately from the web fallback.
+
+## Property and fuzz roadmap
+
+The parser and backup validators already have boundary/integrity regression tests. Broader property-style invariants or a dedicated Rust fuzz target should be added only when they can be maintained in CI without making ordinary contributor setup fragile.
 
 ## Performance tests
 

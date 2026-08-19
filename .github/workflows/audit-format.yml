@@ -1,0 +1,46 @@
+name: Audit formatting
+
+on:
+  push:
+    branches: [audit/phase-6]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: audit-format-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Format frontend and documentation
+        run: npm run format:write
+      - name: Format Rust
+        working-directory: src-tauri
+        run: cargo fmt --all
+      - name: Commit formatting when needed
+        run: |
+          git config user.name "sanskarIN"
+          git config user.email "sanskarin@outlook.in"
+          git add --all
+          if git diff --cached --quiet; then
+            echo "Repository formatting already current."
+            exit 0
+          fi
+          git commit -m "style: normalize repository formatting"
+          git pull --rebase origin audit/phase-6
+          git push origin HEAD:audit/phase-6

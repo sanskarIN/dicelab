@@ -9,7 +9,9 @@ import { RollWorkspace } from './components/RollWorkspace';
 import { SettingsPanel } from './components/SettingsPanel';
 import { parseDiceExpression } from './domain/parser';
 import { DEFAULT_SETTINGS, type DiceLabSettings, type DicePreset, type RollResult } from './domain/types';
+import { copy } from './i18n';
 import { backupToJson, createBackup, downloadText, parseBackupJson } from './services/export';
+import { logError, logEvent } from './services/logger';
 import { rollDice } from './services/roll-service';
 import {
   BUILTIN_PRESETS,
@@ -79,7 +81,8 @@ export default function App() {
       const result = await rollDice(expression, settings.randomMode, settings.seed || 'dicelab', sequenceRef.current++);
       setHistory((current) => [result, ...current].slice(0, settings.historyLimit));
     } catch (cause) {
-      setRollError(cause instanceof Error ? cause.message : 'DiceLab could not complete the roll.');
+      logError('roll_failed', cause, { randomMode: settings.randomMode });
+      setRollError(cause instanceof Error ? cause.message : copy.app.rollFailed);
     } finally {
       setBusy(false);
     }
@@ -87,16 +90,15 @@ export default function App() {
 
   const savePreset = (name: string) => {
     const parsed = parseDiceExpression(expression);
-    const id = typeof globalThis.crypto.randomUUID === 'function'
-      ? globalThis.crypto.randomUUID()
-      : `preset-${Date.now()}`;
+    const id =
+      typeof globalThis.crypto.randomUUID === 'function' ? globalThis.crypto.randomUUID() : `preset-${Date.now()}`;
     setPresets((current) => [
       ...current,
       {
         id,
         name,
         expression: parsed.normalized,
-        description: 'Custom preset',
+        description: copy.app.customPreset,
         createdAt: new Date().toISOString(),
       },
     ]);
@@ -115,14 +117,24 @@ export default function App() {
   const exportBackup = () => {
     const backup = createBackup(history, presets, settings);
     downloadText('dicelab-backup.json', backupToJson(backup), 'application/json');
+    logEvent('info', 'backup_exported', { historyCount: history.length, presetCount: presets.length });
   };
 
   const importBackup = async (file: File) => {
-    const backup = parseBackupJson(await file.text());
-    setHistory(backup.history.slice(0, backup.settings.historyLimit));
-    setPresets([...BUILTIN_PRESETS, ...backup.presets]);
-    setSettings(backup.settings);
-    sequenceRef.current = 0;
+    try {
+      const backup = parseBackupJson(await file.text());
+      setHistory(backup.history.slice(0, backup.settings.historyLimit));
+      setPresets([...BUILTIN_PRESETS, ...backup.presets]);
+      setSettings(backup.settings);
+      sequenceRef.current = 0;
+      logEvent('info', 'backup_restored', {
+        historyCount: backup.history.length,
+        presetCount: backup.presets.length,
+      });
+    } catch (cause) {
+      logError('backup_restore_failed', cause);
+      throw cause;
+    }
   };
 
   const clearAllData = () => {
@@ -133,6 +145,7 @@ export default function App() {
     sequenceRef.current = 0;
     setShowOnboarding(true);
     setView('roll');
+    logEvent('info', 'local_data_cleared');
   };
 
   const finishOnboarding = () => {
@@ -142,7 +155,9 @@ export default function App() {
 
   return (
     <>
-      <a className="skip-link" href="#main-content">Skip to content</a>
+      <a className="skip-link" href="#main-content">
+        {copy.app.skipToContent}
+      </a>
       <AppShell view={view} onNavigate={setView} onOpenCommands={() => setCommandOpen(true)}>
         {view === 'roll' ? (
           <RollWorkspace

@@ -7,6 +7,15 @@ const MAX_DICE: usize = 1_000;
 const MAX_SIDES: u32 = 1_000_000;
 const MAX_ABS_MODIFIER: i64 = 1_000_000_000;
 
+const ERR_INVALID_EXPRESSION: &str = "ERR_INVALID_EXPRESSION";
+const ERR_DICE_COUNT: &str = "ERR_DICE_COUNT";
+const ERR_SIDES: &str = "ERR_SIDES";
+const ERR_MODIFIER: &str = "ERR_MODIFIER";
+const ERR_SELECTION_COUNT: &str = "ERR_SELECTION_COUNT";
+const ERR_KEEP_COUNT: &str = "ERR_KEEP_COUNT";
+const ERR_DROP_COUNT: &str = "ERR_DROP_COUNT";
+const ERR_RANDOM_MODE: &str = "ERR_RANDOM_MODE";
+
 #[derive(Debug, Clone, Copy)]
 enum SelectionKind {
     KeepHighest,
@@ -64,7 +73,7 @@ fn roll_expression(
             let mut rng = StdRng::seed_from_u64(hash_seed(&seed_text));
             Ok(roll_with_rng(&parsed, &mut rng))
         }
-        _ => Err("Random mode must be either 'secure' or 'seeded'.".to_string()),
+        _ => Err(ERR_RANDOM_MODE.to_string()),
     }
 }
 
@@ -76,7 +85,7 @@ fn parse_expression(input: &str) -> Result<Expression, String> {
     });
     let captures = regex
         .captures(input)
-        .ok_or_else(|| "Use an expression such as 2d6+3, 4d6kh3, or 1d20.".to_string())?;
+        .ok_or_else(|| ERR_INVALID_EXPRESSION.to_string())?;
 
     let raw_count = captures.get(1).map_or("", |item| item.as_str());
     let count = if raw_count.is_empty() {
@@ -84,29 +93,26 @@ fn parse_expression(input: &str) -> Result<Expression, String> {
     } else {
         raw_count
             .parse::<usize>()
-            .map_err(|_| "Dice count is invalid.".to_string())?
+            .map_err(|_| ERR_DICE_COUNT.to_string())?
     };
     let sides = captures[2]
         .parse::<u32>()
-        .map_err(|_| "Side count is invalid.".to_string())?;
+        .map_err(|_| ERR_SIDES.to_string())?;
     let modifier = captures
         .get(5)
         .map(|item| item.as_str().replace(char::is_whitespace, ""))
         .map_or(Ok(0_i64), |item| {
-            item.parse::<i64>()
-                .map_err(|_| "Modifier is invalid.".to_string())
+            item.parse::<i64>().map_err(|_| ERR_MODIFIER.to_string())
         })?;
 
     if !(1..=MAX_DICE).contains(&count) {
-        return Err(format!("Dice count must be between 1 and {MAX_DICE}."));
+        return Err(ERR_DICE_COUNT.to_string());
     }
     if !(2..=MAX_SIDES).contains(&sides) {
-        return Err(format!("Sides must be between 2 and {MAX_SIDES}."));
+        return Err(ERR_SIDES.to_string());
     }
     if !(-MAX_ABS_MODIFIER..=MAX_ABS_MODIFIER).contains(&modifier) {
-        return Err(format!(
-            "Modifier magnitude must not exceed {MAX_ABS_MODIFIER}."
-        ));
+        return Err(ERR_MODIFIER.to_string());
     }
 
     let selection = match (captures.get(3), captures.get(4)) {
@@ -114,24 +120,23 @@ fn parse_expression(input: &str) -> Result<Expression, String> {
             let selection_count = raw_count
                 .as_str()
                 .parse::<usize>()
-                .map_err(|_| "Keep/drop count is invalid.".to_string())?;
+                .map_err(|_| ERR_SELECTION_COUNT.to_string())?;
             let kind = match raw_kind.as_str().to_ascii_lowercase().as_str() {
                 "kh" => SelectionKind::KeepHighest,
                 "kl" => SelectionKind::KeepLowest,
                 "dh" => SelectionKind::DropHighest,
                 "dl" => SelectionKind::DropLowest,
-                _ => return Err("Unknown keep/drop operation.".to_string()),
+                _ => return Err(ERR_INVALID_EXPRESSION.to_string()),
             };
+            if selection_count == 0 {
+                return Err(ERR_SELECTION_COUNT.to_string());
+            }
             let is_keep = matches!(kind, SelectionKind::KeepHighest | SelectionKind::KeepLowest);
-            if selection_count == 0
-                || (is_keep && selection_count > count)
-                || (!is_keep && selection_count >= count)
-            {
-                return Err(if is_keep {
-                    "Keep count must be between 1 and the number of dice.".to_string()
-                } else {
-                    "Drop count must leave at least one die.".to_string()
-                });
+            if is_keep && selection_count > count {
+                return Err(ERR_KEEP_COUNT.to_string());
+            }
+            if !is_keep && selection_count >= count {
+                return Err(ERR_DROP_COUNT.to_string());
             }
             Some(Selection {
                 kind,
@@ -270,13 +275,20 @@ mod tests {
     }
 
     #[test]
-    fn rejects_drop_all_dice() {
-        assert!(parse_expression("2d6dl2").is_err());
+    fn returns_stable_error_codes_for_invalid_input() {
+        assert_eq!(parse_expression("dice").unwrap_err(), ERR_INVALID_EXPRESSION);
+        assert_eq!(parse_expression("1001d6").unwrap_err(), ERR_DICE_COUNT);
+        assert_eq!(parse_expression("1d1").unwrap_err(), ERR_SIDES);
+        assert_eq!(parse_expression("2d6kh3").unwrap_err(), ERR_KEEP_COUNT);
+        assert_eq!(parse_expression("2d6dl2").unwrap_err(), ERR_DROP_COUNT);
     }
 
     #[test]
     fn rejects_extreme_modifier_without_overflow() {
-        assert!(parse_expression("1d6-9223372036854775808").is_err());
+        assert_eq!(
+            parse_expression("1d6-9223372036854775808").unwrap_err(),
+            ERR_MODIFIER
+        );
     }
 
     #[test]
