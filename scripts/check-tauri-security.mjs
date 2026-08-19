@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_CONFIG_PATH = path.resolve(SCRIPT_DIRECTORY, '../src-tauri/tauri.conf.json');
+const LOCAL_TAURI_URL = /^http:\/\/(?:ipc|asset)\.localhost(?::\d+)?(?:\/|$)/i;
+const LOOPBACK_URL = /^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(?:\/|$)/i;
 
 export function auditTauriSecurityConfig(config, source = 'src-tauri/tauri.conf.json') {
   const findings = [];
@@ -24,13 +26,15 @@ export function auditTauriSecurityConfig(config, source = 'src-tauri/tauri.conf.
   findings.push(...auditCsp(security.csp, `${source}: app.security.csp`));
 
   if ('devCsp' in security && security.devCsp !== null && security.devCsp !== undefined) {
-    findings.push(...auditCsp(security.devCsp, `${source}: app.security.devCsp`));
+    findings.push(
+      ...auditCsp(security.devCsp, `${source}: app.security.devCsp`, { allowLoopback: true }),
+    );
   }
 
   return findings;
 }
 
-export function auditCsp(csp, source = 'csp') {
+export function auditCsp(csp, source = 'csp', { allowLoopback = false } = {}) {
   if (typeof csp !== 'string' || csp.trim().length === 0) {
     return [`${source}: a non-empty CSP string is required`];
   }
@@ -54,7 +58,7 @@ export function auditCsp(csp, source = 'csp') {
 
   const scriptSources = directives.get('script-src') ?? defaultSources ?? [];
   for (const sourceToken of scriptSources) {
-    if (isRemoteNetworkSource(sourceToken)) {
+    if (isRemoteNetworkSource(sourceToken, allowLoopback)) {
       findings.push(`${source}: remote network script source is not allowed: ${sourceToken}`);
     }
   }
@@ -73,8 +77,11 @@ function parseCsp(csp) {
   return directives;
 }
 
-function isRemoteNetworkSource(source) {
-  return /^https?:\/\//i.test(source) && !/^http:\/\/(ipc|asset)\.localhost(?::\d+)?(?:\/|$)/i.test(source);
+function isRemoteNetworkSource(source, allowLoopback) {
+  if (!/^https?:\/\//i.test(source)) return false;
+  if (LOCAL_TAURI_URL.test(source)) return false;
+  if (allowLoopback && LOOPBACK_URL.test(source)) return false;
+  return true;
 }
 
 export async function auditTauriSecurityFile(filepath = DEFAULT_CONFIG_PATH) {
