@@ -15,6 +15,7 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - History search, statistics, histogram, CSV export, and JSON export.
 - Exact probability calculator for ordinary sums and manageable keep/drop expressions.
 - Backup export and validated restore for history, custom presets, and settings.
+- Native desktop save dialogs for CSV/JSON exports through a dedicated bounded Rust command, while browser builds retain their ordinary download path.
 - Light, dark, and system themes.
 - Reduced-motion and animation controls.
 - First-run onboarding, responsive navigation, and keyboard command palette.
@@ -23,6 +24,7 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - Localized application-level recovery UI for unexpected React render failures without clearing local data.
 - Typed English message catalog and locale boundary for migrated user-facing React/preset copy.
 - Reviewed Hindi message catalog with persisted English/Hindi language selection, localized built-in presets, document-language metadata, and backup compatibility.
+- Locale-aware number, date, and time formatting helpers for roll, history, and probability presentation.
 - Stable parser, probability, and backup validation error codes with localized presentation mappings.
 - Localization contributor guide and locale/error-contract tests.
 - Structured local application logger with recursive sensitive-key redaction, bounded context, and raw-error omission.
@@ -31,6 +33,7 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - Dependency-free real-browser production-bundle E2E smoke covering onboarding, rolling, history, real CSV download, reload persistence, keyboard command palette, probability, real backup download, clear-data flow, real file-input restore, and restored history.
 - Extracted dependency-free CDP transport with Node tests for command routing, protocol errors, event waits/timeouts, and socket closure.
 - Component keyboard/accessibility regression tests for command palette, onboarding, settings, large-history behavior, and root error recovery.
+- Native/browser export-routing tests covering system-dialog cancellation, safe fallback behavior, payload/filename validation, final extension validation, and user-safe export status feedback.
 - Generated TypeScript parser normalization/case/whitespace invariants.
 - Generated native Rust parser normalization corpus plus adversarial malformed-input corpus.
 - Coverage-guided native parser fuzz target with documented local workflow and a bounded scheduled/manual GitHub Actions campaign.
@@ -47,19 +50,24 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - GitHub CI with locked npm/Cargo dependency verification.
 - Tag-driven cross-platform draft release packaging with ZIP archives, `RELEASE-METADATA.json`, and `SHA256SUMS.txt`.
 - Tauri CSP and least-privilege capability configuration.
+- Native export trust-boundary documentation covering browser/desktop behavior, validation, cancellation, and future-format review rules.
 - Professional project documentation baseline.
 
 ### Changed
 
 - TypeScript and Rust seeded modes now use the same UTF-8 FNV-1a 32-bit seed hash and xorshift32 sequence so identical effective seeds reproduce identical deterministic values across web and desktop.
 - Probability calculations advertised as exact now reject raw-outcome counts that exceed JavaScript safe-integer precision.
+- Roll, history, and probability presentation now use the selected DiceLab locale for explicit `Intl` number/date/time formatting instead of inheriting the host browser locale independently from UI language.
 - Backup import validation rejects internally inconsistent roll totals, duplicate IDs, duplicate/out-of-range die indices, impossible die values, malformed timestamps, missing deterministic seeds, mismatched modifiers, and invalid keep/drop state.
 - Parser/probability/backup UI feedback now resolves from stable error codes and catalog entries rather than raw exception messages.
 - Imported and locally persisted settings normalize contradictory reduced-motion/animation state.
 - Locale preferences are normalized to the reviewed English/Hindi set; missing or unsupported schema-v1 backup locale values fall back to English.
+- Built-in preset copy follows the active catalog while user-created names, expressions, seeds, and history content remain unchanged.
 - Local history and custom presets are validated, bounded, and deduplicated before use or persistence.
 - History query logic is centralized in the domain layer so UI filtering, tests, and performance benchmarks share one implementation.
+- History and backup exports now use the dedicated native save command inside Tauri and preserve the existing Blob-download implementation in normal browsers.
 - Normal CI and tagged web release verification now self-test the browser automation infrastructure and require the real-browser smoke after the production build.
+- The dependency-lockfile workflow supports manual dispatch and preserves exact generated lockfiles on a dedicated automation branch if a protected `main` branch rejects its direct update.
 - Release tags must match the synchronized declared application version before release dependencies/builds proceed.
 - Release tags now produce a draft GitHub release only after the web and all desktop build jobs succeed; publication remains a deliberate maintainer action.
 - Core product metadata is centralized for Settings/About consistency.
@@ -73,6 +81,7 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - Backup-error localization now always returns the caller-provided safe fallback if a future/unrecognized code reaches the mapper.
 - History filter tests no longer use a query that ambiguously matches both a total and an expression suffix.
 - Browser E2E navigation/reload synchronization now waits for DevTools page-load events and surfaces `Page.navigate` network/policy errors explicitly instead of racing the previous document.
+- Hindi UI no longer mixes localized interface copy with host-locale number/date/time formatting on roll, history, and probability surfaces.
 
 ### Security
 
@@ -81,13 +90,15 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - CSV exports neutralize formula-like cell prefixes before spreadsheet applications can interpret them as formulas.
 - Imported backups are schema-bounded and validated before replacing local state.
 - Duplicate restored identifiers are rejected to avoid ambiguous application state.
+- Desktop CSV/JSON exports use a purpose-built Rust command that accepts no frontend-supplied destination path, allows only bounded CSV/JSON payloads, validates suggested filenames and final selected extensions, and writes only to the operating-system-dialog-selected path.
+- Native export failures shown by the UI use localized safe messages and do not expose the selected private filesystem path.
 - Structured logger redaction prevents normal operational events from serializing configured seeds, user content, backups, email/name fields, raw exception messages, or stacks.
 - Storage/recovery diagnostics emit only stable event names and bounded safe metadata.
 - CI/tagged builds run a self-tested high-confidence secret scanner that never prints matched credential values.
 - The application recovery boundary logs only a fixed structured event from DiceLab rather than serializing raw exception contents.
 - Release provenance/checksum metadata ties packaged files to a tag/source commit/workflow run for draft review.
 - Desktop content is constrained by a restrictive CSP.
-- No broad filesystem, shell, or network plugin permissions are granted.
+- No broad filesystem, shell, or network plugin permissions are granted to the webview.
 
 ## [0.1.0] - planned
 
