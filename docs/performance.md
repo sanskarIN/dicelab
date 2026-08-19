@@ -41,9 +41,40 @@ Normal sum distributions use dynamic programming, which avoids enumerating every
 
 DiceLab retains at most 5,000 history entries. Search/statistics intentionally process that bounded in-memory collection, while row rendering is progressive so a large retained history does not immediately create thousands of DOM nodes.
 
-Changing the history filter resets the visible window to 200 matching rows. The user can reveal additional rows in 200-entry increments. Export actions operate on all matching records, not just currently rendered records.
+History filtering lives in `src/domain/history.ts` so UI behavior, unit coverage, and the 5,000-record benchmark exercise the same query implementation. Changing the history filter resets the visible window to 200 matching rows. The user can reveal additional rows in 200-entry increments. Export actions operate on all matching records, not just currently rendered records.
 
 If product requirements grow materially beyond 5,000 entries, benchmark the full search/statistics pipeline and consider true list virtualization or indexed persistence before raising the cap.
+
+## Executable benchmark suite
+
+Run the existing lockfile-backed Vitest benchmark suite with:
+
+```bash
+npm run bench
+```
+
+Current benchmark modules cover:
+
+- representative TypeScript dice-expression parsing;
+- ordinary probability dynamic programming (`2d6`, `10d6+5`);
+- exact keep/drop enumeration (`4d6kh3`, `2d20kh1`);
+- summarizing the maximum retained 5,000-roll history;
+- filtering 5,000 rolls by expression and total;
+- copying the unfiltered 5,000-roll history path.
+
+Benchmarks deliberately report measurements rather than enforcing hard CI timing thresholds. Hosted runners, CPU power policy, browser/runtime versions, thermal state, and background load can produce noisy wall-clock numbers.
+
+When recording benchmark evidence for a release candidate, record at minimum:
+
+- commit SHA;
+- operating system and CPU model;
+- Node.js and npm versions;
+- DiceLab/Vitest versions from the lockfile;
+- whether the run used battery or AC power where that matters;
+- benchmark command and complete output;
+- any material environment differences from the previous recorded run.
+
+Do not compare benchmark values across materially different machines as if they were a regression test.
 
 ## Automated performance-related behavior
 
@@ -53,23 +84,21 @@ Regression tests verify that:
 - requesting more reveals the remaining entries;
 - summary statistics still report the full matching set;
 - changing a filter resets the visible window;
+- history domain filtering preserves order and handles expression/total queries;
 - exact probability calculations reject unsafe numeric ranges rather than silently losing exactness.
 
-These checks protect performance-oriented behavior, but they are not wall-clock benchmarks.
+These checks protect performance-oriented behavior separately from wall-clock measurement.
 
-## Benchmark roadmap
+## Remaining benchmark work
 
-Before 1.0, add repeatable executable benchmarks for:
+Before 1.0 release evidence is considered complete, add or record appropriate measurements for:
 
-- TypeScript expression parsing;
 - seeded and secure roll throughput;
-- ordinary probability dynamic programming;
-- keep/drop enumeration near the allowed limit;
-- 5,000-row history filtering and statistics;
 - progressive history rendering in a real browser;
-- Rust expression parsing and native roll throughput.
+- Rust expression parsing and native roll throughput;
+- release bundle size on each supported desktop target.
 
-Record machine/runtime versions with benchmark results so comparisons remain meaningful. Avoid brittle CI timing thresholds until runner variance is understood.
+The first two may use the existing application/toolchain; Rust native benchmarking should avoid adding a heavyweight benchmark dependency merely for vanity metrics. Real-browser rendering and release bundle measurements require the corresponding environment/artifacts.
 
 ## Profiling rules
 
