@@ -50,6 +50,7 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Progressive rendering for very large retained histories.
 - [ ] Optional native save dialog integration with narrowly scoped permissions.
 - [x] Add a reviewed second locale before exposing language selection.
+- [x] Expose a persisted English/Hindi language preference with backup compatibility and document-language metadata.
 
 ## Phase 4 — Verification depth
 
