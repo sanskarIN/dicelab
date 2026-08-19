@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import { DEFAULT_SETTINGS } from './domain/types';
 
@@ -19,6 +19,8 @@ describe('DiceLab primary journeys', () => {
       JSON.stringify({ ...DEFAULT_SETTINGS, randomMode: 'seeded', seed: 'integration-test' }),
     );
   });
+
+  afterEach(() => vi.restoreAllMocks());
 
   it('rolls dice, persists the result in history, and exports the filtered log', async () => {
     const createObjectUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:dicelab-export');
