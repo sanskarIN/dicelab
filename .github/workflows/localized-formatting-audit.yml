@@ -1,0 +1,49 @@
+name: Localized formatting policy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/App.tsx'
+      - 'src/components/**'
+      - 'src/i18n/format.ts'
+      - 'scripts/check-localized-formatting.mjs'
+      - 'scripts/check-localized-formatting.test.mjs'
+      - 'scripts/check-localized-formatting.integration.test.mjs'
+      - '.github/workflows/localized-formatting-audit.yml'
+  pull_request:
+    paths:
+      - 'src/App.tsx'
+      - 'src/components/**'
+      - 'src/i18n/format.ts'
+      - 'scripts/check-localized-formatting.mjs'
+      - 'scripts/check-localized-formatting.test.mjs'
+      - 'scripts/check-localized-formatting.integration.test.mjs'
+      - '.github/workflows/localized-formatting-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: localized-formatting-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Audit localized UI formatting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Self-test formatting auditor
+        run: node --test scripts/check-localized-formatting.test.mjs scripts/check-localized-formatting.integration.test.mjs
+
+      - name: Audit committed localized UI
+        run: node scripts/check-localized-formatting.mjs
