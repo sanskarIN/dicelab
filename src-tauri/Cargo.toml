@@ -11,6 +11,9 @@ repository = "https://github.com/sanskarIN/dicelab"
 name = "dicelab_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+[features]
+fuzzing = []
+
 [build-dependencies]
 tauri-build = { version = "2.4", features = [] }
 
