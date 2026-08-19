@@ -1,4 +1,4 @@
-import { isPersistedPreset, isPersistedRollResult } from '../domain/persistence';
+import { isCanonicalIsoDate, isPersistedPreset, isPersistedRollResult } from '../domain/persistence';
 import { DEFAULT_SETTINGS, type DiceLabSettings, type DicePreset, type RollResult } from '../domain/types';
 
 const MAX_BACKUP_BYTES = 5_000_000;
@@ -92,6 +92,9 @@ export function parseBackupJson(contents: string): DiceLabBackup {
   if (hasDuplicateIds(candidate.presets)) {
     throw new BackupValidationError('Backup presets contain duplicate ids.');
   }
+  if (typeof candidate.exportedAt === 'string' && !isCanonicalIsoDate(candidate.exportedAt)) {
+    throw new BackupValidationError('Backup export timestamp is invalid.');
+  }
 
   const settings = normalizeSettings(candidate.settings);
   return {
@@ -127,11 +130,16 @@ function normalizeSettings(value: unknown): DiceLabSettings {
     typeof settings.historyLimit === 'number' && Number.isSafeInteger(settings.historyLimit)
       ? Math.min(5_000, Math.max(10, settings.historyLimit))
       : DEFAULT_SETTINGS.historyLimit;
+  const reducedMotion =
+    typeof settings.reducedMotion === 'boolean' ? settings.reducedMotion : DEFAULT_SETTINGS.reducedMotion;
   return {
     theme,
-    reducedMotion:
-      typeof settings.reducedMotion === 'boolean' ? settings.reducedMotion : DEFAULT_SETTINGS.reducedMotion,
-    animations: typeof settings.animations === 'boolean' ? settings.animations : DEFAULT_SETTINGS.animations,
+    reducedMotion,
+    animations: reducedMotion
+      ? false
+      : typeof settings.animations === 'boolean'
+        ? settings.animations
+        : DEFAULT_SETTINGS.animations,
     randomMode,
     seed: typeof settings.seed === 'string' ? settings.seed.slice(0, 120) : DEFAULT_SETTINGS.seed,
     historyLimit,
