@@ -28,9 +28,9 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] History search and summary statistics.
 - [x] Observed histogram.
 - [x] CSV/JSON log export.
-- [x] Backup export.
-- [x] Exact common-expression probability calculator.
-- [x] Settings for theme, data, accessibility, and randomness.
+- [x] Backup export and validated restore UI.
+- [x] Exact common-expression probability calculator with explicit precision/complexity limits.
+- [x] Settings for theme, data, accessibility, randomness, updates, and About.
 - [x] Keyboard command palette.
 - [x] About/support/privacy UI.
 - [x] First-run onboarding.
@@ -41,7 +41,9 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Minimal Tauri capabilities.
 - [x] Reduced-motion and non-animation controls.
 - [x] Responsive desktop/tablet/mobile-web layouts.
-- [ ] Import/restore UI for validated DiceLab backup files.
+- [x] Local-storage corruption recovery and persisted-record validation.
+- [x] Backup duplicate/integrity validation and spreadsheet-safe CSV output.
+- [x] Cross-runtime deterministic seeded parity.
 - [ ] Optional native save dialog integration with narrowly scoped permissions.
 - [ ] Externalized translation catalog and first additional locale.
 - [ ] Virtualized history for very large retained histories.
@@ -50,31 +52,37 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 
 - [x] TypeScript parser tests.
 - [x] Dice-engine tests.
-- [x] Exact probability tests.
-- [x] Export serialization tests.
-- [x] Rust native tests.
-- [ ] Add component accessibility smoke tests.
-- [ ] Add property-based parser invariants.
-- [ ] Add fuzz target for Rust expression parsing.
-- [ ] Add browser end-to-end tests for primary journeys.
-- [ ] Establish and record performance benchmarks.
+- [x] Exact probability tests and safe-integer precision guards.
+- [x] Export/backup serialization and hostile-input tests.
+- [x] Rust native tests and TypeScript/Rust seeded reference vectors.
+- [x] Roll-statistics and deterministic RNG edge coverage.
+- [x] Component keyboard/accessibility smoke tests for modal and settings surfaces.
+- [x] Browser-state integration tests for roll/history/export, backup restore, and About navigation.
+- [ ] Add broader property-based parser invariants.
+- [ ] Add a dedicated Rust fuzz target for expression parsing.
+- [ ] Add real-browser E2E tests for rendering/download/reload journeys.
+- [ ] Establish executable performance benchmarks in addition to documented budgets.
 
 ## Phase 5 — Release engineering
 
-- [ ] Generate and commit npm/Cargo lockfiles from a network-enabled runner.
-- [ ] Verify clean builds on Windows, macOS, and Linux.
+- [x] Commit npm and Cargo lockfiles.
+- [x] Enforce locked dependencies in main CI and tagged release verification.
+- [x] Configure tagged Windows/macOS/Linux/web artifact builds.
+- [x] Package verified artifacts into draft GitHub releases with SHA-256 checksums.
+- [ ] Verify clean builds on Windows, macOS, and Linux from the current release candidate.
 - [ ] Capture real screenshots from release-candidate builds.
-- [ ] Add signed release artifacts where signing credentials are available.
-- [ ] Publish `v0.1.0` release notes and checksums.
+- [ ] Add signed/notarized release artifacts where credentials are available and document unsigned builds accurately otherwise.
+- [ ] Publish `v0.1.0` after draft artifact smoke checks pass.
 
 ## Phase 6 — Final audit
 
 - [ ] Clean-checkout setup verification.
-- [ ] Full lint/format/type/test/build suite green.
+- [ ] Full lint/format/type/test/build suite observed green on the release commit.
 - [ ] Dependency and CodeQL checks reviewed.
-- [ ] Documentation link audit.
+- [ ] Documentation-link audit.
 - [ ] Manual keyboard and screen-reader smoke review.
 - [ ] Release-candidate artifact verification.
+- [ ] Confirm screenshots and release notes match the actual candidate build.
 
 ## Post-1.0 candidates
 
@@ -84,7 +92,7 @@ These are intentionally not commitments. They should be implemented only when th
 - shareable local preset files;
 - more built-in tabletop preset packs;
 - deeper distribution comparison tools;
-- optional update notifications;
-- additional localizations.
+- optional native updater after signing/release infrastructure is mature;
+- additional localizations beyond the pre-1.0 catalog work.
 
 The core product remains fully usable without an account or donation.
