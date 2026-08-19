@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -31,6 +32,10 @@ jobs:
         run: npm run docs:check:test
       - name: Documentation links and anchors
         run: npm run docs:check
+      - name: File inventory self-test
+        run: npm run docs:inventory:test
+      - name: Exhaustive tracked-file documentation
+        run: npm run docs:inventory
       - name: Browser E2E infrastructure self-test
         run: npm run test:e2e:infra
       - name: Version audit self-test
