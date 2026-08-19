@@ -21,16 +21,23 @@ Current automated coverage includes:
 - roll-history filtering by expression/total and order preservation;
 - roll statistics and distribution summaries;
 - CSV/JSON serialization, including spreadsheet-formula neutralization;
-- backup validation, duplicate-record rejection, metadata normalization, stable backup error codes, and round trips;
+- browser-versus-Tauri runtime detection and export routing;
+- browser download fallback, native save-command invocation, and native save-dialog cancellation behavior;
+- localized/safe history and backup export status feedback without raw error disclosure;
+- backup validation, duplicate-record rejection, metadata normalization, stable backup error codes, locale compatibility, and round trips;
 - localized parser/probability/backup error mapping without dependence on exception prose;
-- corrupted local-storage recovery and settings normalization;
+- corrupted local-storage recovery, locale persistence, and settings normalization;
+- localized built-in presets while user-created preset copy remains unchanged;
+- typed English/Hindi catalog defaults, live switching, and dynamic helper behavior;
+- explicit `en-US`/`hi-IN` number formatting and active-locale presentation formatting;
+- localized roll-result and probability presentation regression coverage;
+- live Hindi app switching, document-language metadata, and persisted language preference;
 - structured logger redaction, bounded context, and raw-error omission;
 - safe operational logging for blocked/corrupted storage and the application recovery boundary;
-- primary app integration journeys for rolling, history, CSV export, backup restore, and Settings → About navigation;
+- primary app integration journeys for rolling, history, CSV export, backup restore, Settings → About navigation, and language switching;
 - command-palette keyboard focus trapping/restoration;
 - onboarding dialog semantics and initial focus;
-- Settings reduced-motion behavior and release/About actions;
-- typed locale catalog defaults/dynamic helper behavior;
+- Settings reduced-motion, language, backup-export, release, and About actions;
 - progressive large-history rendering and filter-window resets;
 - application root error-boundary fallback behavior and redacted DiceLab recovery logging.
 
@@ -45,7 +52,41 @@ cd src-tauri
 cargo test --locked
 ```
 
-Native tests cover parsing, invalid selection rules, keep/drop selection, deterministic seeded behavior, and the same fixed seeded/hash vectors used by TypeScript. Those paired vectors are a compatibility guard: a given effective seed must produce the same deterministic values in web and desktop runtimes.
+Native tests cover:
+
+- parsing and invalid selection rules;
+- keep/drop selection;
+- deterministic seeded behavior and the same fixed seeded/hash vectors used by TypeScript;
+- native text-export suggested filename/format validation;
+- export payload size limits;
+- final selected-file extension validation;
+- generated parser normalization invariants and an adversarial malformed-input corpus.
+
+The paired seeded vectors are a compatibility guard: a given effective seed must produce the same deterministic values in web and desktop runtimes.
+
+A manifest change is not verified merely because source code compiles conceptually. If `src-tauri/Cargo.toml` changes, regenerate `src-tauri/Cargo.lock` and run the locked Rust checks before treating the dependency graph as release-ready.
+
+## Coverage-guided Rust parser fuzzing
+
+The normal Rust unit suite stays deterministic. Coverage-guided fuzzing is a separate verification layer.
+
+From `src-tauri`, with Rust nightly and `cargo-fuzz` installed:
+
+```bash
+cargo +nightly fuzz run parser
+```
+
+For a bounded smoke campaign:
+
+```bash
+cargo +nightly fuzz run parser -- -max_total_time=60
+```
+
+The fuzz target feeds arbitrary UTF-8 input into the production parser. Successful parses must normalize to a representation that parses again while preserving count, sides, modifier, and normalized text.
+
+`.github/workflows/fuzz.yml` also provides a manual and scheduled bounded campaign. A configured workflow is not release evidence by itself; record an observed green campaign on the intended commit or release candidate before marking that evidence complete.
+
+If fuzzing finds a crash or invariant failure, convert the minimized case into a deterministic Rust regression test before merging the fix. See [`../src-tauri/fuzz/README.md`](../src-tauri/fuzz/README.md).
 
 ## Static and security quality checks
 
@@ -107,7 +148,21 @@ The hardening execution container used on August 19, 2026 has Chromium installed
 
 See [`e2e.md`](e2e.md) for the runner architecture, browser requirements, exact scenario, and debugging guidance.
 
-Desktop smoke coverage must still verify the native Tauri command and packaged application separately from the web companion.
+## Desktop export smoke coverage
+
+The browser E2E suite intentionally validates the browser download path. It does not prove the Tauri-native system-dialog path.
+
+On every supported desktop release candidate, verify separately that:
+
+1. History CSV opens the native save dialog.
+2. History JSON opens the native save dialog.
+3. Backup export opens the native save dialog.
+4. Canceling the dialog creates no file and shows no failure state.
+5. Saving creates only the selected `.csv`/`.json` file and the content matches the requested export.
+6. A native save failure shows generic localized status rather than a private filesystem path or raw OS error.
+7. The webview still has no broad filesystem or shell capability.
+
+See [`native-exports.md`](native-exports.md) for the trust boundary.
 
 ## Executable benchmarks
 
@@ -125,11 +180,13 @@ Benchmark results are measurements rather than pass/fail tests. Record the commi
 
 Every fixed correctness bug should receive a test that fails before the fix and passes after it. Security-boundary fixes should include malformed/untrusted input cases. Cross-runtime deterministic changes must update both TypeScript and Rust reference-vector tests in the same release.
 
-Generated/parser-property tests should remain deterministic: they should exercise many valid shapes without relying on nondeterministic fuzz input inside the normal CI suite.
+Generated/parser-property tests should remain deterministic: they should exercise many valid shapes without relying on nondeterministic fuzz input inside the normal CI suite. Coverage-guided fuzz discoveries belong in the fuzz harness first and should become deterministic unit regressions when actionable.
 
 Stable error codes are compatibility surfaces for localization. New parser/probability/backup codes require both domain tests and localized-mapping tests.
 
-Cross-layer bugs discovered by the real-browser smoke should also receive a lower-level regression test when there is a stable unit/component/domain boundary that can reproduce them.
+New localized presentation values should use the shared `src/i18n/format.ts` boundary and receive at least one non-English formatting regression where grouping/date/time behavior can differ.
+
+Cross-layer bugs discovered by the real-browser or desktop smoke should also receive a lower-level regression test when there is a stable unit/component/domain boundary that can reproduce them.
 
 ## Manual smoke matrix
 
@@ -143,17 +200,18 @@ Before a release, verify at least:
 6. Keep/drop dice are visually and textually identifiable.
 7. History search, clear confirmation, CSV, and JSON export work.
 8. Histories above 200 matching rows progressively reveal additional entries without changing summary statistics or exports.
-9. A valid backup restores settings/history/presets.
+9. A valid backup restores settings/history/presets, including a supported locale preference.
 10. An invalid, duplicate-ID, inconsistent, or oversized backup is rejected safely with user-correctable localized feedback.
 11. Probability calculator handles common expressions and rejects calculations whose exactness/performance budgets would be exceeded.
 12. Theme and reduced-motion preferences apply immediately.
-13. Command palette opens with `Ctrl/Cmd + K`, traps focus while open, restores focus on close, and closes with Escape.
-14. Settings exposes version/releases/About information.
-15. About links and support details are correct.
-16. English catalog-backed labels remain readable at narrow widths and 200% zoom.
-17. A deliberately induced development-only React render failure displays the recovery surface; reloading restores normal startup and does not clear local history/settings.
-18. Storage-blocking/privacy-mode behavior keeps the app usable and emits no private thrown text.
-19. The packaged desktop build independently completes secure/seeded roll, persistence, export/restore, and version/About checks on each supported operating system.
+13. English/Hindi selection updates visible copy, document `lang`, built-in presets, and locale-sensitive presentation formatting without rewriting user-created data.
+14. Command palette opens with `Ctrl/Cmd + K`, traps focus while open, restores focus on close, and closes with Escape.
+15. Settings exposes version/releases/About information.
+16. About links and support details are correct.
+17. English and Hindi catalog-backed labels remain readable at narrow widths and 200% zoom.
+18. A deliberately induced development-only React render failure displays the recovery surface; reloading restores normal startup and does not clear local history/settings.
+19. Storage-blocking/privacy-mode behavior keeps the app usable and emits no private thrown text.
+20. The packaged desktop build independently completes secure/seeded roll, persistence, native export/restore, language switching, and version/About checks on each supported operating system.
 
 ## Accessibility checks
 
@@ -162,6 +220,8 @@ Automated keyboard and component semantics now cover the modal entry points and 
 ## CI expectations
 
 CI installs the committed npm and Cargo lockfiles with `npm ci` and Cargo `--locked` checks. It runs the secret-audit self-test and repository scan, E2E infrastructure self-test, documentation-link audit, frontend format/lint/unit/integration/build checks, real-browser E2E smoke, and Rust format/test/Clippy checks. Pull requests should not merge while required build, E2E, lint, test, format, documentation, secret, Clippy, or security checks are failing. A CI failure caused by an unavailable external service or browser policy must be documented rather than silently ignored.
+
+A stale Cargo lockfile after `Cargo.toml` changes is a hard dependency-verification blocker. Do not reinterpret a configured lockfile-generation workflow as evidence that the generated lock has actually landed; inspect the repository and run locked Rust checks against the resulting commit.
 
 CodeQL runs separately for JavaScript/TypeScript static analysis. Repository-level secret scanning/push protection should also be enabled where available as described in [`repository-governance.md`](repository-governance.md).
 
