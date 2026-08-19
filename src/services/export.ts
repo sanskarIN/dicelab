@@ -181,6 +181,7 @@ function normalizeSettings(value: unknown): DiceLabSettings {
     typeof settings.reducedMotion === 'boolean' ? settings.reducedMotion : DEFAULT_SETTINGS.reducedMotion;
   return {
     theme,
+    locale: settings.locale === 'hi' || settings.locale === 'en' ? settings.locale : DEFAULT_SETTINGS.locale,
     reducedMotion,
     animations: reducedMotion
       ? false
