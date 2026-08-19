@@ -195,7 +195,11 @@ export function SettingsPanel({
             max={5000}
             step={10}
             value={settings.historyLimit}
-            onChange={(event) => patch({ historyLimit: Math.min(5000, Math.max(10, Number(event.target.value) || 10)) })}
+            onChange={(event) => {
+              const value = Number(event.target.value);
+              const normalized = Number.isFinite(value) ? Math.trunc(value) : 10;
+              patch({ historyLimit: Math.min(5000, Math.max(10, normalized)) });
+            }}
           />
         </label>
         <div className="setting-actions">
