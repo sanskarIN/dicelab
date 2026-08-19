@@ -97,14 +97,14 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
                 <p className="eyebrow">{messages.history.observedTotals}</p>
                 <h2 id="histogram-heading">{messages.history.distribution}</h2>
               </div>
-              <span>{stats.frequencies.length} distinct totals</span>
+              <span>{messages.history.distinctTotals(stats.frequencies.length)}</span>
             </div>
             <div className="histogram" role="img" aria-label={messages.history.histogramLabel}>
               {stats.frequencies.map((item) => (
                 <div
                   className="histogram-column"
                   key={item.total}
-                  title={`${item.total}: ${item.count} rolls (${item.percentage.toFixed(1)}%)`}
+                  title={messages.history.histogramTitle(item.total, item.count, item.percentage)}
                 >
                   <span className="histogram-value">{item.count}</span>
                   <span
