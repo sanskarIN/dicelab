@@ -9,7 +9,7 @@ function renderSettings(overrides: Partial<ComponentProps<typeof SettingsPanel>>
   const props: ComponentProps<typeof SettingsPanel> = {
     settings: DEFAULT_SETTINGS,
     onChange: vi.fn(),
-    onExportBackup: vi.fn(),
+    onExportBackup: vi.fn().mockResolvedValue(true),
     onImportBackup: vi.fn().mockResolvedValue(undefined),
     onClearData: vi.fn(),
     onOpenAbout: vi.fn(),
@@ -34,6 +34,21 @@ describe('SettingsPanel', () => {
     const props = renderSettings();
     fireEvent.change(screen.getByRole('combobox', { name: 'Language' }), { target: { value: 'hi' } });
     expect(props.onChange).toHaveBeenCalledWith({ ...DEFAULT_SETTINGS, locale: 'hi' });
+  });
+
+  it('reports a successful backup export', async () => {
+    const props = renderSettings();
+    fireEvent.click(screen.getByRole('button', { name: /Export backup/i }));
+    expect(props.onExportBackup).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole('status')).toHaveTextContent('Backup export ready.');
+  });
+
+  it('reports a failed backup export without exposing raw errors', async () => {
+    const onExportBackup = vi.fn().mockRejectedValue(new Error('private filesystem path'));
+    renderSettings({ onExportBackup });
+    fireEvent.click(screen.getByRole('button', { name: /Export backup/i }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Backup export failed.');
+    expect(screen.queryByText(/private filesystem path/i)).not.toBeInTheDocument();
   });
 
   it('exposes version, release notes, and the About view', () => {
