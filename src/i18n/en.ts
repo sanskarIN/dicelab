@@ -10,6 +10,12 @@ export const en = {
     business: 'Business',
     support: 'Support',
   },
+  errorBoundary: {
+    eyebrow: 'Recovery',
+    heading: 'DiceLab hit an unexpected interface error.',
+    body: 'Your local DiceLab data has not been cleared. Reload the app to recover this interface.',
+    reload: 'Reload DiceLab',
+  },
   navigation: {
     roll: 'Roll',
     history: 'History',
