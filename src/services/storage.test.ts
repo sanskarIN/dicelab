@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SETTINGS, type DicePreset, type RollResult } from '../domain/types';
 import {
   BUILTIN_PRESETS,
+  MAX_CUSTOM_PRESETS,
   getBuiltinPresets,
+  limitPresetCollection,
   loadHistory,
   loadPresets,
   loadSettings,
@@ -35,6 +37,14 @@ const customPreset: DicePreset = {
   description: 'Storage fixture',
   createdAt: '2026-08-19T04:00:00.000Z',
 };
+
+function manyCustomPresets(count: number): DicePreset[] {
+  return Array.from({ length: count }, (_, index) => ({
+    ...customPreset,
+    id: `custom-${index}`,
+    name: `Custom ${index}`,
+  }));
+}
 
 describe('local storage recovery', () => {
   beforeEach(() => localStorage.clear());
@@ -121,6 +131,27 @@ describe('local storage recovery', () => {
     expect(loaded.slice(0, hindiBuiltins.length)).toEqual(hindiBuiltins);
     expect(loaded.at(-1)).toEqual(customPreset);
     expect(loaded[0].name).toBe('D20 जाँच');
+  });
+
+  it('keeps the newest custom presets when the live collection exceeds the backup/storage limit', () => {
+    const custom = manyCustomPresets(MAX_CUSTOM_PRESETS + 1);
+    const limited = limitPresetCollection([...BUILTIN_PRESETS, ...custom]);
+    const retainedCustom = limited.slice(BUILTIN_PRESETS.length);
+
+    expect(limited.slice(0, BUILTIN_PRESETS.length)).toEqual(BUILTIN_PRESETS);
+    expect(retainedCustom).toHaveLength(MAX_CUSTOM_PRESETS);
+    expect(retainedCustom[0].id).toBe('custom-1');
+    expect(retainedCustom.at(-1)?.id).toBe(`custom-${MAX_CUSTOM_PRESETS}`);
+  });
+
+  it('persists the same newest-500 custom preset policy used by live state', () => {
+    const custom = manyCustomPresets(MAX_CUSTOM_PRESETS + 1);
+    saveCustomPresets(custom);
+
+    const persisted = JSON.parse(localStorage.getItem(PRESETS_KEY) ?? '[]') as DicePreset[];
+    expect(persisted).toHaveLength(MAX_CUSTOM_PRESETS);
+    expect(persisted[0].id).toBe('custom-1');
+    expect(persisted.at(-1)?.id).toBe(`custom-${MAX_CUSTOM_PRESETS}`);
   });
 
   it('sanitizes persisted history and presets before writing them back', () => {
