@@ -361,13 +361,14 @@ Responsibilities:
 4. install stable Rust;
 5. regenerate `src-tauri/Cargo.lock` with `cargo generate-lockfile`;
 6. require `cargo metadata --locked --no-deps --format-version 1` to accept the generated Cargo lock against the manifest;
-7. run `git diff --check` on the generated changes;
-8. commit only when one or both lockfiles changed;
-9. rebase the generated commit on current `main`;
-10. try to push the exact generated commit to `main`;
-11. if direct push is rejected, force-publish that generated commit to `automation/lockfiles` for maintainer review/application.
+7. run the lock-aware `node scripts/check-version-sync.mjs` against the generated npm/Cargo locks and manifest/config versions;
+8. run `git diff --check` on the generated changes;
+9. commit only when one or both lockfiles changed;
+10. rebase the generated commit on current `main`;
+11. try to push the exact generated commit to `main`;
+12. if direct push is rejected, force-publish that generated commit to `automation/lockfiles` for maintainer review/application.
 
-The workflow uses the repository automation identity/email configured in its Git commit step. Its existence is configuration evidence only; a generated commit or successful run must still be observed before claiming the lockfile blocker is resolved.
+The workflow therefore cannot publish generated locks unless Cargo accepts the locked manifest relationship **and** generated package versions match the application version. The workflow uses the repository automation identity/email configured in its Git commit step. Its existence is configuration evidence only; a generated commit or successful run must still be observed before claiming the lockfile blocker is resolved.
 
 For the 2.0.12 bump, successful regeneration must update npm root version metadata and the DiceLab Cargo-lock package version as well as resolve the `tauri-plugin-dialog` dependency graph.
 
