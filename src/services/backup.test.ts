@@ -30,6 +30,19 @@ describe('DiceLab backups', () => {
     expect(restored.settings).toEqual(DEFAULT_SETTINGS);
   });
 
+  it('round trips a seeded roll created from the maximum-length user seed', () => {
+    const userSeed = 's'.repeat(120);
+    const seededRoll: RollResult = {
+      ...roll,
+      mode: 'seeded',
+      seed: `${userSeed}:4999`,
+    };
+    const settings = { ...DEFAULT_SETTINGS, randomMode: 'seeded' as const, seed: userSeed };
+    const restored = parseBackupJson(backupToJson(createBackup([seededRoll], [], settings)));
+    expect(restored.history).toEqual([seededRoll]);
+    expect(restored.settings.seed).toBe(userSeed);
+  });
+
   it('rejects unsupported schemas', () => {
     expect(() => parseBackupJson('{"schemaVersion":99,"history":[],"presets":[],"settings":{}}')).toThrow(
       BackupValidationError,
