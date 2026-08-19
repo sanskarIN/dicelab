@@ -86,6 +86,12 @@ export function parseBackupJson(contents: string): DiceLabBackup {
   if (!candidate.presets.every(isPersistedPreset)) {
     throw new BackupValidationError('Backup contains an invalid preset.');
   }
+  if (hasDuplicateIds(candidate.history)) {
+    throw new BackupValidationError('Backup history contains duplicate roll ids.');
+  }
+  if (hasDuplicateIds(candidate.presets)) {
+    throw new BackupValidationError('Backup presets contain duplicate ids.');
+  }
 
   const settings = normalizeSettings(candidate.settings);
   return {
@@ -130,6 +136,15 @@ function normalizeSettings(value: unknown): DiceLabSettings {
     seed: typeof settings.seed === 'string' ? settings.seed.slice(0, 120) : DEFAULT_SETTINGS.seed,
     historyLimit,
   };
+}
+
+function hasDuplicateIds(items: Array<{ id: string }>): boolean {
+  const ids = new Set<string>();
+  for (const item of items) {
+    if (ids.has(item.id)) return true;
+    ids.add(item.id);
+  }
+  return false;
 }
 
 function csvCell(value: string): string {
