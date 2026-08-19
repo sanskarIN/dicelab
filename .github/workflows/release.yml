@@ -18,10 +18,15 @@ jobs:
         with:
           node-version: 22
       - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
-      - run: npm run test
-      - run: npm run build
+        run: npm ci
+      - name: Format check
+        run: npm run format
+      - name: Lint
+        run: npm run lint
+      - name: Unit and integration tests
+        run: npm run test
+      - name: Production web build
+        run: npm run build
       - uses: actions/upload-artifact@v4
         with:
           name: dicelab-web-${{ github.ref_name }}
@@ -41,6 +46,8 @@ jobs:
         with:
           node-version: 22
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
       - name: Install Linux Tauri dependencies
         if: runner.os == 'Linux'
         run: |
@@ -57,8 +64,16 @@ jobs:
             librsvg2-dev
       - name: Install frontend dependencies
         shell: bash
-        run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+        run: npm ci
+      - name: Verify Rust formatting
+        working-directory: src-tauri
+        run: cargo fmt --all -- --check
+      - name: Run Rust tests
+        working-directory: src-tauri
+        run: cargo test --locked
+      - name: Run Clippy
+        working-directory: src-tauri
+        run: cargo clippy --all-targets --all-features --locked -- -D warnings
       - name: Build desktop bundle
         run: npm run tauri:build
       - uses: actions/upload-artifact@v4
@@ -66,3 +81,45 @@ jobs:
           name: dicelab-${{ runner.os }}-${{ github.ref_name }}
           path: src-tauri/target/release/bundle/**
           if-no-files-found: error
+
+  release:
+    name: Draft GitHub release
+    needs: [web, desktop]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+      - name: Package release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-packages
+          for directory in release-artifacts/*; do
+            [ -d "$directory" ] || continue
+            name="$(basename "$directory")"
+            (
+              cd "$directory"
+              zip -qr "../../release-packages/${name}.zip" .
+            )
+          done
+          (
+            cd release-packages
+            sha256sum ./*.zip > SHA256SUMS.txt
+          )
+      - name: Create or update draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" \
+              --draft \
+              --generate-notes \
+              --title "DiceLab ${GITHUB_REF_NAME}"
+          fi
+          gh release upload "$GITHUB_REF_NAME" release-packages/* --clobber
