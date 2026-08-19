@@ -53,20 +53,20 @@ export function historyToJson(history: RollResult[]): string {
 }
 
 export function historyToCsv(history: RollResult[]): string {
-  const rows = [
-    ['id', 'rolled_at', 'expression', 'total', 'modifier', 'mode', 'seed', 'dice'],
-    ...history.map((roll) => [
-      roll.id,
-      roll.rolledAt,
-      roll.expression,
-      String(roll.total),
-      String(roll.modifier),
-      roll.mode,
-      roll.seed ?? '',
-      roll.dice.map((die) => `${die.value}${die.kept ? '' : ' (dropped)'}`).join(' | '),
-    ]),
-  ];
-  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+  const header = ['id', 'rolled_at', 'expression', 'total', 'modifier', 'mode', 'seed', 'dice'].join(',');
+  const rows = history.map((roll) =>
+    [
+      csvCell(roll.id, true),
+      csvCell(roll.rolledAt),
+      csvCell(roll.expression),
+      csvCell(String(roll.total)),
+      csvCell(String(roll.modifier)),
+      csvCell(roll.mode),
+      csvCell(roll.seed ?? '', true),
+      csvCell(roll.dice.map((die) => `${die.value}${die.kept ? '' : ' (dropped)'}`).join(' | ')),
+    ].join(','),
+  );
+  return `${[header, ...rows].join('\n')}\n`;
 }
 
 export function createBackup(
@@ -226,8 +226,8 @@ function hasDuplicateIds(items: Array<{ id: string }>): boolean {
   return false;
 }
 
-function csvCell(value: string): string {
-  const safeValue = /^\s*[=+\-@]/u.test(value) ? `'${value}` : value;
+function csvCell(value: string, neutralizeFormula = false): string {
+  const safeValue = neutralizeFormula && /^\s*[=+\-@]/u.test(value) ? `'${value}` : value;
   if (!/[",\r\n]/.test(safeValue)) return safeValue;
   return `"${safeValue.replaceAll('"', '""')}"`;
 }
