@@ -16,6 +16,8 @@
     "test:coverage": "vitest run --coverage",
     "bench": "vitest bench --run",
     "docs:check": "node scripts/check-doc-links.mjs",
+    "security:secrets": "node scripts/check-secrets.mjs",
+    "security:secrets:test": "node --test scripts/check-secrets.test.mjs",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"
