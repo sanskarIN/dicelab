@@ -16,6 +16,36 @@ DiceLab ships with reviewed English and Hindi interface catalogs behind a typed 
 
 The Settings screen exposes the reviewed English/Hindi choice. The selected locale is stored locally, preserved in backups, applied to the document `lang` attribute, and used by shared number/date/time formatters.
 
+## Live catalog rule
+
+`messages` is a live exported binding whose catalog is replaced by `setLocale()`. Components that read `messages.*` during render receive the current catalog after `App` updates locale state and rerenders.
+
+Do **not** capture translated string values into module-level constants that are created once when a module is imported. For example, avoid:
+
+```ts
+const navigation = [
+  { label: messages.navigation.roll },
+  { label: messages.navigation.history },
+];
+```
+
+Those strings would reflect whichever locale was active when the module first evaluated and could remain stale after a live language change.
+
+Instead, construct catalog-backed arrays/objects inside the component render or in a function called during render:
+
+```ts
+function getNavigation() {
+  return [
+    { label: messages.navigation.roll },
+    { label: messages.navigation.history },
+  ];
+}
+```
+
+The same rule applies to command definitions, menu entries, accessibility labels, preset display metadata, and any other user-visible value that must update without a page reload. Technical constants that are not localized may remain module-level.
+
+Live-switch integration coverage must include persistent shell/navigation surfaces and dialogs/menus—not only the currently selected content panel—so module-level catalog capture regressions are caught.
+
 ## Adding a locale
 
 1. Copy the structure of `src/i18n/en.ts` into a new locale file.
@@ -103,6 +133,8 @@ Use formatter helpers for standalone numbers/dates/times. For a number embedded 
 
 - No missing catalog keys.
 - No untranslated user-visible strings accidentally introduced into migrated React surfaces.
+- No localized string value that needs live switching is captured in a module-level constant.
+- Persistent shell/navigation/menu/dialog copy changes immediately when locale changes.
 - Dynamic message functions preserve all values and units.
 - Error-code mappings are exhaustive and unknown errors return the intended localized fallback.
 - Active-locale number/date/time formatting uses the shared formatter boundary.
