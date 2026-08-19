@@ -22,10 +22,16 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - name: Install locked dependencies
         run: npm ci
-      - name: Format repository
+      - name: Format frontend and documentation
         run: npm run format:write
+      - name: Format Rust
+        working-directory: src-tauri
+        run: cargo fmt --all
       - name: Commit formatting when needed
         run: |
           git config user.name "sanskarIN"
