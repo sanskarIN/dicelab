@@ -4,6 +4,7 @@ import App from './App';
 import { DEFAULT_SETTINGS } from './domain/types';
 import { setLocale } from './i18n';
 
+const HISTORY_KEY = 'dicelab.history.v1';
 const SETTINGS_KEY = 'dicelab.settings.v1';
 const ONBOARDED_KEY = 'dicelab.onboarded.v1';
 
@@ -49,6 +50,34 @@ describe('DiceLab primary journeys', () => {
     fireEvent.click(screen.getByRole('button', { name: 'CSV' }));
     expect(createObjectUrl).toHaveBeenCalledTimes(1);
     expect(revokeObjectUrl).toHaveBeenCalledWith('blob:dicelab-export');
+  });
+
+  it('enforces the configured history limit during initial storage recovery', async () => {
+    const storedHistory = Array.from({ length: 12 }, (_, index) => ({
+      id: `startup-roll-${index}`,
+      expression: '1d6',
+      total: (index % 6) + 1,
+      dice: [{ value: (index % 6) + 1, kept: true, index: 0 }],
+      modifier: 0,
+      mode: 'seeded',
+      seed: `startup:${index}`,
+      rolledAt: new Date(Date.UTC(2026, 7, 19, 4, index)).toISOString(),
+    }));
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(storedHistory));
+    localStorage.setItem(
+      SETTINGS_KEY,
+      JSON.stringify({ ...DEFAULT_SETTINGS, historyLimit: 10, randomMode: 'seeded', seed: 'startup' }),
+    );
+
+    render(<App />);
+    openView('History');
+
+    expect(within(screen.getByLabelText('Roll summary')).getByText('10')).toBeInTheDocument();
+    expect(screen.queryByText('startup-roll-10')).not.toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]')).toHaveLength(10),
+    );
   });
 
   it('restores a valid backup through settings and exposes the restored roll in history', async () => {
