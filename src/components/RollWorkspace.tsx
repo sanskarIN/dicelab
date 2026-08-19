@@ -36,7 +36,7 @@ export function RollWorkspace({
     try {
       return { parsed: parseDiceExpression(expression), error: null };
     } catch (cause) {
-      return { parsed: null, error: cause instanceof Error ? cause.message : 'Invalid expression.' };
+      return { parsed: null, error: cause instanceof Error ? cause.message : messages.roll.invalidExpression };
     }
   }, [expression]);
 
@@ -139,8 +139,8 @@ export function RollWorkspace({
               <p className="result-note">
                 {lastRoll.modifier === 0
                   ? messages.roll.noModifier
-                  : `Modifier ${lastRoll.modifier > 0 ? '+' : ''}${lastRoll.modifier}`}
-                {lastRoll.seed ? ` · Seed ${lastRoll.seed}` : ''}
+                  : `${messages.roll.modifier} ${lastRoll.modifier > 0 ? '+' : ''}${lastRoll.modifier}`}
+                {lastRoll.seed ? ` · ${messages.roll.seed} ${lastRoll.seed}` : ''}
               </p>
             </>
           ) : (
@@ -175,7 +175,7 @@ export function RollWorkspace({
                 <button
                   className="preset-delete"
                   type="button"
-                  aria-label={`Delete ${preset.name}`}
+                  aria-label={`${messages.roll.deletePreset} ${preset.name}`}
                   onClick={() => onDeletePreset(preset.id)}
                 >
                   <Trash2 size={16} aria-hidden="true" />
