@@ -41,8 +41,8 @@ export function SettingsPanel({
     try {
       const saved = await onExportBackup();
       if (saved) setDataStatus(messages.settings.exportSuccess);
-    } catch {
-      setDataStatus(messages.settings.exportFailed);
+    } catch (cause) {
+      setDataStatus(formatBackupError(cause, messages.settings.exportFailed));
     }
   };
 
@@ -239,18 +239,20 @@ export function SettingsPanel({
         </div>
         <div className="setting-row">
           <span>
-            <strong>{APP_NAME} {APP_VERSION}</strong>
-            <small>{messages.settings.releaseBody}</small>
+            <strong>{messages.settings.installedVersion}</strong>
+            <small>{messages.settings.installedVersionBody}</small>
           </span>
-          <a className="secondary-button" href={RELEASES_URL} target="_blank" rel="noreferrer">
-            {messages.settings.releases} <ExternalLink size={15} aria-hidden="true" />
-          </a>
+          <code>{APP_VERSION}</code>
         </div>
         <div className="setting-actions">
           <button type="button" className="secondary-button" onClick={onOpenAbout}>
             <Info size={16} aria-hidden="true" /> {messages.settings.openAbout}
           </button>
+          <a className="secondary-button link-button" href={RELEASES_URL} target="_blank" rel="noreferrer">
+            <ExternalLink size={16} aria-hidden="true" /> {messages.settings.viewReleases}
+          </a>
         </div>
+        <p className="panel-note">{messages.settings.manualUpdates(APP_NAME)}</p>
       </section>
     </section>
   );
@@ -260,7 +262,7 @@ function ToggleRow({
   label,
   detail,
   checked,
-  disabled = false,
+  disabled,
   onChange,
 }: {
   label: string;
@@ -270,13 +272,13 @@ function ToggleRow({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className={disabled ? 'setting-row disabled' : 'setting-row'}>
+    <label className="setting-row">
       <span>
         <strong>{label}</strong>
         <small>{detail}</small>
       </span>
       <input
-        className="switch"
+        className="toggle"
         type="checkbox"
         checked={checked}
         disabled={disabled}
