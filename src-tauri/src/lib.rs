@@ -1,4 +1,4 @@
-use rand::{rngs::OsRng, rngs::StdRng, Rng, SeedableRng};
+use rand::{rngs::OsRng, Rng};
 use regex::Regex;
 use serde::Serialize;
 use std::sync::OnceLock;
@@ -6,6 +6,8 @@ use std::sync::OnceLock;
 const MAX_DICE: usize = 1_000;
 const MAX_SIDES: u32 = 1_000_000;
 const MAX_ABS_MODIFIER: i64 = 1_000_000_000;
+const UINT32_RANGE: u64 = 0x1_0000_0000;
+const SEEDED_FALLBACK_STATE: u32 = 0x9e37_79b9;
 
 #[derive(Debug, Clone, Copy)]
 enum SelectionKind {
@@ -47,6 +49,34 @@ struct NativeRollResult {
     modifier: i64,
 }
 
+#[derive(Debug, Clone)]
+struct SeededRandomSource {
+    state: u32,
+}
+
+impl SeededRandomSource {
+    fn new(seed: &str) -> Self {
+        let hash = hash_seed(seed);
+        Self {
+            state: if hash == 0 {
+                SEEDED_FALLBACK_STATE
+            } else {
+                hash
+            },
+        }
+    }
+
+    fn next_int(&mut self, max_exclusive: u32) -> u32 {
+        debug_assert!(max_exclusive > 0);
+        let mut x = self.state;
+        x ^= x << 13;
+        x ^= x >> 17;
+        x ^= x << 5;
+        self.state = x;
+        ((u64::from(self.state) * u64::from(max_exclusive)) / UINT32_RANGE) as u32
+    }
+}
+
 #[tauri::command]
 fn roll_expression(
     expression: String,
@@ -61,8 +91,8 @@ fn roll_expression(
         }
         "seeded" => {
             let seed_text = seed.unwrap_or_else(|| "dicelab".to_string());
-            let mut rng = StdRng::seed_from_u64(hash_seed(&seed_text));
-            Ok(roll_with_rng(&parsed, &mut rng))
+            let mut rng = SeededRandomSource::new(&seed_text);
+            Ok(roll_with_seeded_rng(&parsed, &mut rng))
         }
         _ => Err("Random mode must be either 'secure' or 'seeded'.".to_string()),
     }
@@ -169,6 +199,20 @@ fn roll_with_rng<R: Rng + ?Sized>(expression: &Expression, rng: &mut R) -> Nativ
     let values: Vec<u32> = (0..expression.count)
         .map(|_| rng.gen_range(1..=expression.sides))
         .collect();
+    roll_from_values(expression, values)
+}
+
+fn roll_with_seeded_rng(
+    expression: &Expression,
+    rng: &mut SeededRandomSource,
+) -> NativeRollResult {
+    let values: Vec<u32> = (0..expression.count)
+        .map(|_| rng.next_int(expression.sides) + 1)
+        .collect();
+    roll_from_values(expression, values)
+}
+
+fn roll_from_values(expression: &Expression, values: Vec<u32>) -> NativeRollResult {
     let kept = select_kept(&values, expression.selection.as_ref());
     let dice: Vec<DieRoll> = values
         .into_iter()
@@ -239,11 +283,11 @@ fn select_kept(values: &[u32], selection: Option<&Selection>) -> Vec<bool> {
     }
 }
 
-fn hash_seed(seed: &str) -> u64 {
-    let mut hash = 0xcbf29ce484222325_u64;
+fn hash_seed(seed: &str) -> u32 {
+    let mut hash = 0x811c_9dc5_u32;
     for byte in seed.as_bytes() {
-        hash ^= u64::from(*byte);
-        hash = hash.wrapping_mul(0x100000001b3);
+        hash ^= u32::from(*byte);
+        hash = hash.wrapping_mul(0x0100_0193);
     }
     hash
 }
@@ -287,14 +331,35 @@ mod tests {
     }
 
     #[test]
+    fn seeded_rng_matches_web_reference_vector() {
+        let mut rng = SeededRandomSource::new("reproducible");
+        let values = [
+            rng.next_int(20) + 1,
+            rng.next_int(20) + 1,
+            rng.next_int(20) + 1,
+            rng.next_int(6) + 1,
+        ];
+        assert_eq!(values, [2, 19, 10, 6]);
+    }
+
+    #[test]
+    fn seed_hash_matches_web_utf8_reference() {
+        assert_eq!(hash_seed("reproducible"), 2_201_898_953);
+        assert_eq!(hash_seed("🎲 DiceLab"), 1_755_545_114);
+    }
+
+    #[test]
     fn seeded_rolls_are_reproducible() {
         let expression = parse_expression("3d20+5").expect("expression should parse");
-        let seed = hash_seed("reproducible");
-        let first = roll_with_rng(&expression, &mut StdRng::seed_from_u64(seed));
-        let second = roll_with_rng(&expression, &mut StdRng::seed_from_u64(seed));
+        let mut first_rng = SeededRandomSource::new("reproducible");
+        let mut second_rng = SeededRandomSource::new("reproducible");
+        let first = roll_with_seeded_rng(&expression, &mut first_rng);
+        let second = roll_with_seeded_rng(&expression, &mut second_rng);
         let first_values: Vec<_> = first.dice.iter().map(|die| die.value).collect();
         let second_values: Vec<_> = second.dice.iter().map(|die| die.value).collect();
+        assert_eq!(first_values, vec![2, 19, 10]);
         assert_eq!(first_values, second_values);
+        assert_eq!(first.total, 36);
         assert_eq!(first.total, second.total);
     }
 }
