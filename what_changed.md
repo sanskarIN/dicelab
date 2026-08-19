@@ -51,7 +51,7 @@ The preceding final audit closed concrete product defects before this 2.0.12 rel
 - generated negative total/modifier CSV values stay numeric;
 - live history-limit input is truncated/clamped to the persisted safe-integer contract;
 - the command shortcut hint is `Ctrl/⌘ K`, matching the actual cross-platform handler;
-- the lockfile generation workflow verifies generated locked Cargo metadata and generated diff hygiene.
+- lockfile generation validates generated locked Cargo metadata and generated diff hygiene.
 
 Those details are also recorded in `CHANGELOG.md`, `docs/application-flows.md`, `docs/data-contracts.md`, and `docs/release-blockers-current.md`.
 
@@ -100,6 +100,31 @@ The focused version-parser/agreement test suite was independently exercised afte
 
 The full repository version check is intentionally expected to fail until the generated npm and Cargo locks are regenerated to 2.0.12. That failure is a release-protection mechanism, not a hidden defect.
 
+## Lockfile generator now enforces the version gate before publishing
+
+A final automation gap was closed after the lock-aware version checker was added.
+
+Commit:
+
+- `57fd09c9` — `ci: verify generated lockfile versions before commit`
+
+`.github/workflows/lockfiles.yml` now requires this sequence before a generated lock commit can exist:
+
+1. regenerate npm lockfile with npm;
+2. regenerate Cargo lockfile with Cargo;
+3. validate the generated Cargo graph with `cargo metadata --locked --no-deps`;
+4. run `node scripts/check-version-sync.mjs` against the newly generated npm/Cargo lock metadata and application manifests/configuration;
+5. run `git diff --check`;
+6. commit changed lockfiles;
+7. rebase and push to `main`, or publish the exact generated commit to `automation/lockfiles` if direct `main` update is rejected.
+
+Therefore the automation cannot publish generated 2.0.12 locks that still carry a 0.1.0 DiceLab package version.
+
+Documentation follow-up commits:
+
+- `b0eee45e` — `docs: record generated version check in lock workflow`
+- `e75b6036` — `docs: define lock and version synchronization policy`
+
 ## 2.0.12 release workflow hardened
 
 The tag workflow was strengthened so a draft release cannot depend only on separately scheduled/path-filtered repository audits.
@@ -136,7 +161,7 @@ Human artifact/platform/accessibility/signing/provenance review remains mandator
 
 ## 2.0.12 release documentation synchronized
 
-The active release-facing documents were moved off the obsolete pre-1.0/`v0.1.0` assumptions and synchronized to the 2.0.12 candidate:
+The active release-facing documents were moved off obsolete pre-1.0/`v0.1.0` assumptions and synchronized to the 2.0.12 candidate:
 
 - `9f234207` / `8f935f9c` — release guide prepared for 2.0.12 and then updated for the lock-aware version gate;
 - `067da245` — roadmap targets 2.0.12 and separates implemented work from candidate evidence;
@@ -144,9 +169,10 @@ The active release-facing documents were moved off the obsolete pre-1.0/`v0.1.0`
 - `435a070a` — repository governance/milestones aligned with the 2.0.12 release line;
 - `d1433abb` — changelog staged as `[2.0.12] - 2026-08-19 (release candidate)` while retaining `[Unreleased]` and explicitly not claiming publication;
 - `b744b2f6` — data/version/dependency contracts made generated-lock aware;
-- `c2b67503` — automation reference updated for generated-lock version checking and stronger release workflow;
+- `c2b67503` / `b0eee45e` — automation reference updated for lock-aware version checking, stronger release workflow, and generator-side version validation;
 - `bfa84119` — release-candidate evidence template strengthened for 2.0.12 version/lock/policy/platform evidence;
-- `b4edc949` — README now surfaces 2.0.12 candidate status and current publication blockers.
+- `b4edc949` — README now surfaces 2.0.12 candidate status and current publication blockers;
+- `e75b6036` — lockfile policy now separates direct dependency consistency, generated application-version consistency, package-manager generation, and release evidence.
 
 No new tracked path was introduced, so the exhaustive repository-file reference does not need a new path entry for this continuation.
 
@@ -193,13 +219,13 @@ Therefore `src-tauri/Cargo.lock` is stale because:
 - the DiceLab package version is `0.1.0`, not `2.0.12`;
 - `tauri-plugin-dialog` is missing from the locked DiceLab dependency graph.
 
-The most recent commit search still does **not** show the workflow-generated commit:
+The final recent-commit check still does **not** show the workflow-generated commit:
 
 ```text
 build: lock application dependencies
 ```
 
-The most recent branch search still finds no:
+The final branch search still finds no:
 
 ```text
 automation/lockfiles
@@ -224,6 +250,33 @@ DICELAB_EXPECT_VERSION=v2.0.12 npm run version:check
 
 The existing lockfile workflow is configured to perform the generation automatically and either commit to `main` or publish the exact generated commit on `automation/lockfiles` if direct main updates are rejected. No successful generated output from that mechanism has yet been observed in this continuation.
 
+## 2.0.12 continuation state audit
+
+The prior final checkpoint before this version-specific continuation was:
+
+```text
+f06a08c87f4725c5b6b8ac5adbb9ec9fb5b1c509
+```
+
+The latest implementation/documentation head inspected before this handoff update was:
+
+```text
+e75b60369f23a1d641d0895ac16a440d1456acf2
+```
+
+Comparison result:
+
+```text
+25 commits ahead
+0 commits behind
+19 tracked files modified in the net diff
+0 new tracked paths introduced
+```
+
+The modified surfaces span version metadata, release/lock workflows, version auditing/tests, changelog/roadmap/README, release/governance/evidence documentation, data/automation/lockfile contracts, and this handoff.
+
+The GitHub classic combined-status endpoint returned no individual status records for the inspected head. That absence is **not** treated as a green CI result.
+
 ## What is actually verified in this continuation
 
 Observed/verified directly:
@@ -235,7 +288,8 @@ Observed/verified directly:
 - no generated lockfile commit appears in recent commits;
 - no `automation/lockfiles` branch appears in branch search;
 - the strengthened version-parser/agreement tests passed 14/14 in the isolated execution performed during this work;
-- release/docs/governance source changes are committed to `main`.
+- release/docs/governance/workflow source changes are committed to `main`;
+- the 2.0.12 continuation is 25 commits ahead of the prior final checkpoint before this handoff commit.
 
 Not claimed as observed 2.0.12 release evidence:
 
