@@ -2,7 +2,7 @@
 
 Last updated: 2026-08-19
 
-This file is the current continuation entry point. Detailed completed work is preserved in dated handoffs so this file can stay focused on the latest repository state instead of duplicating every historical commit.
+This file is the current continuation entry point. Detailed historical implementation work remains preserved in the dated handoffs and the deep documentation set; this file records the **latest audited repository state** and the exact remaining release gates.
 
 ## Detailed handoff history
 
@@ -15,169 +15,104 @@ Read in order:
 
 The handoff index is [`docs/handoffs/README.md`](docs/handoffs/README.md).
 
-## Current implementation state
+## Product implementation state
 
-The main product/code-completable milestones are implemented:
+The code-completable product scope is implemented:
 
 - Rust + Tauri desktop application and React/Vite web companion;
 - bounded dice expression parser with modifiers and `kh`/`kl`/`dh`/`dl` selections;
 - secure native/browser randomness and deterministic cross-runtime seeded mode;
 - localized roll workspace, presets, history, statistics, probability, Settings, onboarding, command palette, and About UI;
-- reviewed English/Hindi catalogs, persisted locale preference, document `lang`, localized built-ins, and explicit `en-US`/`hi-IN` presentation formatting;
-- validated/bounded local persistence and backup schema-v1 restore;
-- spreadsheet-safe CSV and JSON history export;
-- Tauri-native OS save dialogs through the dedicated bounded `save_text_export` Rust command with browser Blob-download fallback;
+- reviewed English/Hindi catalogs, persisted locale preference, document `lang`, localized built-ins, and explicit presentation formatting;
+- bounded local persistence and backup schema-v1 restore;
+- CSV/JSON history export and JSON backup export;
+- Tauri-native OS save dialogs through the dedicated bounded `save_text_export` Rust command with browser Blob fallback;
 - privacy-safe local structured logging;
-- generated/adversarial parser tests and coverage-guided Rust parser fuzz target;
+- parser regression/generated/adversarial tests plus a Rust fuzz target;
 - production-bundle real-browser CDP smoke automation;
 - executable performance benchmarks;
 - cross-platform draft release packaging with provenance metadata and SHA-256 checksums;
 - capability/CSP/offline-network/runtime/native-command/localized-formatting/lock consistency policy audits;
 - structured GitHub issue/PR/support/ownership/funding metadata.
 
-## Documentation completion state
+## Final audit fixes completed in this continuation
 
-The repository now has a deep documentation system rather than only individual guides.
+### Persisted keep/drop semantic integrity
 
-Start at [`docs/README.md`](docs/README.md).
+Previously a persisted or imported keep/drop roll could pass validation if it had the correct **number** of kept dice and a self-consistent total even when the wrong actual dice were marked kept.
 
-Major references include:
+Now `src/domain/persistence.ts` reconstructs values by original die index, computes the expected keep/drop selection with the same deterministic selection engine used by live rolls, and rejects any mismatched `kept` mask.
 
-- [`docs/architecture.md`](docs/architecture.md) — current system architecture;
-- [`docs/application-flows.md`](docs/application-flows.md) — startup/roll/history/probability/localization/export/backup/storage/error/release flows;
-- [`docs/data-contracts.md`](docs/data-contracts.md) — domain, persistence, backup, native, locale, version, and lockfile contracts;
-- [`docs/code-reference.md`](docs/code-reference.md) — maintainer-level module responsibilities and change routing;
-- [`docs/automation-reference.md`](docs/automation-reference.md) — every npm command, repository script, workflow, and evidence meaning;
-- [`docs/repository-file-reference.md`](docs/repository-file-reference.md) — every Git-tracked file by exact path with purpose/relationships;
-- [`docs/repository-policy-gates.md`](docs/repository-policy-gates.md) — executable security/architecture policy index;
-- [`docs/release.md`](docs/release.md) and [`docs/release-candidate-evidence-template.md`](docs/release-candidate-evidence-template.md) — release process/evidence;
-- [`docs/release-blockers-current.md`](docs/release-blockers-current.md) — current evidence-gated blockers.
+Regression coverage exists in both local-storage recovery and backup-import tests.
 
-### Exhaustive file coverage
+Commits:
 
-The file reference is enforced mechanically by:
+- `445abada` — `fix: validate persisted keep drop selections`
+- `b1a1424b` — `test: reject forged persisted keep drop masks`
+- `3ac4c496` — `test: reject forged backup selection masks`
 
-- `scripts/check-file-reference.mjs`;
-- `scripts/check-file-reference.test.mjs`;
-- `scripts/check-file-reference.integration.test.mjs`.
+### Spreadsheet-safe CSV without breaking numeric columns
 
-Commands:
+CSV formula neutralization was hardened in two stages:
 
-```bash
-npm run docs:inventory:test
-npm run docs:inventory
-```
+- untrusted formula-like values preceded by whitespace are now detected;
+- formula neutralization is limited to untrusted text fields (`id` and `seed`) so generated negative `total` and `modifier` values remain true numeric CSV cells instead of being converted to apostrophe-prefixed text.
 
-The audit compares `git ls-files -z` with exact first-column paths in `docs/repository-file-reference.md`. A new tracked file must be documented in the same change or the repository audit will fail once executed.
+Regression coverage includes direct formula markers, whitespace-prefixed formula markers, imported formula-like IDs, quoted formula content, and negative numeric totals/modifiers.
 
-`.github/workflows/repository-audit.yml` now includes both the inventory self-test and exhaustive tracked-file audit.
+Commits:
 
-## Correctness fixes discovered by the documentation audit
+- `50d32006` — `fix: neutralize whitespace prefixed csv formulas`
+- `1760442a` — `test: cover whitespace prefixed csv formulas`
+- `2b6b8174` — `fix: preserve numeric csv columns`
+- `05038f95` — `test: preserve numeric csv semantics`
 
-Writing the application flows/data/security contracts exposed implementation/policy mismatches that were fixed rather than documented as if they were correct.
+### History-limit live-state normalization
 
-### Backup export/restore size parity
+The Settings number field previously allowed a manually entered fractional history limit to enter live application state even though persisted settings require a safe integer. The same setting could therefore behave differently before and after reload.
 
-Previously the importer rejected backups above 5,000,000 UTF-8 bytes but browser export could still create a larger backup.
+The field now converts finite input to an integer immediately with `Math.trunc()` and clamps it to the supported 10–5,000 range.
 
-Now:
+Commits:
 
-- `backupToJson()` enforces the same 5,000,000-byte `TextEncoder` limit as `parseBackupJson()`;
-- oversized output fails before browser/native save rather than being silently truncated;
-- the stable `backup-too-large` error/context is reused;
-- Settings renders the existing localized 5 MB backup error for known oversized exports;
-- the generic native text transport remains separately capped at 6,000,000 bytes;
-- tests cover oversized serialization and Hindi export failure feedback without raw private/developer error details.
+- `86cb41cd` — `fix: keep history limit integer bounded`
+- `6d2cb32a` — `test: normalize fractional history limits`
 
-Relevant commits include:
+### Dependency-lock workflow hardening
 
-- `3595652f` — `fix: keep exported backups within restore size limit`
-- `c57a2dc0` — `fix: show localized backup export size errors`
-- `b4d3fa1c` — `test: reject backups too large to restore before export`
-- `825ab06e` — `test: localize oversized backup export feedback`
+`.github/workflows/lockfiles.yml` now:
 
-### Live shell and command-palette localization
+- triggers on both manifests **and both lockfiles**, plus the workflow itself;
+- regenerates npm/Cargo lockfiles with the package managers;
+- disables unnecessary npm audit/fund network work during lock generation;
+- verifies generated Cargo metadata with `--locked`;
+- runs `git diff --check` before committing;
+- retains the existing direct-main/fallback-branch publication behavior;
+- uses a bounded job timeout.
 
-Persistent shell navigation and command definitions previously captured translated strings at module evaluation, so a live English/Hindi switch could leave those surfaces in the previous language until reload.
+Commits:
 
-Now:
+- `0a4507e8` — `ci: verify generated dependency lockfiles`
+- `99680f5c` — `ci: revalidate direct lockfile edits`
 
-- `AppShell` builds navigation labels during render;
-- `CommandPalette` builds command labels/details during render through `getCommands()`;
-- the shell brand accessible name no longer appends a hardcoded English word;
-- the live application integration test verifies Hindi shell navigation, command-palette heading/commands, built-in presets, and document language while preserving user-created preset text;
-- localization documentation explicitly forbids module-level capture of translated primitive values that need live switching.
+## Documentation state
 
-Relevant commits include:
+The deep documentation system remains the canonical reference. Start at [`docs/README.md`](docs/README.md).
 
-- `c506ff79` — `fix: refresh navigation labels after locale changes`
-- `0dd6fcef` — `fix: refresh command labels after locale changes`
-- `e38f4864` — `test: cover live shell and command palette localization`
-- `f4850483` — `fix: remove hardcoded English from brand accessible name`
-- `269c7261` — `test: target localized command dialog semantically`
-- `12a2b904` — `docs: prevent stale module captured locale strings`
+Key references:
 
-### Production CSP versus local development loopback
+- [`docs/architecture.md`](docs/architecture.md) — system architecture;
+- [`docs/application-flows.md`](docs/application-flows.md) — startup, roll, history, probability, localization, export, backup, storage, error, and release flows;
+- [`docs/data-contracts.md`](docs/data-contracts.md) — domain/persistence/backup/native/locale/version/lockfile contracts;
+- [`docs/code-reference.md`](docs/code-reference.md) — maintainer module/change-routing reference;
+- [`docs/automation-reference.md`](docs/automation-reference.md) — commands, scripts, workflows, and evidence semantics;
+- [`docs/repository-file-reference.md`](docs/repository-file-reference.md) — exhaustive Git-tracked file inventory;
+- [`docs/repository-policy-gates.md`](docs/repository-policy-gates.md) — executable security/architecture gates;
+- [`docs/release.md`](docs/release.md) — release process;
+- [`docs/release-candidate-evidence-template.md`](docs/release-candidate-evidence-template.md) — candidate evidence record;
+- [`docs/release-blockers-current.md`](docs/release-blockers-current.md) — exact current release blockers.
 
-The Tauri security/offline-network audits originally treated `devCsp` exactly like packaged production CSP and therefore could falsely reject the legitimate Vite/Tauri development sources `http://localhost:1420` and `ws://localhost:1421`.
-
-Now:
-
-- packaged production CSP remains strict;
-- explicit loopback URLs are allowed only while auditing `devCsp`;
-- supported loopback forms are `localhost`, `127.0.0.1`, and `[::1]`;
-- scheme-wide `http:` / `https:` / `ws:` / `wss:` sources remain forbidden;
-- non-loopback remote development origins remain forbidden;
-- localhost remains forbidden as a packaged production dependency;
-- tests cover development loopback acceptance plus production/non-loopback/broad-scheme rejection;
-- `docs/tauri-security-policy.md` and `docs/offline-network-policy.md` document the distinction.
-
-Relevant commits include:
-
-- `d6739ff4` — `fix: allow loopback development origins in Tauri CSP audit`
-- `20b81e25` — `test: distinguish dev loopback from remote Tauri origins`
-- `98c64a74` — `fix: allow loopback development sources in offline CSP audit`
-- `f8b72bb2` — `test: distinguish dev loopback from production network sources`
-- `430d920f` — `docs: document loopback only development CSP exception`
-- `e55ad9cc` — `docs: document development loopback network exception`
-
-The canonical application/data docs were also updated after these fixes so documentation describes the actual corrected behavior rather than the earlier mismatch.
-
-## Current repository policy commands
-
-`package.json` exposes stable dependency-free audit commands:
-
-```text
-security:secrets:test
-security:secrets
-docs:check:test
-docs:check
-docs:inventory:test
-docs:inventory
-policy:capabilities
-policy:tauri-security
-policy:offline-csp
-policy:localized-formatting
-policy:runtime
-policy:native-commands
-policy:lockfiles
-policy:boundaries
-policy:test
-policy:all
-test:e2e:infra
-version:check:test
-version:check
-release:verify
-release:verify:test
-```
-
-Normal frontend and Rust checks remain separate from these repository-level audits.
-
-## Execution-environment limitation
-
-A clean-checkout verification was attempted from the available execution container after the documentation/policy changes. The container still cannot resolve `github.com`, so it cannot clone the repository or regenerate Cargo dependencies locally.
-
-Therefore no local Node/Rust pass is being claimed from that container. Repository tooling/configuration/tests are committed, but execution evidence remains separate until an environment with repository/network access actually runs them.
+No new tracked file was introduced by this continuation, so the exhaustive file-reference inventory does not require a new path entry.
 
 ## Current first release blocker — still open
 
@@ -187,47 +122,53 @@ Therefore no local Node/Rust pass is being claimed from that container. Reposito
 tauri-plugin-dialog = "2.7.2"
 ```
 
-The latest observed `src-tauri/Cargo.lock` still shows the Tauri package sequence without a `tauri-plugin-dialog` package entry. Therefore the dialog dependency graph has **not** been observed as regenerated in the committed lockfile.
+A fresh audit of the current `main` branch still finds **no `tauri-plugin-dialog` package entry** in `src-tauri/Cargo.lock`.
 
-Do not hand-edit Cargo's transitive lock entries.
+Recent commit history also does not yet show the workflow-generated `build: lock application dependencies` commit, and no `automation/lockfiles` fallback branch was observed.
 
-Required resolution on a network-enabled runner:
+Therefore the Rust dependency graph is **not yet eligible for a reproducibility claim**. Do not hand-edit Cargo's transitive lock entries.
+
+Required network-enabled resolution:
 
 ```bash
 cd src-tauri
 cargo generate-lockfile
 cargo test --locked
 cargo clippy --all-targets --all-features --locked -- -D warnings
+node ../scripts/check-lockfile-consistency.mjs
 ```
 
-Then run/observe the repository policy/documentation/frontend/browser/fuzz checks against the resulting exact commit.
+The strengthened lockfile workflow is intended to perform the generation/validation automatically when GitHub Actions executes successfully, but workflow configuration alone is not release evidence.
 
-## Other evidence-gated release work
+## Remaining evidence-gated release work
 
-Still open until observed on the intended release candidate:
+The following are intentionally still open until observed on the **same intended candidate commit**:
 
-- full production real-browser E2E success on unrestricted infrastructure;
-- a bounded parser fuzz campaign with no unresolved finding;
-- release-candidate benchmark evidence with machine/runtime metadata;
-- clean Windows/macOS/Linux candidate builds;
-- native CSV/JSON/backup save-dialog save/cancel/failure smoke on each desktop platform;
-- English/Hindi candidate visual and accessibility review;
-- keyboard/screen-reader/200%-text/reduced-motion manual review;
+- locked Rust test/Clippy success after the Cargo lockfile is regenerated;
+- complete frontend unit/integration/lint/format/build verification;
+- repository documentation/security/policy audit success;
+- full production real-browser E2E success;
+- bounded parser fuzz campaign with no unresolved finding;
+- candidate benchmark record with machine/runtime metadata;
+- clean Windows/macOS/Linux desktop builds and smoke tests;
+- native CSV/JSON/backup save/cancel/failure smoke on each desktop platform;
+- English/Hindi visual and accessibility review;
+- keyboard-only, representative screen-reader, 200% text, focus, and reduced-motion review;
 - CodeQL/dependency/repository-security results review;
 - real screenshots from verified candidate builds;
-- signing/notarization where credentials/infrastructure are available, or accurate unsigned documentation otherwise;
-- downloaded artifact checksum/provenance/content review;
-- human review and publication of the draft `v0.1.0` release.
+- signing/notarization where available, or accurate unsigned-release documentation;
+- artifact checksum/provenance/content review;
+- maintainer approval and publication of the draft `v0.1.0` release.
 
-Use [`docs/release-candidate-evidence-template.md`](docs/release-candidate-evidence-template.md) rather than marking these complete from workflow configuration alone.
+Do not mark any of those complete from workflow definitions alone. Use [`docs/release-candidate-evidence-template.md`](docs/release-candidate-evidence-template.md) and preserve the exact source commit/run/platform evidence.
 
 ## Continuation rule
 
-Do not repeat completed implementation/documentation work. Continue from the first unresolved evidence or newly discovered defect:
+Do not repeat completed implementation work unless a new defect is found. Continue from the first unresolved release gate:
 
-1. regenerate/commit the current Cargo lockfile;
+1. regenerate and commit the current Cargo lockfile;
 2. observe locked Rust quality checks;
-3. observe repository documentation/policy/frontend/browser/fuzz checks on the same commit;
-4. produce and smoke-test platform release candidates;
-5. record candidate benchmarks/accessibility/screenshots/security/provenance evidence;
-6. publish only after the draft candidate is reviewed and no release blocker remains.
+3. observe frontend/repository/browser/fuzz checks on the same candidate;
+4. produce and smoke-test Windows/macOS/Linux candidates;
+5. record benchmark/accessibility/localization/screenshot/security/provenance evidence;
+6. publish only after the evidence template is complete enough for explicit maintainer approval.
