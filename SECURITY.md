@@ -30,17 +30,38 @@ Maintainers will review reports, reproduce the issue where possible, assess seve
 
 ## Security design notes
 
-- Native random rolls use Rust's operating-system-backed secure randomness path.
-- Seeded mode is intentionally deterministic and is visibly separated from secure mode.
+- Native secure rolls use Rust's operating-system-backed `OsRng` path.
+- Browser secure rolls use Web Crypto and rejection sampling for bounded integers.
+- Seeded mode is intentionally deterministic, cross-runtime reproducible, and visibly separated from secure mode; it is not a cryptographic primitive.
 - The desktop application uses a restrictive Content Security Policy.
 - Tauri capabilities are kept minimal and do not grant broad filesystem or shell access.
 - DiceLab does not require an account or remote database for normal operation.
+- Persisted roll/preset records are validated before they are restored into application state; malformed records are discarded from ordinary local storage and rejected in imported backups.
+- Backup imports enforce schema size limits, expression consistency, bounded values, canonical timestamps, unique identifiers, deterministic-seed requirements, and coherent keep/drop totals before state replacement.
+- CSV export neutralizes cells beginning with common spreadsheet formula prefixes (`=`, `+`, `-`, `@`) before normal CSV quoting.
 - Exported files are created only after an explicit user action.
+- Tagged builds package artifacts only after prerequisite quality jobs succeed and generate SHA-256 checksum metadata for draft-release review.
 - The repository must not contain credentials, signing keys, access tokens, or private production data.
+
+## Local data trust boundary
+
+Browser/webview local storage is treated as potentially corrupted or user-modifiable input. DiceLab therefore does not assume that values read from storage still match TypeScript interfaces.
+
+On load:
+
+- settings are normalized to supported enums and numeric bounds;
+- reduced-motion state wins over contradictory animation state;
+- history and custom presets are structurally/domain validated;
+- duplicate IDs are removed from ordinary local persistence;
+- forged entries using reserved built-in preset IDs are ignored.
+
+Backup import is stricter than recovery from ordinary local storage: ambiguous/duplicate records cause the import to fail rather than silently changing the supplied backup.
 
 ## Dependency and supply-chain security
 
-The repository uses automated dependency update configuration, CI checks, and static analysis. Contributors should avoid adding dependencies for trivial functionality and should prefer maintained packages with clear licensing and security posture.
+The repository uses committed npm/Cargo lockfiles, automated dependency update configuration, locked CI installation, CodeQL/static analysis, and minimal dependency policy. Contributors should avoid adding dependencies for trivial functionality and should prefer maintained packages with clear licensing and security posture.
+
+Release artifacts remain drafts until a maintainer reviews checksums and platform smoke tests. Signing/notarization credentials, if configured later, must remain in protected CI secrets rather than source control.
 
 ## Scope
 
@@ -50,6 +71,8 @@ Examples of in-scope issues include:
 - unintended filesystem/network capabilities;
 - injection or unsafe rendering of untrusted content;
 - sensitive local data exposure;
+- malicious or malformed backup/persistence behavior;
+- spreadsheet formula execution caused by exported user-controlled data;
 - insecure update/release behavior;
 - dependency vulnerabilities with a practical DiceLab impact.
 
