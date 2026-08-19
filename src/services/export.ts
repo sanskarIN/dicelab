@@ -1,6 +1,7 @@
 import { selectKeptIndices } from '../domain/engine';
 import { parseDiceExpression } from '../domain/parser';
 import { DEFAULT_SETTINGS, type DicePreset, type DiceLabSettings, type RollResult } from '../domain/types';
+import { copy } from '../i18n';
 
 const MAX_BACKUP_BYTES = 5_000_000;
 const MAX_BACKUP_HISTORY = 5_000;
@@ -63,41 +64,37 @@ export function backupToJson(backup: DiceLabBackup): string {
 
 export function parseBackupJson(contents: string): DiceLabBackup {
   if (new Blob([contents]).size > MAX_BACKUP_BYTES) {
-    throw new BackupValidationError('Backup is larger than the supported 5 MB limit.');
+    throw new BackupValidationError(copy.errors.backupTooLarge);
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(contents) as unknown;
   } catch {
-    throw new BackupValidationError('Backup is not valid JSON.');
+    throw new BackupValidationError(copy.errors.invalidBackupJson);
   }
   if (!parsed || typeof parsed !== 'object') {
-    throw new BackupValidationError('Backup root must be an object.');
+    throw new BackupValidationError(copy.errors.invalidBackupRoot);
   }
 
   const candidate = parsed as Record<string, unknown>;
   if (candidate.schemaVersion !== 1) {
-    throw new BackupValidationError('Unsupported DiceLab backup schema version.');
+    throw new BackupValidationError(copy.errors.unsupportedBackupSchema);
   }
 
   const history = candidate.history;
   const presets = candidate.presets;
   if (!Array.isArray(history) || history.length > MAX_BACKUP_HISTORY) {
-    throw new BackupValidationError(
-      `Backup history must contain at most ${MAX_BACKUP_HISTORY.toLocaleString('en-US')} rolls.`,
-    );
+    throw new BackupValidationError(copy.errors.backupHistoryTooLarge(MAX_BACKUP_HISTORY));
   }
   if (!Array.isArray(presets) || presets.length > MAX_BACKUP_PRESETS) {
-    throw new BackupValidationError(
-      `Backup presets must contain at most ${MAX_BACKUP_PRESETS.toLocaleString('en-US')} items.`,
-    );
+    throw new BackupValidationError(copy.errors.backupPresetsTooLarge(MAX_BACKUP_PRESETS));
   }
   if (!history.every(isRollResult)) {
-    throw new BackupValidationError('Backup contains an invalid or inconsistent roll history entry.');
+    throw new BackupValidationError(copy.errors.invalidBackupRoll);
   }
   if (!presets.every(isPreset)) {
-    throw new BackupValidationError('Backup contains an invalid preset.');
+    throw new BackupValidationError(copy.errors.invalidBackupPreset);
   }
 
   const settings = normalizeSettings(candidate.settings);
@@ -125,16 +122,16 @@ export function downloadText(filename: string, contents: string, mimeType: strin
 
 function normalizeSettings(value: unknown): DiceLabSettings {
   if (!value || typeof value !== 'object') {
-    throw new BackupValidationError('Backup settings are missing or invalid.');
+    throw new BackupValidationError(copy.errors.invalidBackupSettings);
   }
   const settings = value as Record<string, unknown>;
   const theme = settings.theme;
   const randomMode = settings.randomMode;
   if (theme !== 'system' && theme !== 'light' && theme !== 'dark') {
-    throw new BackupValidationError('Backup theme is invalid.');
+    throw new BackupValidationError(copy.errors.invalidBackupTheme);
   }
   if (randomMode !== 'secure' && randomMode !== 'seeded') {
-    throw new BackupValidationError('Backup random mode is invalid.');
+    throw new BackupValidationError(copy.errors.invalidBackupRandomMode);
   }
   const historyLimit =
     typeof settings.historyLimit === 'number' && Number.isSafeInteger(settings.historyLimit)
