@@ -44,9 +44,10 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Local-storage corruption recovery and persisted-record validation.
 - [x] Backup duplicate/integrity validation and spreadsheet-safe CSV output.
 - [x] Cross-runtime deterministic seeded parity.
+- [x] Externalized typed English catalog and locale boundary for user-facing React/preset copy.
+- [x] Progressive rendering for very large retained histories.
 - [ ] Optional native save dialog integration with narrowly scoped permissions.
-- [ ] Externalized translation catalog and first additional locale.
-- [ ] Virtualized history for very large retained histories.
+- [ ] Add a reviewed second locale before exposing language selection.
 
 ## Phase 4 — Verification depth
 
@@ -58,7 +59,8 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Roll-statistics and deterministic RNG edge coverage.
 - [x] Component keyboard/accessibility smoke tests for modal and settings surfaces.
 - [x] Browser-state integration tests for roll/history/export, backup restore, and About navigation.
-- [ ] Add broader property-based parser invariants.
+- [x] Generated parser normalization/case/whitespace invariants.
+- [x] Large-history progressive-rendering regression coverage.
 - [ ] Add a dedicated Rust fuzz target for expression parsing.
 - [ ] Add real-browser E2E tests for rendering/download/reload journeys.
 - [ ] Establish executable performance benchmarks in addition to documented budgets.
@@ -93,6 +95,6 @@ These are intentionally not commitments. They should be implemented only when th
 - more built-in tabletop preset packs;
 - deeper distribution comparison tools;
 - optional native updater after signing/release infrastructure is mature;
-- additional localizations beyond the pre-1.0 catalog work.
+- additional localizations after catalog review infrastructure is established.
 
 The core product remains fully usable without an account or donation.
