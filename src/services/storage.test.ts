@@ -106,6 +106,27 @@ describe('local storage recovery', () => {
     expect(loadHistory()).toEqual([validRoll]);
   });
 
+  it('rejects persisted keep/drop masks that do not match the rolled values', () => {
+    const forgedSelection: RollResult = {
+      id: 'forged-selection',
+      expression: '4d6kh3',
+      total: 13,
+      dice: [
+        { value: 6, kept: true, index: 0 },
+        { value: 6, kept: true, index: 1 },
+        { value: 1, kept: true, index: 2 },
+        { value: 2, kept: false, index: 3 },
+      ],
+      modifier: 0,
+      mode: 'seeded',
+      seed: 'storage-test:selection',
+      rolledAt: '2026-08-19T04:00:00.000Z',
+    };
+    localStorage.setItem(HISTORY_KEY, JSON.stringify([forgedSelection]));
+
+    expect(loadHistory()).toEqual([]);
+  });
+
   it('ignores forged built-in presets and duplicate custom ids', () => {
     localStorage.setItem(
       PRESETS_KEY,
