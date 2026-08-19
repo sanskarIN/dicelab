@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import { DEFAULT_SETTINGS } from './domain/types';
+import { setLocale } from './i18n';
 
 const SETTINGS_KEY = 'dicelab.settings.v1';
 const ONBOARDED_KEY = 'dicelab.onboarded.v1';
@@ -20,7 +21,11 @@ describe('DiceLab primary journeys', () => {
     );
   });
 
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    setLocale('en');
+    document.documentElement.lang = 'en';
+    vi.restoreAllMocks();
+  });
 
   it('rolls dice, persists the result in history, and exports the filtered log', async () => {
     const createObjectUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:dicelab-export');
@@ -77,6 +82,23 @@ describe('DiceLab primary journeys', () => {
     expect(screen.getByText('1d6')).toBeInTheDocument();
     expect(within(screen.getByLabelText('Roll summary')).getByText('4–4')).toBeInTheDocument();
     expect(screen.getByText('Seeded')).toBeInTheDocument();
+  });
+
+  it('switches the complete interface and built-in presets to Hindi', async () => {
+    render(<App />);
+    openView('Settings');
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Language' }), { target: { value: 'hi' } });
+
+    expect(screen.getByRole('heading', { name: 'सेटिंग्स' })).toBeInTheDocument();
+    expect(document.documentElement).toHaveAttribute('lang', 'hi');
+    await waitFor(() =>
+      expect(JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}').locale).toBe('hi'),
+    );
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'रोल' })[0]);
+    expect(screen.getByText('D20 जाँच')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'रोल करें' })).toBeInTheDocument();
   });
 
   it('opens the About surface from Settings', () => {
