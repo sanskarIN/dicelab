@@ -195,6 +195,18 @@ fn parse_expression(input: &str) -> Result<Expression, String> {
     })
 }
 
+#[cfg(feature = "fuzzing")]
+pub fn fuzz_parse_expression(input: &str) {
+    if let Ok(first) = parse_expression(input) {
+        let normalized = first.normalized.clone();
+        let second = parse_expression(&normalized).expect("normalized parser output must parse again");
+        assert_eq!(second.normalized, normalized);
+        assert_eq!(second.count, first.count);
+        assert_eq!(second.sides, first.sides);
+        assert_eq!(second.modifier, first.modifier);
+    }
+}
+
 fn roll_with_rng<R: Rng + ?Sized>(expression: &Expression, rng: &mut R) -> NativeRollResult {
     let values: Vec<u32> = (0..expression.count)
         .map(|_| rng.gen_range(1..=expression.sides))
