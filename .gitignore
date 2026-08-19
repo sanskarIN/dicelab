@@ -9,6 +9,9 @@ node_modules/
 # Rust and Tauri
 /src-tauri/target/
 /src-tauri/gen/
+/src-tauri/fuzz/target/
+/src-tauri/fuzz/artifacts/
+/src-tauri/fuzz/corpus/
 
 # environment and local configuration
 .env
