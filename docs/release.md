@@ -2,6 +2,16 @@
 
 DiceLab releases should be reproducible, reviewed, and based on a clean commit with passing required checks.
 
+## Current candidate
+
+The repository is currently preparing **DiceLab 2.0.12**. The intended release tag is:
+
+```text
+v2.0.12
+```
+
+Do not create or publish that tag until the dependency locks and release-candidate evidence described below are current for the exact source commit.
+
 ## Version locations
 
 Keep the version aligned in:
@@ -12,7 +22,7 @@ Keep the version aligned in:
 - `src-tauri/tauri.conf.json`
 - `CHANGELOG.md`
 
-Use semantic-versioning principles. During pre-1.0 development, minor releases may still include deliberate compatibility changes when documented clearly.
+Use semantic-versioning principles. Compatibility-affecting changes must be documented clearly, especially once the project is on a 2.x version line.
 
 The automated repository check verifies the executable/configuration locations:
 
@@ -21,7 +31,7 @@ npm run version:check:test
 npm run version:check
 ```
 
-`CHANGELOG.md` is intentionally reviewed by a maintainer rather than parsed as an executable version source because the unreleased/planned sections can legitimately mention multiple versions.
+`CHANGELOG.md` is intentionally reviewed by a maintainer rather than parsed as an executable version source because unreleased/released sections can legitimately mention multiple versions.
 
 ## Dependency-lock rule
 
@@ -44,7 +54,7 @@ Do not hand-edit transitive Cargo lock entries to bypass a stale-lock failure.
 
 ## Release prerequisites
 
-Before tagging a release:
+Before tagging `v2.0.12`:
 
 1. Ensure `package-lock.json` and `src-tauri/Cargo.lock` are committed and current for the exact manifests.
 2. Verify normal CI is green on the exact release commit, including real-browser E2E.
@@ -56,7 +66,7 @@ Before tagging a release:
 8. Complete native desktop CSV/JSON/backup save-dialog smoke checks on candidate builds.
 9. Capture real screenshots from the release candidate.
 10. Update `CHANGELOG.md`, `ROADMAP.md`, and `what_changed.md`.
-11. Verify every executable/configuration version location matches with `npm run version:check`.
+11. Verify every executable/configuration version location matches `2.0.12` with `npm run version:check`.
 12. Confirm the repository contains no credentials or generated signing secrets.
 13. Confirm seeded web/desktop compatibility reference-vector tests pass.
 14. Confirm English/Hindi locale selection and locale-aware presentation survive restart/backup restore.
@@ -153,11 +163,11 @@ If signing is configured through CI, use repository/environment secrets and leas
 
 ## Tagging
 
-Create an annotated version tag from the verified commit, for example:
+Create the annotated version tag only from the verified 2.0.12 release commit:
 
 ```bash
-git tag -a v0.1.0 -m "DiceLab v0.1.0"
-git push origin v0.1.0
+git tag -a v2.0.12 -m "DiceLab v2.0.12"
+git push origin v2.0.12
 ```
 
 The tag-driven release workflow then:
@@ -169,7 +179,7 @@ The tag-driven release workflow then:
 5. uploads each platform artifact to the workflow run;
 6. downloads only artifacts produced by successful prerequisite jobs;
 7. creates a ZIP per artifact set;
-8. generates `SHA256SUMS.txt` for the ZIP files;
+8. generates `RELEASE-METADATA.json` and `SHA256SUMS.txt` for the packages/provenance;
 9. creates or updates a **draft** GitHub release for the tag and uploads the packages/checksums.
 
 The workflow deliberately leaves the release as a draft. A human maintainer must still install/smoke-test the produced bundles, verify native save dialogs/localization, and review generated notes before publishing.
@@ -219,7 +229,7 @@ For each produced bundle:
 7. Export History CSV/JSON through the native save dialog.
 8. Export a backup through the native save dialog and restore it.
 9. Verify English/Hindi selection, document language, localized built-ins, and presentation formatting.
-10. Verify About/version/contact information.
+10. Verify About/version/contact information reports `2.0.12`.
 11. Confirm the build contains no development server references.
 12. Verify reduced-motion and keyboard navigation behavior.
 13. Confirm local diagnostic logging does not expose user-created content/seeds/raw errors.
