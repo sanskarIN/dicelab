@@ -14,31 +14,39 @@ Do not create or publish that tag until the dependency locks and release-candida
 
 ## Version locations
 
-Keep the version aligned in:
+Keep the application version aligned in:
 
-- `package.json`
-- `src/config/app.ts`
-- `src-tauri/Cargo.toml`
-- `src-tauri/tauri.conf.json`
-- `CHANGELOG.md`
+- `package.json`;
+- the top-level `version` and `packages[""]` root version in generated `package-lock.json`;
+- `src/config/app.ts`;
+- `src-tauri/Cargo.toml`;
+- DiceLab's generated package entry in `src-tauri/Cargo.lock`;
+- `src-tauri/tauri.conf.json`;
+- `CHANGELOG.md` as the human-reviewed release record.
 
-Use semantic-versioning principles. Compatibility-affecting changes must be documented clearly, especially once the project is on a 2.x version line.
+Use semantic-versioning principles. Compatibility-affecting changes must be documented clearly, especially on the 2.x version line.
 
-The automated repository check verifies the executable/configuration locations:
+The automated repository check verifies the six machine-readable sources plus both npm-lock version locations:
 
 ```bash
 npm run version:check:test
 npm run version:check
 ```
 
-`CHANGELOG.md` is intentionally reviewed by a maintainer rather than parsed as an executable version source because unreleased/released sections can legitimately mention multiple versions.
+The version audit intentionally fails when a manifest/config version has been bumped but generated npm/Cargo lock metadata has not yet been regenerated. `CHANGELOG.md` remains a maintainer-reviewed source rather than an executable version input because unreleased/released sections can legitimately mention multiple versions.
 
 ## Dependency-lock rule
 
-Every dependency-manifest change must be accompanied by the corresponding generated lockfile before the release commit is considered reproducible.
+Every dependency-manifest or application-version change must be accompanied by corresponding generated lockfiles before the release commit is considered reproducible.
 
 - `package.json` changes require a current `package-lock.json`.
 - `src-tauri/Cargo.toml` changes require a current `src-tauri/Cargo.lock`.
+
+Regenerate npm metadata from the repository root:
+
+```bash
+npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+```
 
 For Rust, regenerate from `src-tauri`:
 
@@ -56,17 +64,17 @@ Do not hand-edit transitive Cargo lock entries to bypass a stale-lock failure.
 
 Before tagging `v2.0.12`:
 
-1. Ensure `package-lock.json` and `src-tauri/Cargo.lock` are committed and current for the exact manifests.
-2. Verify normal CI is green on the exact release commit, including real-browser E2E.
-3. Observe a bounded Rust parser fuzz campaign green on the intended candidate or record why it is excluded from the release gate.
-4. Run the clean-checkout quality suite.
-5. Run/review the repository secret audit and platform security alerts.
-6. Review dependency/CodeQL findings.
-7. Complete the accessibility smoke checklist.
-8. Complete native desktop CSV/JSON/backup save-dialog smoke checks on candidate builds.
-9. Capture real screenshots from the release candidate.
-10. Update `CHANGELOG.md`, `ROADMAP.md`, and `what_changed.md`.
-11. Verify every executable/configuration version location matches `2.0.12` with `npm run version:check`.
+1. Ensure `package-lock.json` and `src-tauri/Cargo.lock` are generated and current for the exact manifests/version.
+2. Verify `npm run version:check` reports all manifest/config/generated-lock version locations as `2.0.12`.
+3. Verify normal CI is green on the exact release commit, including real-browser E2E.
+4. Observe a bounded Rust parser fuzz campaign green on the intended candidate or record why it is excluded from the release gate.
+5. Run the clean-checkout quality suite.
+6. Run/review the repository secret audit and platform security alerts.
+7. Review dependency/CodeQL findings.
+8. Complete the accessibility smoke checklist.
+9. Complete native desktop CSV/JSON/backup save-dialog smoke checks on candidate builds.
+10. Capture real screenshots from the release candidate.
+11. Update `CHANGELOG.md`, `ROADMAP.md`, and `what_changed.md`.
 12. Confirm the repository contains no credentials or generated signing secrets.
 13. Confirm seeded web/desktop compatibility reference-vector tests pass.
 14. Confirm English/Hindi locale selection and locale-aware presentation survive restart/backup restore.
@@ -83,11 +91,17 @@ cd dicelab
 
 npm run security:secrets:test
 npm run security:secrets
+npm run docs:check:test
+npm run docs:check
+npm run docs:inventory:test
+npm run docs:inventory
+npm run policy:test
+npm run policy:all
 npm run test:e2e:infra
 npm run version:check:test
 npm run version:check
+npm run release:verify:test
 npm ci
-npm run docs:check
 npm run format
 npm run lint
 npm run test
@@ -172,17 +186,21 @@ git push origin v2.0.12
 
 The tag-driven release workflow then:
 
-1. runs secret-audit, E2E-infrastructure, and version-audit self-checks before dependency installation;
-2. verifies the repository secret scan and version consistency;
-3. runs documentation, format, lint, unit/integration, production-build, and real-browser E2E checks with locked npm dependencies;
-4. builds Windows, macOS, and Linux desktop bundles after locked Rust tests/Clippy checks;
-5. uploads each platform artifact to the workflow run;
-6. downloads only artifacts produced by successful prerequisite jobs;
-7. creates a ZIP per artifact set;
-8. generates `RELEASE-METADATA.json` and `SHA256SUMS.txt` for the packages/provenance;
-9. creates or updates a **draft** GitHub release for the tag and uploads the packages/checksums.
+1. runs secret-audit self-tests and the repository secret audit;
+2. runs documentation link and exhaustive tracked-file inventory self-tests/audits;
+3. runs repository policy self-tests and all release-relevant policy boundaries, including lockfile consistency;
+4. runs browser E2E infrastructure, version-audit, and release-verifier self-tests;
+5. verifies tag `v2.0.12` agrees with manifest/config/generated-lock version metadata;
+6. installs locked npm dependencies;
+7. runs format, lint, unit/integration, production-build, and real-browser E2E checks;
+8. builds Windows, macOS, and Linux desktop bundles after locked Rust formatting/tests/Clippy checks;
+9. uploads each platform artifact to the workflow run;
+10. downloads only artifacts produced by successful prerequisite jobs;
+11. creates a ZIP per artifact set;
+12. generates `RELEASE-METADATA.json` and `SHA256SUMS.txt` for the packages/provenance;
+13. creates or updates a **draft** GitHub release for the tag and uploads the packages/checksums.
 
-The workflow deliberately leaves the release as a draft. A human maintainer must still install/smoke-test the produced bundles, verify native save dialogs/localization, and review generated notes before publishing.
+The web, desktop, and draft-release jobs use explicit timeouts so a stuck release path cannot remain indefinitely active. The workflow deliberately leaves the release as a draft. A human maintainer must still install/smoke-test the produced bundles, verify native save dialogs/localization, and review generated notes before publishing.
 
 ## Draft release review
 
@@ -192,7 +210,7 @@ Before publishing the draft:
 - extract and inspect expected platform files;
 - complete the artifact smoke matrix below;
 - verify the exact release commit had green CI/E2E/CodeQL/security evidence;
-- verify the committed Cargo lockfile includes all direct Rust dependencies declared by the candidate manifest;
+- verify both generated lockfiles carry the 2.0.12 application version and the Cargo lock includes all direct Rust dependencies declared by the candidate manifest;
 - replace or edit generated notes so they accurately match `CHANGELOG.md`;
 - clearly state whether artifacts are unsigned, signed, notarized, or otherwise platform-verified;
 - attach release screenshots only if they come from the candidate build;
