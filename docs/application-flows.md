@@ -10,14 +10,16 @@ This document explains how user actions travel through React, domain logic, brow
 
 ### Initial state loading
 
-`App` initializes independent pieces of state from local persistence:
+Startup order matters because later recovered collections depend on validated settings:
 
-1. `loadHistory()` reads and validates retained roll records.
-2. `loadSettings()` normalizes theme, locale, motion, randomness, seed, and history-limit values.
-3. The active message catalog is set immediately from the loaded locale before normal application rendering continues.
-4. `loadPresets(settings.locale)` rebuilds localized built-in presets and appends validated user-created presets.
+1. `loadSettings()` normalizes theme, locale, motion, randomness, seed, and history-limit values.
+2. The active message catalog is immediately set from the loaded locale.
+3. `loadHistory()` reads/validates retained roll records and the coordinator immediately slices the recovered in-memory history to `settings.historyLimit`.
+4. `loadPresets(settings.locale)` rebuilds localized built-in presets and appends validated, bounded user-created presets.
 5. `hasCompletedOnboarding()` determines whether the onboarding dialog should be shown.
 6. The initial navigation view is `roll` and the initial expression is `1d20`.
+
+The history-limit slice occurs during state initialization rather than waiting for a later persistence effect. Therefore a forged/stale localStorage history containing more valid records than the active setting cannot appear in memory, statistics, exports, or backups on the first render.
 
 If local storage is blocked/corrupted, storage services return safe defaults and emit only bounded privacy-safe operational diagnostics. Startup does not require a network service or account.
 
@@ -26,7 +28,7 @@ If local storage is blocked/corrupted, storage services return safe defaults and
 After state exists:
 
 - settings and bounded history are persisted whenever either changes;
-- custom presets are persisted whenever the preset collection changes;
+- bounded custom presets are persisted whenever the preset collection changes;
 - root HTML data attributes are updated for theme, reduced motion, and animation state;
 - the document `lang` attribute follows the selected DiceLab locale;
 - system-theme changes are observed when theme preference is `system`;
@@ -139,15 +141,28 @@ Saving a preset:
 3. stores the normalized expression;
 4. stores the user-supplied name exactly;
 5. uses the current catalog's generic custom-preset description at creation time;
-6. stores an ISO creation timestamp.
+6. stores an ISO creation timestamp;
+7. passes the resulting collection through `limitPresetCollection()` before committing it to React state.
 
 Deletion refuses IDs beginning with `builtin-`.
 
-Persistence removes forged/reserved built-in IDs from user storage and caps custom presets at 500.
+### Shared custom-preset bound
+
+`MAX_CUSTOM_PRESETS` is 500.
+
+`sanitizeCustomPresets()` validates/deduplicates non-built-in presets and keeps the newest 500 entries. The same policy is reused by:
+
+- `loadPresets()` when recovering local data;
+- `limitPresetCollection()` for live in-memory state after a new custom preset is saved;
+- `saveCustomPresets()` before local persistence.
+
+Keeping live state and persisted state under the same limit prevents an in-session 501st preset from entering a backup that DiceLab's own schema-v1 importer would reject.
+
+Built-in presets do not count toward the 500 custom-preset limit.
 
 ### Locale switching
 
-When locale changes, `App.updateSettings()` rebuilds only built-in presets from the new catalog and preserves every non-built-in preset object. User-created names/descriptions are therefore not silently translated or rewritten.
+When locale changes, `App.updateSettings()` rebuilds only built-in presets from the new catalog and preserves every non-built-in preset object. User-created names/descriptions are therefore not silently translated or rewritten. Because live custom state is already bounded, locale switching does not need to re-enforce the count limit.
 
 ## 6. History flow
 
@@ -309,6 +324,8 @@ Dialog cancellation returns `false`. Save failure is surfaced by React as safe g
 - current settings;
 - current ISO export timestamp.
 
+Because history and custom-preset state are already bounded before this point, the backup cannot exceed schema record-count limits merely because a persistence effect has not yet run.
+
 `backupToJson()` then:
 
 1. pretty-prints the backup JSON;
@@ -378,7 +395,8 @@ Recovery rules include:
 - invalid records → discarded from ordinary persisted collections;
 - duplicate IDs → de-duplicated;
 - forged built-in preset IDs → discarded from custom storage;
-- excessive collections → bounded;
+- excessive history → bounded to the global 5,000-record storage maximum and then to the active configured history limit by the coordinator;
+- excessive custom presets → newest 500 retained;
 - unsupported settings → normalized to safe defaults;
 - blocked read/write/clear → application continues with safe state and privacy-safe diagnostic events.
 
@@ -408,6 +426,8 @@ Onboarding visibility is derived from the versioned onboarding key. Completing o
 If storage is unavailable, onboarding completion may not persist, but core rolling remains usable.
 
 Onboarding copy follows the locale loaded before the first render, so a persisted Hindi preference applies to the first-run dialog as well.
+
+The onboarding surface declares itself modal, initially focuses its only actionable control, and intercepts forward/backward Tab while open so keyboard focus cannot escape into the underlying application shell.
 
 ## 17. Command palette flow
 
