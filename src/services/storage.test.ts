@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SETTINGS, type DicePreset, type RollResult } from '../domain/types';
 import { BUILTIN_PRESETS, loadHistory, loadPresets, loadSettings, saveCustomPresets, saveHistory } from './storage';
 
@@ -30,10 +30,20 @@ const customPreset: DicePreset = {
 
 describe('local storage recovery', () => {
   beforeEach(() => localStorage.clear());
+  afterEach(() => vi.restoreAllMocks());
 
-  it('falls back to default settings when persisted JSON is malformed', () => {
+  it('falls back to default settings and logs only safe metadata when persisted JSON is malformed', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     localStorage.setItem(SETTINGS_KEY, '{not-json');
     expect(loadSettings()).toEqual(DEFAULT_SETTINGS);
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'warn',
+        event: 'storage.read_failed',
+        context: { storageArea: 'local', keyClass: 'settings' },
+      }),
+    );
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('{not-json');
   });
 
   it('normalizes unsafe settings and enforces reduced-motion consistency', () => {
@@ -95,5 +105,21 @@ describe('local storage recovery', () => {
 
     expect(JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]')).toEqual([validRoll]);
     expect(JSON.parse(localStorage.getItem(PRESETS_KEY) ?? '[]')).toEqual([customPreset]);
+  });
+
+  it('keeps working when storage reads are blocked and does not log thrown details', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('private browser policy detail');
+    });
+
+    expect(loadHistory()).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'storage.read_failed',
+        context: { storageArea: 'local', keyClass: 'history' },
+      }),
+    );
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('private browser policy detail');
   });
 });
