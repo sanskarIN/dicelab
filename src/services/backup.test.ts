@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SETTINGS, type RollResult } from '../domain/types';
 import {
   BackupValidationError,
   type BackupValidationErrorCode,
   backupToJson,
   createBackup,
+  parseBackupFile,
   parseBackupJson,
 } from './export';
 
@@ -70,6 +71,17 @@ describe('DiceLab backups', () => {
       expect((cause as BackupValidationError).code).toBe('backup-too-large');
       expect((cause as BackupValidationError).context.limit).toBe(5_000_000);
     }
+  });
+
+  it('rejects an oversized selected backup before reading it into memory', async () => {
+    const text = vi.fn().mockResolvedValue('{}');
+    const oversizedFile = { size: 5_000_001, text };
+
+    await expect(parseBackupFile(oversizedFile)).rejects.toMatchObject({
+      code: 'backup-too-large',
+      context: { limit: 5_000_000 },
+    });
+    expect(text).not.toHaveBeenCalled();
   });
 
   it('round trips the Hindi locale preference', () => {
