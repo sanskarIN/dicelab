@@ -4,7 +4,7 @@ import { filterRollHistory } from '../domain/history';
 import { summarizeRolls } from '../domain/statistics';
 import type { RollResult } from '../domain/types';
 import { messages } from '../i18n';
-import { formatDateTime } from '../i18n/format';
+import { formatDateTime, formatDecimal, formatFixedDecimal, formatInteger } from '../i18n/format';
 import { historyToCsv, historyToJson, saveTextExport, type TextExportFormat } from '../services/export';
 
 interface HistoryPanelProps {
@@ -86,10 +86,13 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
       ) : null}
 
       <div className="stats-grid" aria-label={messages.history.summaryLabel}>
-        <StatCard label={messages.history.rolls} value={String(stats.count)} />
-        <StatCard label={messages.history.average} value={stats.mean === null ? '—' : stats.mean.toFixed(2)} />
-        <StatCard label={messages.history.median} value={stats.median === null ? '—' : String(stats.median)} />
-        <StatCard label={messages.history.range} value={stats.minimum === null ? '—' : `${stats.minimum}–${stats.maximum}`} />
+        <StatCard label={messages.history.rolls} value={formatInteger(stats.count)} />
+        <StatCard label={messages.history.average} value={stats.mean === null ? '—' : formatFixedDecimal(stats.mean, 2)} />
+        <StatCard label={messages.history.median} value={stats.median === null ? '—' : formatDecimal(stats.median, 2)} />
+        <StatCard
+          label={messages.history.range}
+          value={stats.minimum === null ? '—' : `${formatInteger(stats.minimum)}–${formatInteger(stats.maximum ?? stats.minimum)}`}
+        />
       </div>
 
       <section className="panel history-toolbar-panel">
@@ -134,12 +137,12 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
                   key={item.total}
                   title={messages.history.histogramTitle(item.total, item.count, item.percentage)}
                 >
-                  <span className="histogram-value">{item.count}</span>
+                  <span className="histogram-value">{formatInteger(item.count)}</span>
                   <span
                     className="histogram-bar"
                     style={{ height: `${Math.max(8, (item.count / maxFrequency) * 100)}%` }}
                   />
-                  <span className="histogram-label">{item.total}</span>
+                  <span className="histogram-label">{formatInteger(item.total)}</span>
                 </div>
               ))}
             </div>
@@ -148,10 +151,10 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
           <section className="panel history-list" aria-label={messages.history.entriesLabel}>
             {visibleHistory.map((roll) => (
               <article className="history-row" key={roll.id}>
-                <div className="history-total">{roll.total}</div>
+                <div className="history-total">{formatInteger(roll.total)}</div>
                 <div className="history-meta">
                   <strong>{roll.expression}</strong>
-                  <span>{roll.dice.map((die) => `${die.value}${die.kept ? '' : '×'}`).join(' · ')}</span>
+                  <span>{roll.dice.map((die) => `${formatInteger(die.value)}${die.kept ? '' : '×'}`).join(' · ')}</span>
                 </div>
                 <div className="history-time">
                   <span>{roll.mode === 'secure' ? messages.history.secure : messages.history.seeded}</span>
