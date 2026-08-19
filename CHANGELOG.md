@@ -68,8 +68,9 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - Probability calculations advertised as exact now reject raw-outcome counts that exceed JavaScript safe-integer precision.
 - Roll, history, and probability presentation now use the selected DiceLab locale for explicit `Intl` number/date/time formatting instead of inheriting the host browser locale independently from UI language.
 - Persistent shell navigation and command-palette definitions now read the active catalog during rendering instead of capturing translated primitive strings when modules first load.
-- Backup import validation rejects internally inconsistent roll totals, duplicate IDs, duplicate/out-of-range die indices, impossible die values, malformed timestamps, missing deterministic seeds, mismatched modifiers, and invalid keep/drop state.
+- Backup import validation rejects internally inconsistent roll totals, duplicate IDs, duplicate/out-of-range die indices, impossible die values, malformed timestamps, missing deterministic seeds, mismatched modifiers, and semantically incorrect keep/drop selections.
 - Backup serialization now enforces the same 5,000,000-byte UTF-8 limit as backup restore before browser/native output, while the generic native text transport retains its separate 6,000,000-byte cap.
+- Browser-selected backup restore now rejects files above the 5,000,000-byte contract from `File.size` before reading them, while decoded UTF-8 size is still checked after reading as defense in depth.
 - Parser/probability/backup UI feedback now resolves from stable error codes and catalog entries rather than raw exception messages.
 - Imported and locally persisted settings normalize contradictory reduced-motion/animation state.
 - Locale preferences are normalized to the reviewed English/Hindi set; missing or unsupported schema-v1 backup locale values fall back to English.
@@ -79,7 +80,7 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - History and backup exports now use the dedicated native save command inside Tauri and preserve the existing Blob-download implementation in normal browsers.
 - Tauri security/offline-network policy audits now distinguish packaged production CSP from explicit loopback-only Vite/HMR development sources; production remains strict and non-loopback/broad-scheme development origins remain rejected.
 - Normal CI and tagged web release verification now self-test the browser automation infrastructure and require the real-browser smoke after the production build.
-- The dependency-lockfile workflow supports manual dispatch and preserves exact generated lockfiles on a dedicated automation branch if a protected `main` branch rejects its direct update.
+- The dependency-lockfile workflow now revalidates direct lockfile edits as well as manifest/workflow changes, verifies locked Cargo metadata, checks generated diffs, and preserves exact generated lockfiles on a dedicated automation branch if protected `main` rejects its direct update.
 - Repository-level audit commands are exposed through stable npm scripts for documentation, policy, version, secret, E2E-infrastructure, and release-package verification.
 - Repository audit now validates both Markdown links/anchors and exhaustive tracked-file documentation coverage.
 - Contributor, pull-request, CODEOWNERS, README, ADR index, and handoff documentation now reflect the current English/Hindi product, native command/security boundaries, policy gates, generated-lock rules, and evidence-based release process.
@@ -90,7 +91,11 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 ### Fixed
 
 - DiceLab no longer generates a backup larger than its own documented 5 MB restore limit; oversized serialization fails before save/download with the stable localized backup-size error instead of producing an immediately un-restorable file.
+- Oversized selected backup files are rejected before `File.text()` reads their contents into memory.
 - Backups produced from a maximum-length 120-character user seed can be restored after DiceLab appends the deterministic sequence suffix.
+- Persisted/imported keep/drop rolls now verify the exact expected kept indices instead of accepting a forged mask with only the correct kept-die count and self-consistent total.
+- History-limit input now emits an integer clamped to 10–5,000 immediately, avoiding fractional live state that would normalize differently after reload.
+- The command-palette shortcut hint now displays `Ctrl/⌘ K`, matching the implemented Ctrl-or-Command keyboard handler.
 - Live English/Hindi switching now refreshes persistent shell navigation and command-palette labels/details immediately without requiring a reload.
 - The shell brand accessible name no longer appends a hardcoded English word during Hindi operation.
 - Tauri CSP policy checks no longer falsely reject the legitimate explicit loopback Vite development origin while still rejecting the same origin in packaged production policy and rejecting non-loopback remote development sources.
@@ -110,8 +115,8 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 
 - Secure mode uses OS-backed native randomness on desktop and Web Crypto in the browser companion.
 - Untrusted dice expressions are bounded and validated.
-- CSV exports neutralize formula-like cell prefixes before spreadsheet applications can interpret them as formulas.
-- Imported backups are schema-bounded and validated before replacing local state.
+- CSV exports neutralize formula-like untrusted `id`/`seed` cells even when formula markers follow leading whitespace, while generated negative numeric totals/modifiers remain numeric fields.
+- Imported backups are schema-bounded and validated before replacing local state, with oversized selected files rejected before their text is read.
 - Duplicate restored identifiers are rejected to avoid ambiguous application state.
 - Desktop CSV/JSON exports use a purpose-built Rust command that accepts no frontend-supplied destination path, allows only bounded CSV/JSON payloads, validates suggested filenames and final selected extensions, and writes only to the operating-system-dialog-selected path.
 - Native export failures shown by the UI use localized safe messages and do not expose the selected private filesystem path.
