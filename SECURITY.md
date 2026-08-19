@@ -38,8 +38,10 @@ Maintainers will review reports, reproduce the issue where possible, assess seve
 - DiceLab does not require an account or remote database for normal operation.
 - Persisted roll/preset records are validated before they are restored into application state; malformed records are discarded from ordinary local storage and rejected in imported backups.
 - Backup imports enforce schema size limits, expression consistency, bounded values, canonical timestamps, unique identifiers, deterministic-seed requirements, and coherent keep/drop totals before state replacement.
+- Parser, probability, and backup failures expose stable internal error codes to presentation code instead of requiring UI components to trust raw exception prose.
 - CSV export neutralizes cells beginning with common spreadsheet formula prefixes (`=`, `+`, `-`, `@`) before normal CSV quoting.
 - Exported files are created only after an explicit user action.
+- Structured application logging redacts sensitive key families, bounds nested context, and never serializes raw error messages/stacks.
 - Tagged builds package artifacts only after prerequisite quality jobs succeed and generate SHA-256 checksum metadata for draft-release review.
 - The repository must not contain credentials, signing keys, access tokens, or private production data.
 
@@ -57,9 +59,23 @@ On load:
 
 Backup import is stricter than recovery from ordinary local storage: ambiguous/duplicate records cause the import to fail rather than silently changing the supplied backup.
 
-## Dependency and supply-chain security
+## Logging and diagnostics
+
+DiceLab does not require remote telemetry. Current diagnostic logs are local console events for operational failures such as storage degradation or the application recovery boundary.
+
+The logging boundary in `src/services/logger.ts` is designed so callers pass stable event names and bounded metadata. Sensitive key names—including credentials, seeds, email/name fields, expressions, history, presets, backups, files, payloads, messages, and stacks—are redacted. Raw `Error.message` and `Error.stack` are not serialized.
+
+Normal dice rolls and user-correctable validation failures are not logged by default. See [`docs/logging.md`](docs/logging.md) before adding new log events.
+
+## Dependency, secret, and supply-chain security
 
 The repository uses committed npm/Cargo lockfiles, automated dependency update configuration, locked CI installation, CodeQL/static analysis, and minimal dependency policy. Contributors should avoid adding dependencies for trivial functionality and should prefer maintained packages with clear licensing and security posture.
+
+CI and tagged release verification also run `npm run security:secrets`, a dependency-free high-confidence scan for committed private-key headers and common credential-token formats. The scanner reports only file, line, and rule identifier; it intentionally does not print the matched credential value. Its own detection/redaction behavior is verified with `npm run security:secrets:test`.
+
+This local audit is defense in depth. Where GitHub repository security settings are available, enable secret scanning, push protection, Dependabot alerts/security updates, dependency graph, CodeQL/code scanning, and private vulnerability reporting as described in [`docs/repository-governance.md`](docs/repository-governance.md).
+
+If a real credential is ever committed, removing the text from a later commit is not sufficient: revoke/rotate the credential and assess exposure.
 
 Release artifacts remain drafts until a maintainer reviews checksums and platform smoke tests. Signing/notarization credentials, if configured later, must remain in protected CI secrets rather than source control.
 
@@ -73,6 +89,7 @@ Examples of in-scope issues include:
 - sensitive local data exposure;
 - malicious or malformed backup/persistence behavior;
 - spreadsheet formula execution caused by exported user-controlled data;
+- insecure logging or accidental disclosure of user-controlled/private data;
 - insecure update/release behavior;
 - dependency vulnerabilities with a practical DiceLab impact.
 
