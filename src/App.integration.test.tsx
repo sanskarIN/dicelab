@@ -78,4 +78,12 @@ describe('DiceLab primary journeys', () => {
     expect(within(screen.getByLabelText('Roll summary')).getByText('4–4')).toBeInTheDocument();
     expect(screen.getByText('Seeded')).toBeInTheDocument();
   });
+
+  it('opens the About surface from Settings', () => {
+    render(<App />);
+    openView('Settings');
+    fireEvent.click(screen.getByRole('button', { name: /Open About/i }));
+    expect(screen.getByRole('heading', { name: 'About DiceLab' })).toBeInTheDocument();
+    expect(screen.getByText('Made by the Sanskar')).toBeInTheDocument();
+  });
 });
