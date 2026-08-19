@@ -1,5 +1,6 @@
 import { isPersistedPreset, isPersistedRollResult } from '../domain/persistence';
 import { DEFAULT_SETTINGS, type DiceLabSettings, type DicePreset, type RollResult } from '../domain/types';
+import { messages } from '../i18n';
 
 const MAX_HISTORY = 5_000;
 const MAX_CUSTOM_PRESETS = 500;
@@ -12,12 +13,12 @@ const KEYS = {
 } as const;
 
 export const BUILTIN_PRESETS: DicePreset[] = [
-  preset('builtin-d20', 'D20 check', '1d20', 'A standard tabletop check.'),
-  preset('builtin-advantage', 'Advantage', '2d20kh1', 'Roll two d20 and keep the highest.'),
-  preset('builtin-disadvantage', 'Disadvantage', '2d20kl1', 'Roll two d20 and keep the lowest.'),
-  preset('builtin-ability', 'Ability score', '4d6kh3', 'Classic roll-four-drop-lowest equivalent.'),
-  preset('builtin-fireball', 'Fireball', '8d6', 'A familiar multi-die damage roll.'),
-  preset('builtin-percentile', 'Percentile', '1d100', 'A d100 percentile roll.'),
+  preset('builtin-d20', messages.presets.d20Name, '1d20', messages.presets.d20Body),
+  preset('builtin-advantage', messages.presets.advantageName, '2d20kh1', messages.presets.advantageBody),
+  preset('builtin-disadvantage', messages.presets.disadvantageName, '2d20kl1', messages.presets.disadvantageBody),
+  preset('builtin-ability', messages.presets.abilityName, '4d6kh3', messages.presets.abilityBody),
+  preset('builtin-fireball', messages.presets.fireballName, '8d6', messages.presets.fireballBody),
+  preset('builtin-percentile', messages.presets.percentileName, '1d100', messages.presets.percentileBody),
 ];
 
 export function loadHistory(): RollResult[] {
