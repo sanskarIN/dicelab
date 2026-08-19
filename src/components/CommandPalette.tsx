@@ -1,5 +1,6 @@
 import { BarChart3, Dices, History, Info, Search, Settings, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { messages } from '../i18n';
 import type { AppView } from './AppShell';
 
 interface CommandPaletteProps {
@@ -10,29 +11,39 @@ interface CommandPaletteProps {
 }
 
 const commands: Array<{ label: string; detail: string; icon: typeof Dices; run: (props: CommandPaletteProps) => void }> = [
-  { label: 'Roll dice', detail: 'Open the dice studio', icon: Dices, run: (props) => props.onNavigate('roll') },
   {
-    label: 'View history',
-    detail: 'Browse recent local rolls',
+    label: messages.commands.rollDice,
+    detail: messages.commands.rollDiceDetail,
+    icon: Dices,
+    run: (props) => props.onNavigate('roll'),
+  },
+  {
+    label: messages.commands.history,
+    detail: messages.commands.historyDetail,
     icon: History,
     run: (props) => props.onNavigate('history'),
   },
   {
-    label: 'Probability calculator',
-    detail: 'Inspect exact distributions',
+    label: messages.commands.probability,
+    detail: messages.commands.probabilityDetail,
     icon: BarChart3,
     run: (props) => props.onNavigate('probability'),
   },
   {
-    label: 'Settings',
-    detail: 'Appearance, accessibility, randomness',
+    label: messages.commands.settings,
+    detail: messages.commands.settingsDetail,
     icon: Settings,
     run: (props) => props.onNavigate('settings'),
   },
-  { label: 'About DiceLab', detail: 'Project, privacy, support', icon: Info, run: (props) => props.onNavigate('about') },
   {
-    label: 'Roll with advantage',
-    detail: 'Set expression to 2d20kh1',
+    label: messages.commands.about,
+    detail: messages.commands.aboutDetail,
+    icon: Info,
+    run: (props) => props.onNavigate('about'),
+  },
+  {
+    label: messages.commands.advantage,
+    detail: messages.commands.advantageDetail,
     icon: Dices,
     run: (props) => {
       props.onSetExpression('2d20kh1');
@@ -40,8 +51,8 @@ const commands: Array<{ label: string; detail: string; icon: typeof Dices; run: 
     },
   },
   {
-    label: 'Roll ability score',
-    detail: 'Set expression to 4d6kh3',
+    label: messages.commands.ability,
+    detail: messages.commands.abilityDetail,
     icon: Dices,
     run: (props) => {
       props.onSetExpression('4d6kh3');
@@ -130,15 +141,15 @@ export function CommandPalette(props: CommandPaletteProps) {
             onKeyDown={(event) => {
               if (event.key === 'Enter' && filtered[0]) run(filtered[0]);
             }}
-            placeholder="Search actions…"
-            aria-label="Search quick actions"
+            placeholder={messages.commands.searchPlaceholder}
+            aria-label={messages.commands.searchLabel}
           />
-          <button type="button" aria-label="Close quick actions" onClick={props.onClose}>
+          <button type="button" aria-label={messages.commands.close} onClick={props.onClose}>
             <X size={18} aria-hidden="true" />
           </button>
         </div>
         <h2 id="commands-title" className="sr-only">
-          Quick actions
+          {messages.commands.title}
         </h2>
         <div className="command-list">
           {filtered.length ? (
@@ -155,7 +166,7 @@ export function CommandPalette(props: CommandPaletteProps) {
               );
             })
           ) : (
-            <p className="command-empty">No matching action.</p>
+            <p className="command-empty">{messages.commands.empty}</p>
           )}
         </div>
       </section>
