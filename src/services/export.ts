@@ -90,10 +90,10 @@ export function parseBackupJson(contents: string): DiceLabBackup {
   if (!Array.isArray(presets) || presets.length > MAX_BACKUP_PRESETS) {
     throw new BackupValidationError(copy.errors.backupPresetsTooLarge(MAX_BACKUP_PRESETS));
   }
-  if (!history.every(isRollResult)) {
+  if (!history.every(isValidRollResult)) {
     throw new BackupValidationError(copy.errors.invalidBackupRoll);
   }
-  if (!presets.every(isPreset)) {
+  if (!presets.every(isValidPreset)) {
     throw new BackupValidationError(copy.errors.invalidBackupPreset);
   }
 
@@ -148,7 +148,7 @@ function normalizeSettings(value: unknown): DiceLabSettings {
   };
 }
 
-function isRollResult(value: unknown): value is RollResult {
+export function isValidRollResult(value: unknown): value is RollResult {
   if (!value || typeof value !== 'object') return false;
   const roll = value as Partial<RollResult>;
   if (
@@ -209,7 +209,7 @@ function isRollResult(value: unknown): value is RollResult {
   return roll.total === expectedTotal;
 }
 
-function isPreset(value: unknown): value is DicePreset {
+export function isValidPreset(value: unknown): value is DicePreset {
   if (!value || typeof value !== 'object') return false;
   const preset = value as Partial<DicePreset>;
   if (
