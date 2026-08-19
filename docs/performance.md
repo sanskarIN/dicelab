@@ -56,6 +56,7 @@ npm run bench
 Current benchmark modules cover:
 
 - representative TypeScript dice-expression parsing;
+- browser seeded and secure bounded-RNG generation in 1,000-value batches;
 - ordinary probability dynamic programming (`2d6`, `10d6+5`);
 - exact keep/drop enumeration (`4d6kh3`, `2d20kh1`);
 - summarizing the maximum retained 5,000-roll history;
@@ -93,12 +94,11 @@ These checks protect performance-oriented behavior separately from wall-clock me
 
 Before 1.0 release evidence is considered complete, add or record appropriate measurements for:
 
-- seeded and secure roll throughput;
 - progressive history rendering in a real browser;
 - Rust expression parsing and native roll throughput;
 - release bundle size on each supported desktop target.
 
-The first two may use the existing application/toolchain; Rust native benchmarking should avoid adding a heavyweight benchmark dependency merely for vanity metrics. Real-browser rendering and release bundle measurements require the corresponding environment/artifacts.
+Rust native benchmarking should avoid adding a heavyweight benchmark dependency merely for vanity metrics. Real-browser rendering and release bundle measurements require the corresponding environment/artifacts.
 
 ## Profiling rules
 
