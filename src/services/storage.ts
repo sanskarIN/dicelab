@@ -1,6 +1,7 @@
 import { isPersistedPreset, isPersistedRollResult } from '../domain/persistence';
 import { DEFAULT_SETTINGS, type DiceLabSettings, type DicePreset, type RollResult } from '../domain/types';
 import { messages } from '../i18n';
+import { logger } from './logger';
 
 const MAX_HISTORY = 5_000;
 const MAX_CUSTOM_PRESETS = 500;
@@ -12,6 +13,8 @@ const KEYS = {
   onboarded: 'dicelab.onboarded.v1',
 } as const;
 
+type StorageKeyClass = keyof typeof KEYS;
+
 export const BUILTIN_PRESETS: DicePreset[] = [
   preset('builtin-d20', messages.presets.d20Name, '1d20', messages.presets.d20Body),
   preset('builtin-advantage', messages.presets.advantageName, '2d20kh1', messages.presets.advantageBody),
@@ -22,7 +25,7 @@ export const BUILTIN_PRESETS: DicePreset[] = [
 ];
 
 export function loadHistory(): RollResult[] {
-  const parsed = readJson<unknown>(KEYS.history, []);
+  const parsed = readJson<unknown>('history', []);
   if (!Array.isArray(parsed)) return [];
   return uniqueById(parsed.slice(0, MAX_HISTORY).filter(isPersistedRollResult));
 }
@@ -30,11 +33,11 @@ export function loadHistory(): RollResult[] {
 export function saveHistory(history: RollResult[], limit: number): void {
   const safeLimit = Number.isSafeInteger(limit) ? Math.min(Math.max(limit, 10), MAX_HISTORY) : DEFAULT_SETTINGS.historyLimit;
   const safeHistory = uniqueById(history.filter(isPersistedRollResult)).slice(0, safeLimit);
-  writeJson(KEYS.history, safeHistory);
+  writeJson('history', safeHistory);
 }
 
 export function loadPresets(): DicePreset[] {
-  const parsed = readJson<unknown>(KEYS.presets, []);
+  const parsed = readJson<unknown>('presets', []);
   const custom = Array.isArray(parsed)
     ? uniqueById(
         parsed
@@ -50,11 +53,11 @@ export function saveCustomPresets(presets: DicePreset[]): void {
   const custom = uniqueById(
     presets.filter(isPersistedPreset).filter((item) => !item.id.startsWith('builtin-')),
   ).slice(0, MAX_CUSTOM_PRESETS);
-  writeJson(KEYS.presets, custom);
+  writeJson('presets', custom);
 }
 
 export function loadSettings(): DiceLabSettings {
-  const parsed = readJson<unknown>(KEYS.settings, {});
+  const parsed = readJson<unknown>('settings', {});
   if (!parsed || typeof parsed !== 'object') return DEFAULT_SETTINGS;
   const settings = parsed as Record<string, unknown>;
   const reducedMotion =
@@ -83,13 +86,14 @@ export function loadSettings(): DiceLabSettings {
 }
 
 export function saveSettings(settings: DiceLabSettings): void {
-  writeJson(KEYS.settings, settings);
+  writeJson('settings', settings);
 }
 
 export function hasCompletedOnboarding(): boolean {
   try {
     return localStorage.getItem(KEYS.onboarded) === 'true';
   } catch {
+    logStorageFailure('read', 'onboarded');
     return false;
   }
 }
@@ -98,7 +102,7 @@ export function completeOnboarding(): void {
   try {
     localStorage.setItem(KEYS.onboarded, 'true');
   } catch {
-    // The app remains usable when storage is unavailable.
+    logStorageFailure('write', 'onboarded');
   }
 }
 
@@ -106,7 +110,7 @@ export function clearDiceLabData(): void {
   try {
     Object.values(KEYS).forEach((key) => localStorage.removeItem(key));
   } catch {
-    // Ignore blocked storage; callers refresh their in-memory state separately.
+    logger.warn('storage.clear_failed', { storageArea: 'local' });
   }
 }
 
@@ -114,21 +118,29 @@ function preset(id: string, name: string, expression: string, description: strin
   return { id, name, expression, description, createdAt: '2026-08-19T00:00:00.000Z' };
 }
 
-function readJson<T>(key: string, fallback: T): T {
+function readJson<T>(keyClass: StorageKeyClass, fallback: T): T {
   try {
-    const value = localStorage.getItem(key);
+    const value = localStorage.getItem(KEYS[keyClass]);
     return value === null ? fallback : (JSON.parse(value) as T);
   } catch {
+    logStorageFailure('read', keyClass);
     return fallback;
   }
 }
 
-function writeJson(key: string, value: unknown): void {
+function writeJson(keyClass: StorageKeyClass, value: unknown): void {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    localStorage.setItem(KEYS[keyClass], JSON.stringify(value));
   } catch {
-    // Storage quota or privacy settings should not break rolling dice.
+    logStorageFailure('write', keyClass);
   }
+}
+
+function logStorageFailure(operation: 'read' | 'write', keyClass: StorageKeyClass): void {
+  logger.warn(`storage.${operation}_failed`, {
+    storageArea: 'local',
+    keyClass,
+  });
 }
 
 function uniqueById<T extends { id: string }>(items: T[]): T[] {
