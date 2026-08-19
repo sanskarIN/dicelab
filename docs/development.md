@@ -15,15 +15,13 @@ src/
   services/        browser/native boundaries and persistence
   test/            shared browser test setup
 scripts/            repository quality utilities
-a src-tauri/
+src-tauri/
   capabilities/    desktop permissions
   icons/           application branding
   src/             native Rust application core
 .github/            automation and repository templates
 docs/               engineering and user documentation
 ```
-
-> Note: the `a` before `src-tauri/` above is not a directory; it is intentionally absent in the actual repository tree. Use the canonical paths below and in the README.
 
 ## Typical development loop
 
