@@ -1,8 +1,12 @@
 # Changelog
 
-All notable DiceLab changes are documented here. The project follows semantic-versioning principles while it evolves toward a stable 1.0 release.
+All notable DiceLab changes are documented here. The project follows semantic-versioning principles.
 
 ## [Unreleased]
+
+The next publication target is **2.0.12**. The section below records the prepared 2.0.12 candidate content, but the version is not considered published until `v2.0.12` passes the release evidence gate and the draft release is explicitly approved.
+
+## [2.0.12] - 2026-08-19 (release candidate)
 
 ### Added
 
@@ -64,28 +68,31 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 
 ### Changed
 
-- TypeScript and Rust seeded modes now use the same UTF-8 FNV-1a 32-bit seed hash and xorshift32 sequence so identical effective seeds reproduce identical deterministic values across web and desktop.
-- Probability calculations advertised as exact now reject raw-outcome counts that exceed JavaScript safe-integer precision.
-- Roll, history, and probability presentation now use the selected DiceLab locale for explicit `Intl` number/date/time formatting instead of inheriting the host browser locale independently from UI language.
-- Persistent shell navigation and command-palette definitions now read the active catalog during rendering instead of capturing translated primitive strings when modules first load.
+- Authoritative application version metadata in npm, frontend configuration, Cargo, and Tauri configuration is synchronized to `2.0.12` for the current candidate.
+- The tag-driven release workflow now runs documentation link/inventory audits, repository policy self-tests/audits, version/tag consistency, and release-verifier self-tests directly before artifact creation, so separate focused workflows cannot be the only protection on a release tag.
+- Release web/desktop/draft jobs now use explicit timeouts to prevent indefinitely hung candidate pipelines.
+- TypeScript and Rust seeded modes use the same UTF-8 FNV-1a 32-bit seed hash and xorshift32 sequence so identical effective seeds reproduce identical deterministic values across web and desktop.
+- Probability calculations advertised as exact reject raw-outcome counts that exceed JavaScript safe-integer precision.
+- Roll, history, and probability presentation uses the selected DiceLab locale for explicit `Intl` number/date/time formatting instead of inheriting the host browser locale independently from UI language.
+- Persistent shell navigation and command-palette definitions read the active catalog during rendering instead of capturing translated primitive strings when modules first load.
 - Backup import validation rejects internally inconsistent roll totals, duplicate IDs, duplicate/out-of-range die indices, impossible die values, malformed timestamps, missing deterministic seeds, mismatched modifiers, and semantically incorrect keep/drop selections.
-- Backup serialization now enforces the same 5,000,000-byte UTF-8 limit as backup restore before browser/native output, while the generic native text transport retains its separate 6,000,000-byte cap.
-- Browser-selected backup restore now rejects files above the 5,000,000-byte contract from `File.size` before reading them, while decoded UTF-8 size is still checked after reading as defense in depth.
-- Parser/probability/backup UI feedback now resolves from stable error codes and catalog entries rather than raw exception messages.
+- Backup serialization enforces the same 5,000,000-byte UTF-8 limit as backup restore before browser/native output, while the generic native text transport retains its separate 6,000,000-byte cap.
+- Browser-selected backup restore rejects files above the 5,000,000-byte contract from `File.size` before reading them, while decoded UTF-8 size is still checked after reading as defense in depth.
+- Parser/probability/backup UI feedback resolves from stable error codes and catalog entries rather than raw exception messages.
 - Imported and locally persisted settings normalize contradictory reduced-motion/animation state.
 - Locale preferences are normalized to the reviewed English/Hindi set; missing or unsupported schema-v1 backup locale values fall back to English.
 - Built-in preset copy follows the active catalog while user-created names, expressions, seeds, and history content remain unchanged.
 - Local history and custom presets are validated, bounded, and deduplicated before use or persistence.
 - History query logic is centralized in the domain layer so UI filtering, tests, and performance benchmarks share one implementation.
-- History and backup exports now use the dedicated native save command inside Tauri and preserve the existing Blob-download implementation in normal browsers.
-- Tauri security/offline-network policy audits now distinguish packaged production CSP from explicit loopback-only Vite/HMR development sources; production remains strict and non-loopback/broad-scheme development origins remain rejected.
-- Normal CI and tagged web release verification now self-test the browser automation infrastructure and require the real-browser smoke after the production build.
-- The dependency-lockfile workflow now revalidates direct lockfile edits as well as manifest/workflow changes, verifies locked Cargo metadata, checks generated diffs, and preserves exact generated lockfiles on a dedicated automation branch if protected `main` rejects its direct update.
+- History and backup exports use the dedicated native save command inside Tauri and preserve the existing Blob-download implementation in normal browsers.
+- Tauri security/offline-network policy audits distinguish packaged production CSP from explicit loopback-only Vite/HMR development sources; production remains strict and non-loopback/broad-scheme development origins remain rejected.
+- Normal CI and tagged web release verification self-test the browser automation infrastructure and require the real-browser smoke after the production build.
+- The dependency-lockfile workflow revalidates direct lockfile edits as well as manifest/workflow changes, verifies locked Cargo metadata, checks generated diffs, and preserves exact generated lockfiles on a dedicated automation branch if protected `main` rejects its direct update.
 - Repository-level audit commands are exposed through stable npm scripts for documentation, policy, version, secret, E2E-infrastructure, and release-package verification.
-- Repository audit now validates both Markdown links/anchors and exhaustive tracked-file documentation coverage.
-- Contributor, pull-request, CODEOWNERS, README, ADR index, and handoff documentation now reflect the current English/Hindi product, native command/security boundaries, policy gates, generated-lock rules, and evidence-based release process.
+- Repository audit validates both Markdown links/anchors and exhaustive tracked-file documentation coverage.
+- Contributor, pull-request, CODEOWNERS, README, ADR index, governance, release, roadmap, and handoff documentation reflect the current English/Hindi product, native command/security boundaries, policy gates, generated-lock rules, and 2.0.12 evidence-based release process.
 - Release tags must match the synchronized declared application version before release dependencies/builds proceed.
-- Release tags now produce a draft GitHub release only after the web and all desktop build jobs succeed; publication remains a deliberate maintainer action.
+- Release tags produce a draft GitHub release only after the web and all desktop build jobs succeed; publication remains a deliberate maintainer action.
 - Core product metadata is centralized for Settings/About consistency.
 
 ### Fixed
@@ -93,23 +100,23 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - DiceLab no longer generates a backup larger than its own documented 5 MB restore limit; oversized serialization fails before save/download with the stable localized backup-size error instead of producing an immediately un-restorable file.
 - Oversized selected backup files are rejected before `File.text()` reads their contents into memory.
 - Backups produced from a maximum-length 120-character user seed can be restored after DiceLab appends the deterministic sequence suffix.
-- Persisted/imported keep/drop rolls now verify the exact expected kept indices instead of accepting a forged mask with only the correct kept-die count and self-consistent total.
-- History-limit input now emits an integer clamped to 10–5,000 immediately, avoiding fractional live state that would normalize differently after reload.
-- The command-palette shortcut hint now displays `Ctrl/⌘ K`, matching the implemented Ctrl-or-Command keyboard handler.
-- Live English/Hindi switching now refreshes persistent shell navigation and command-palette labels/details immediately without requiring a reload.
+- Persisted/imported keep/drop rolls verify the exact expected kept indices instead of accepting a forged mask with only the correct kept-die count and self-consistent total.
+- History-limit input emits an integer clamped to 10–5,000 immediately, avoiding fractional live state that would normalize differently after reload.
+- The command-palette shortcut hint displays `Ctrl/⌘ K`, matching the implemented Ctrl-or-Command keyboard handler.
+- Live English/Hindi switching refreshes persistent shell navigation and command-palette labels/details immediately without requiring a reload.
 - The shell brand accessible name no longer appends a hardcoded English word during Hindi operation.
 - Tauri CSP policy checks no longer falsely reject the legitimate explicit loopback Vite development origin while still rejecting the same origin in packaged production policy and rejecting non-loopback remote development sources.
 - Offline-network CSP checks no longer falsely reject explicit loopback Vite/HMR development HTTP/WebSocket URLs while preserving production and broad-network-scheme restrictions.
 - Corrupted or forged local-storage entries no longer flow directly into application state.
 - Command-palette focus is trapped while open and restored to the invoking control after dismissal.
-- Unexpected React render failures now show a recovery surface instead of leaving the product with an unhandled blank interface.
-- Backup-error localization now always returns the caller-provided safe fallback if a future/unrecognized code reaches the mapper.
+- Unexpected React render failures show a recovery surface instead of leaving the product with an unhandled blank interface.
+- Backup-error localization always returns the caller-provided safe fallback if a future/unrecognized code reaches the mapper.
 - History filter tests no longer use a query that ambiguously matches both a total and an expression suffix.
-- Browser E2E navigation/reload synchronization now waits for DevTools page-load events and surfaces `Page.navigate` network/policy errors explicitly instead of racing the previous document.
+- Browser E2E navigation/reload synchronization waits for DevTools page-load events and surfaces `Page.navigate` network/policy errors explicitly instead of racing the previous document.
 - Hindi UI no longer mixes localized interface copy with host-locale number/date/time formatting on roll, history, and probability surfaces.
 - Contributor documentation no longer incorrectly states that English is the only shipped locale.
-- ADR index now includes all currently tracked architecture decisions rather than stopping after ADR-0003.
-- Repository-audit command references for documentation/release self-tests now have matching package scripts.
+- ADR index includes all currently tracked architecture decisions rather than stopping after ADR-0003.
+- Repository-audit command references for documentation/release self-tests have matching package scripts.
 
 ### Security
 
@@ -128,10 +135,11 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 - Tauri configuration audits reject missing/self-unanchored CSP, wildcard sources, `unsafe-eval`, non-loopback remote script sources, dangerous remote-domain IPC, and remote production CSP network origins; development exceptions are explicit loopback-only.
 - Native runtime and native-command audits keep Tauri API access, runtime probing, command names, command routing, and Rust handler entries within reviewed allowlists.
 - Release lockfile consistency audit fails candidates whose direct manifest dependencies are not represented in committed lockfiles instead of silently resolving a different graph during release verification.
+- The 2.0.12 tag workflow directly runs repository policy and documentation inventory gates before artifacts can be produced.
 - Release provenance/checksum metadata ties packaged files to a tag/source commit/workflow run for draft review.
 - Desktop content is constrained by a restrictive CSP.
 - No broad filesystem, shell, or network plugin permissions are granted to the webview.
 
-## [0.1.0] - planned
+### Candidate status
 
-The first release candidate will be tagged only after clean-checkout verification, current generated dependency locks, platform builds, real screenshots, dependency/security review, real-browser/desktop smoke checks, and release-candidate verification satisfy the Definition of Done.
+The 2.0.12 candidate is **not yet publishable**. Generated npm/Cargo locks, including `tauri-plugin-dialog` in Cargo's graph, plus CI/E2E/fuzz/benchmark/platform/accessibility/security/screenshot/checksum/provenance evidence must still be observed on the intended release commit. See [`docs/release-blockers-current.md`](docs/release-blockers-current.md).
