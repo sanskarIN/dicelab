@@ -1,0 +1,47 @@
+name: Offline CSP network policy
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+    paths:
+      - 'src-tauri/tauri.conf.json'
+      - 'scripts/check-offline-csp.mjs'
+      - 'scripts/check-offline-csp.test.mjs'
+      - 'scripts/check-offline-csp.integration.test.mjs'
+      - '.github/workflows/offline-csp-audit.yml'
+  pull_request:
+    paths:
+      - 'src-tauri/tauri.conf.json'
+      - 'scripts/check-offline-csp.mjs'
+      - 'scripts/check-offline-csp.test.mjs'
+      - 'scripts/check-offline-csp.integration.test.mjs'
+      - '.github/workflows/offline-csp-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: offline-csp-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Audit offline CSP network sources
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Self-test offline CSP auditor
+        run: node --test scripts/check-offline-csp.test.mjs scripts/check-offline-csp.integration.test.mjs
+
+      - name: Audit committed Tauri CSP
+        run: node scripts/check-offline-csp.mjs
