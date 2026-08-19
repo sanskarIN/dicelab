@@ -1,3 +1,4 @@
+import { selectKeptIndices } from './engine';
 import { parseDiceExpression } from './parser';
 import type { DicePreset, RollResult } from './types';
 
@@ -35,6 +36,7 @@ export function isPersistedRollResult(value: unknown): value is RollResult {
   if (roll.modifier !== expression.modifier || roll.dice.length !== expression.count) return false;
 
   const seenIndices = new Set<number>();
+  const valuesByIndex = new Array<number>(expression.count);
   for (const die of roll.dice) {
     if (
       !die ||
@@ -53,14 +55,11 @@ export function isPersistedRollResult(value: unknown): value is RollResult {
       return false;
     }
     seenIndices.add(die.index);
+    valuesByIndex[die.index] = die.value;
   }
 
-  const expectedKept = expression.selection
-    ? expression.selection.kind.startsWith('keep')
-      ? expression.selection.count
-      : expression.count - expression.selection.count
-    : expression.count;
-  if (roll.dice.filter((die) => die.kept).length !== expectedKept) return false;
+  const expectedKeptIndices = selectKeptIndices(valuesByIndex, expression);
+  if (roll.dice.some((die) => die.kept !== expectedKeptIndices.has(die.index))) return false;
 
   const computedTotal = roll.dice.reduce((sum, die) => sum + (die.kept ? die.value : 0), expression.modifier);
   return computedTotal === roll.total;
