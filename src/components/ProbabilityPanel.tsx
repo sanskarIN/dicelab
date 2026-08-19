@@ -3,6 +3,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { calculateProbability } from '../domain/probability';
 import type { ProbabilityDistribution } from '../domain/types';
 import { messages } from '../i18n';
+import { formatDecimal, formatFixedDecimal, formatInteger } from '../i18n/format';
 import { formatDomainError } from '../i18n/errors';
 
 const examples = ['2d6', '1d20+5', '4d6kh3', '2d20kh1'];
@@ -62,8 +63,8 @@ export function ProbabilityPanel() {
 
       <div className="stats-grid">
         <ProbabilityStat label={messages.probability.expression} value={distribution.expression} />
-        <ProbabilityStat label={messages.probability.expectedValue} value={distribution.expectedValue.toFixed(3)} />
-        <ProbabilityStat label={messages.probability.range} value={`${distribution.minimum}–${distribution.maximum}`} />
+        <ProbabilityStat label={messages.probability.expectedValue} value={formatFixedDecimal(distribution.expectedValue, 3)} />
+        <ProbabilityStat label={messages.probability.range} value={`${formatInteger(distribution.minimum)}–${formatInteger(distribution.maximum)}`} />
         <ProbabilityStat label={messages.probability.outcomes} value={formatOutcomes(distribution.totalOutcomes)} />
       </div>
 
@@ -78,11 +79,11 @@ export function ProbabilityPanel() {
         <div className="probability-rows">
           {visiblePoints.map((point) => (
             <div className="probability-row" key={point.total}>
-              <strong>{point.total}</strong>
+              <strong>{formatInteger(point.total)}</strong>
               <div className="probability-track" aria-hidden="true">
                 <span style={{ width: `${(point.probability / maxProbability) * 100}%` }} />
               </div>
-              <span>{(point.probability * 100).toFixed(point.probability < 0.001 ? 4 : 2)}%</span>
+              <span>{formatFixedDecimal(point.probability * 100, point.probability < 0.001 ? 4 : 2)}%</span>
             </div>
           ))}
         </div>
@@ -108,5 +109,5 @@ function ProbabilityStat({ label, value }: { label: string; value: string }) {
 function formatOutcomes(value: number): string {
   if (!Number.isFinite(value)) return messages.probability.veryLarge;
   if (value >= 1_000_000_000) return value.toExponential(3);
-  return value.toLocaleString('en-US');
+  return formatInteger(value);
 }
