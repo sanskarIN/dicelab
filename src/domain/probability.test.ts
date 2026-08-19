@@ -10,6 +10,18 @@ describe('calculateProbability', () => {
     expect(distribution.points.find((point) => point.total === 7)?.probability).toBeCloseTo(6 / 36, 10);
   });
 
+  it('preserves exact integer ways at the supported numeric boundary', () => {
+    const distribution = calculateProbability('20d6');
+    const countedOutcomes = distribution.points.reduce((sum, point) => sum + point.ways, 0);
+    expect(distribution.totalOutcomes).toBe(3_656_158_440_062_976);
+    expect(countedOutcomes).toBe(distribution.totalOutcomes);
+    expect(distribution.expectedValue).toBeCloseTo(70, 10);
+  });
+
+  it('rejects sum distributions whose exact integer counts would exceed safe precision', () => {
+    expect(() => calculateProbability('21d6')).toThrow(ProbabilityComplexityError);
+  });
+
   it('enumerates manageable keep-highest expressions exactly', () => {
     const distribution = calculateProbability('2d20kh1');
     expect(distribution.totalOutcomes).toBe(400);
