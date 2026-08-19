@@ -37,7 +37,7 @@ describe('DiceLab primary journeys', () => {
     openView('History');
     expect(screen.getByRole('heading', { name: 'History & statistics' })).toBeInTheDocument();
     expect(screen.getByText('2d6+1')).toBeInTheDocument();
-    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(within(screen.getByLabelText('Roll summary')).getByText('1')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'CSV' }));
     expect(createObjectUrl).toHaveBeenCalledTimes(1);
@@ -73,7 +73,7 @@ describe('DiceLab primary journeys', () => {
 
     openView('History');
     expect(screen.getByText('1d6')).toBeInTheDocument();
-    expect(screen.getByText('4')).toBeInTheDocument();
+    expect(within(screen.getByLabelText('Roll summary')).getByText('4–4')).toBeInTheDocument();
     expect(screen.getByText('Seeded')).toBeInTheDocument();
   });
 });
