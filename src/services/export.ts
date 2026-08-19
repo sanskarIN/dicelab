@@ -183,6 +183,7 @@ function isPreset(value: unknown): value is DicePreset {
 }
 
 function csvCell(value: string): string {
-  if (!/[",\r\n]/.test(value)) return value;
-  return `"${value.replaceAll('"', '""')}"`;
+  const safeValue = /^[=+\-@]/.test(value) ? `'${value}` : value;
+  if (!/[",\r\n]/.test(safeValue)) return safeValue;
+  return `"${safeValue.replaceAll('"', '""')}"`;
 }
