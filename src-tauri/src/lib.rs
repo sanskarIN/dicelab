@@ -362,4 +362,85 @@ mod tests {
         assert_eq!(first.total, 36);
         assert_eq!(first.total, second.total);
     }
+
+    #[test]
+    fn generated_valid_expressions_round_trip_normalization() {
+        let selection_codes = ["kh", "kl", "dh", "dl"];
+        for sample in 1_usize..=500 {
+            let count = (sample % 30) + 1;
+            let sides = ((sample * 17) % 99) + 2;
+            let modifier = ((sample as i64 * 7_919) % 2_001) - 1_000;
+            let selection_code = selection_codes[sample % selection_codes.len()];
+            let is_keep = matches!(selection_code, "kh" | "kl");
+            let maximum_selection = if is_keep {
+                count
+            } else {
+                count.saturating_sub(1)
+            };
+            let selection_text = if maximum_selection == 0 {
+                String::new()
+            } else {
+                format!(
+                    "{selection_code}{}",
+                    (sample % maximum_selection) + 1
+                )
+            };
+            let modifier_text = match modifier.cmp(&0) {
+                std::cmp::Ordering::Greater => format!("+{modifier}"),
+                std::cmp::Ordering::Less => modifier.to_string(),
+                std::cmp::Ordering::Equal => String::new(),
+            };
+            let input = format!("{count}d{sides}{selection_text}{modifier_text}");
+
+            let first = parse_expression(&input).expect("generated expression should parse");
+            let second = parse_expression(&first.normalized).expect("normalized expression should parse");
+            assert_eq!(second.normalized, first.normalized);
+            assert_eq!(second.count, first.count);
+            assert_eq!(second.sides, first.sides);
+            assert_eq!(second.modifier, first.modifier);
+        }
+    }
+
+    #[test]
+    fn adversarial_parser_corpus_is_rejected_without_panics() {
+        let corpus = [
+            "",
+            " ",
+            "dice",
+            "d",
+            "d0",
+            "d1",
+            "0d6",
+            "1001d6",
+            "1d1000001",
+            "2d6kh0",
+            "2d6kh3",
+            "2d6kl3",
+            "2d6dh2",
+            "2d6dl2",
+            "1d6+1000000001",
+            "1d6-1000000001",
+            "1d6+9223372036854775808",
+            "184467440737095516160d6",
+            "1d42949672960",
+            "1d6kh999999999999999999999",
+            "1d6\0+1",
+            "🎲",
+            "٢d٦",
+            "1d6 + + 2",
+            "1d6 -- 2",
+            "1d6kz1",
+            "1d6kh1 trailing",
+            "prefix 1d6",
+            "1e6d6",
+            "-1d6",
+        ];
+
+        for input in corpus {
+            assert!(
+                parse_expression(input).is_err(),
+                "adversarial input unexpectedly parsed: {input:?}"
+            );
+        }
+    }
 }
