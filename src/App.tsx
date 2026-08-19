@@ -84,12 +84,14 @@ export default function App() {
     setRollError(null);
     try {
       parseDiceExpression(expression);
+      const sequence = sequenceRef.current;
       const result = await rollDice(
         expression,
         settings.randomMode,
         settings.seed || 'dicelab',
-        sequenceRef.current++,
+        sequence,
       );
+      sequenceRef.current = sequence + 1;
       setHistory((current) => [result, ...current].slice(0, settings.historyLimit));
     } catch (cause) {
       setRollError(formatDomainError(cause, messages.roll.genericRollError));
