@@ -1,0 +1,51 @@
+name: Release policy audits
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-policy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  policy:
+    name: Verify repository policy boundaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Self-test desktop capability policy
+        run: node --test scripts/check-capabilities.test.mjs scripts/check-capabilities.integration.test.mjs
+
+      - name: Audit desktop capabilities
+        run: node scripts/check-capabilities.mjs
+
+      - name: Self-test Tauri security policy
+        run: node --test scripts/check-tauri-security.test.mjs scripts/check-tauri-security.integration.test.mjs
+
+      - name: Audit Tauri security configuration
+        run: node scripts/check-tauri-security.mjs
+
+      - name: Self-test localized formatting policy
+        run: node --test scripts/check-localized-formatting.test.mjs scripts/check-localized-formatting.integration.test.mjs
+
+      - name: Audit localized UI formatting
+        run: node scripts/check-localized-formatting.mjs
+
+      - name: Self-test native runtime policy
+        run: node --test scripts/check-runtime-boundaries.test.mjs scripts/check-runtime-boundaries.integration.test.mjs
+
+      - name: Audit native runtime boundary
+        run: node scripts/check-runtime-boundaries.mjs
