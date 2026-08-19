@@ -1,0 +1,55 @@
+name: Dependency lockfiles
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - src-tauri/Cargo.toml
+      - .github/workflows/lockfiles.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dicelab-lockfiles
+  cancel-in-progress: true
+
+jobs:
+  lockfiles:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+        continue-on-error: true
+
+      - name: Generate npm lockfile
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Generate Cargo lockfile
+        working-directory: src-tauri
+        run: cargo generate-lockfile
+
+      - name: Commit lockfiles when changed
+        run: |
+          git config user.name "sanskarIN"
+          git config user.email "sanskarin@outlook.in"
+          git add package-lock.json src-tauri/Cargo.lock
+          if git diff --cached --quiet; then
+            echo "Lockfiles already current."
+            exit 0
+          fi
+          git commit -m "build: lock application dependencies"
+          git push
