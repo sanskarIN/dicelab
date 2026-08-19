@@ -23,23 +23,45 @@ npm run version:check
 
 `CHANGELOG.md` is intentionally reviewed by a maintainer rather than parsed as an executable version source because the unreleased/planned sections can legitimately mention multiple versions.
 
+## Dependency-lock rule
+
+Every dependency-manifest change must be accompanied by the corresponding generated lockfile before the release commit is considered reproducible.
+
+- `package.json` changes require a current `package-lock.json`.
+- `src-tauri/Cargo.toml` changes require a current `src-tauri/Cargo.lock`.
+
+For Rust, regenerate from `src-tauri`:
+
+```bash
+cargo generate-lockfile
+cargo test --locked
+cargo clippy --all-targets --all-features --locked -- -D warnings
+```
+
+The repository lockfile workflow can regenerate npm/Cargo lockfiles and supports manual dispatch. If branch protection rejects its direct `main` update, it is configured to publish the exact generated commit to `automation/lockfiles` for review/application. The existence of that workflow is not proof that the lockfile is current: inspect the resulting commit and observe locked checks before release.
+
+Do not hand-edit transitive Cargo lock entries to bypass a stale-lock failure.
+
 ## Release prerequisites
 
 Before tagging a release:
 
-1. Ensure `package-lock.json` and `src-tauri/Cargo.lock` are committed and current.
+1. Ensure `package-lock.json` and `src-tauri/Cargo.lock` are committed and current for the exact manifests.
 2. Verify normal CI is green on the exact release commit, including real-browser E2E.
-3. Run the clean-checkout quality suite.
-4. Run/review the repository secret audit and platform security alerts.
-5. Review dependency/CodeQL findings.
-6. Complete the accessibility smoke checklist.
-7. Capture real screenshots from the release candidate.
-8. Update `CHANGELOG.md`, `ROADMAP.md`, and `what_changed.md`.
-9. Verify every executable/configuration version location matches with `npm run version:check`.
-10. Confirm the repository contains no credentials or generated signing secrets.
-11. Confirm seeded web/desktop compatibility reference-vector tests pass.
-12. Record release-candidate benchmark evidence with the machine/runtime metadata required by `docs/performance.md`.
-13. Review repository settings against `docs/repository-governance.md`.
+3. Observe a bounded Rust parser fuzz campaign green on the intended candidate or record why it is excluded from the release gate.
+4. Run the clean-checkout quality suite.
+5. Run/review the repository secret audit and platform security alerts.
+6. Review dependency/CodeQL findings.
+7. Complete the accessibility smoke checklist.
+8. Complete native desktop CSV/JSON/backup save-dialog smoke checks on candidate builds.
+9. Capture real screenshots from the release candidate.
+10. Update `CHANGELOG.md`, `ROADMAP.md`, and `what_changed.md`.
+11. Verify every executable/configuration version location matches with `npm run version:check`.
+12. Confirm the repository contains no credentials or generated signing secrets.
+13. Confirm seeded web/desktop compatibility reference-vector tests pass.
+14. Confirm English/Hindi locale selection and locale-aware presentation survive restart/backup restore.
+15. Record release-candidate benchmark evidence with the machine/runtime metadata required by `docs/performance.md`.
+16. Review repository settings against `docs/repository-governance.md`.
 
 ## Clean-checkout verification
 
@@ -95,6 +117,34 @@ The August 19, 2026 execution container used during hardening has Chromium insta
 
 Do not weaken browser/security policy merely to manufacture local release evidence.
 
+## Native desktop export release evidence
+
+The web companion's browser-download test does not validate Tauri's native save path. Each Windows/macOS/Linux candidate must independently prove the native flow.
+
+For History CSV, History JSON, and backup export:
+
+1. Trigger the export from the packaged candidate.
+2. Confirm the operating-system save dialog opens.
+3. Cancel once and confirm no file is created and no error is shown.
+4. Save once using the expected extension and verify the resulting content.
+5. Verify a deliberately unavailable/unwritable destination fails with generic localized UI feedback rather than a private filesystem path/raw operating-system error.
+6. Confirm the webview has not gained broad filesystem or shell capability.
+7. Confirm the selected file extension remains consistent with the requested `csv`/`json` format.
+
+See [`native-exports.md`](native-exports.md) for the implementation trust boundary.
+
+## Localization release evidence
+
+For both `en` and `hi` on a candidate build:
+
+- switch locale from Settings and confirm navigation/surface copy changes immediately;
+- confirm document language metadata follows the selection;
+- confirm built-in presets localize while user-created copy remains unchanged;
+- confirm roll/history/probability numbers and dates/times use the selected locale formatting;
+- restart and confirm the preference persists;
+- export/import a backup and confirm the supported locale is restored;
+- check narrow layouts and 200% text scaling for clipping/overlap.
+
 ## Signing and notarization
 
 Signing credentials are deployment secrets. Never store private keys, certificates, passwords, or notarization credentials in the repository.
@@ -122,7 +172,7 @@ The tag-driven release workflow then:
 8. generates `SHA256SUMS.txt` for the ZIP files;
 9. creates or updates a **draft** GitHub release for the tag and uploads the packages/checksums.
 
-The workflow deliberately leaves the release as a draft. A human maintainer must still install/smoke-test the produced bundles and review generated notes before publishing.
+The workflow deliberately leaves the release as a draft. A human maintainer must still install/smoke-test the produced bundles, verify native save dialogs/localization, and review generated notes before publishing.
 
 ## Draft release review
 
@@ -132,6 +182,7 @@ Before publishing the draft:
 - extract and inspect expected platform files;
 - complete the artifact smoke matrix below;
 - verify the exact release commit had green CI/E2E/CodeQL/security evidence;
+- verify the committed Cargo lockfile includes all direct Rust dependencies declared by the candidate manifest;
 - replace or edit generated notes so they accurately match `CHANGELOG.md`;
 - clearly state whether artifacts are unsigned, signed, notarized, or otherwise platform-verified;
 - attach release screenshots only if they come from the candidate build;
@@ -144,8 +195,10 @@ Release notes should contain:
 - user-visible additions and fixes;
 - security/privacy changes;
 - accessibility changes;
+- localization changes;
 - deterministic RNG compatibility changes;
 - validation/backup compatibility changes;
+- native export behavior or limitations;
 - known limitations;
 - upgrade or backup-schema notes;
 - platform-specific caveats;
@@ -162,13 +215,16 @@ For each produced bundle:
 3. Install or launch it on the intended platform.
 4. Complete a secure roll and a seeded roll.
 5. Compare a documented seeded reference case with the web companion.
-6. Verify settings persist after restart.
-7. Export a backup and restore it.
-8. Verify About/version/contact information.
-9. Confirm the build contains no development server references.
-10. Verify reduced-motion and keyboard navigation behavior.
-11. Confirm local diagnostic logging does not expose user-created content/seeds/raw errors.
-12. Capture screenshots only after the artifact passes this matrix.
+6. Verify settings, including locale, persist after restart.
+7. Export History CSV/JSON through the native save dialog.
+8. Export a backup through the native save dialog and restore it.
+9. Verify English/Hindi selection, document language, localized built-ins, and presentation formatting.
+10. Verify About/version/contact information.
+11. Confirm the build contains no development server references.
+12. Verify reduced-motion and keyboard navigation behavior.
+13. Confirm local diagnostic logging does not expose user-created content/seeds/raw errors.
+14. Confirm native export errors do not expose private selected paths.
+15. Capture screenshots only after the artifact passes this matrix.
 
 ## Rollback
 
