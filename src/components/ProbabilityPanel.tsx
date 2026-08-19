@@ -87,7 +87,7 @@ export function ProbabilityPanel() {
         </div>
         {distribution.points.length > MAX_VISIBLE_POINTS ? (
           <p className="panel-note">
-            Showing the first {MAX_VISIBLE_POINTS} of {distribution.points.length} totals to keep the interface responsive.
+            {messages.probability.truncated(MAX_VISIBLE_POINTS, distribution.points.length)}
           </p>
         ) : null}
       </section>
@@ -105,7 +105,7 @@ function ProbabilityStat({ label, value }: { label: string; value: string }) {
 }
 
 function formatOutcomes(value: number): string {
-  if (!Number.isFinite(value)) return 'Very large';
+  if (!Number.isFinite(value)) return messages.probability.veryLarge;
   if (value >= 1_000_000_000) return value.toExponential(3);
   return value.toLocaleString('en-US');
 }
