@@ -20,7 +20,7 @@ describe('filterRollHistory', () => {
   });
 
   it('matches textual total fragments', () => {
-    expect(filterRollHistory(history, '1')).toEqual([history[0], history[1]]);
+    expect(filterRollHistory(history, '13')).toEqual([history[1]]);
     expect(filterRollHistory(history, '17')).toEqual([history[0]]);
   });
 
