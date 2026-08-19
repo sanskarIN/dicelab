@@ -17,6 +17,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Secret audit self-test
+        run: npm run security:secrets:test
+      - name: High-confidence secret audit
+        run: npm run security:secrets
       - name: Install dependencies
         run: npm ci
       - name: Documentation links
