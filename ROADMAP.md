@@ -49,7 +49,7 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Structured local logging with secret/PII-oriented redaction and bounded context.
 - [x] Progressive rendering for very large retained histories.
 - [ ] Optional native save dialog integration with narrowly scoped permissions.
-- [ ] Add a reviewed second locale before exposing language selection.
+- [x] Add a reviewed second locale before exposing language selection.
 
 ## Phase 4 — Verification depth
 
@@ -70,7 +70,7 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Dependency-free real-browser E2E runner for onboarding, roll/history, downloads, reload persistence, keyboard commands, probability, clear-data, and backup restore.
 - [x] Dependency-free CDP transport tests and E2E syntax self-check.
 - [ ] Observe the full real-browser E2E journey green on CI/release-candidate infrastructure.
-- [ ] Add a coverage-guided Rust fuzz target (`cargo-fuzz` or equivalent) from a network-enabled tooling environment.
+- [x] Add a coverage-guided Rust parser fuzz target with a bounded scheduled GitHub Actions campaign.
 - [ ] Record release-candidate benchmark evidence on a documented machine/runtime.
 
 ## Phase 5 — Release engineering
