@@ -9,7 +9,7 @@ import { RollWorkspace } from './components/RollWorkspace';
 import { SettingsPanel } from './components/SettingsPanel';
 import { parseDiceExpression } from './domain/parser';
 import { DEFAULT_SETTINGS, type DiceLabSettings, type DicePreset, type RollResult } from './domain/types';
-import { backupToJson, createBackup, downloadText } from './services/export';
+import { backupToJson, createBackup, downloadText, parseBackupJson } from './services/export';
 import { rollDice } from './services/roll-service';
 import {
   BUILTIN_PRESETS,
@@ -117,6 +117,14 @@ export default function App() {
     downloadText('dicelab-backup.json', backupToJson(backup), 'application/json');
   };
 
+  const importBackup = async (file: File) => {
+    const backup = parseBackupJson(await file.text());
+    setHistory(backup.history.slice(0, backup.settings.historyLimit));
+    setPresets([...BUILTIN_PRESETS, ...backup.presets]);
+    setSettings(backup.settings);
+    sequenceRef.current = 0;
+  };
+
   const clearAllData = () => {
     clearDiceLabData();
     setHistory([]);
@@ -153,7 +161,13 @@ export default function App() {
         {view === 'history' ? <HistoryPanel history={history} onClear={() => setHistory([])} /> : null}
         {view === 'probability' ? <ProbabilityPanel /> : null}
         {view === 'settings' ? (
-          <SettingsPanel settings={settings} onChange={updateSettings} onExportBackup={exportBackup} onClearData={clearAllData} />
+          <SettingsPanel
+            settings={settings}
+            onChange={updateSettings}
+            onExportBackup={exportBackup}
+            onImportBackup={importBackup}
+            onClearData={clearAllData}
+          />
         ) : null}
         {view === 'about' ? <AboutPanel /> : null}
       </AppShell>
