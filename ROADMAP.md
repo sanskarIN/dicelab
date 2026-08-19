@@ -1,5 +1,7 @@
 # DiceLab Roadmap
 
+Current release-preparation target: **2.0.12** (`v2.0.12`).
+
 This roadmap tracks engineering milestones rather than promises of fixed dates. Priorities may change when testing reveals correctness, accessibility, security, or platform issues.
 
 ## Phase 0 — Foundation
@@ -52,6 +54,10 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Add a reviewed second locale before exposing language selection.
 - [x] Expose a persisted English/Hindi language preference with backup compatibility and document-language metadata.
 - [x] Apply active-locale number/date/time formatting to roll, history, and probability presentation.
+- [x] Enforce exact persisted keep/drop selection semantics.
+- [x] Reject oversized backup files before reading their text into memory.
+- [x] Keep CSV formula protection scoped to untrusted text while preserving numeric columns.
+- [x] Normalize live history-limit input to the persisted integer contract.
 
 ## Phase 4 — Verification depth
 
@@ -71,15 +77,16 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Executable Vitest benchmarks for parser, RNG, probability, 5,000-record filtering, and 5,000-record statistics.
 - [x] Dependency-free real-browser E2E runner for onboarding, roll/history, downloads, reload persistence, keyboard commands, probability, clear-data, and backup restore.
 - [x] Dependency-free CDP transport tests and E2E syntax self-check.
-- [ ] Observe the full real-browser E2E journey green on CI/release-candidate infrastructure.
+- [ ] Observe the full real-browser E2E journey green on 2.0.12 CI/release-candidate infrastructure.
 - [x] Add a coverage-guided Rust parser fuzz target with a bounded scheduled GitHub Actions campaign.
-- [ ] Observe a parser fuzz campaign green on CI/release-candidate infrastructure.
-- [ ] Record release-candidate benchmark evidence on a documented machine/runtime.
+- [ ] Observe a parser fuzz campaign green on the 2.0.12 candidate.
+- [ ] Record 2.0.12 release-candidate benchmark evidence on a documented machine/runtime.
 
 ## Phase 5 — Release engineering
 
+- [x] Synchronize executable/configuration version metadata to 2.0.12.
 - [x] Commit npm and Cargo lockfiles for the previous dependency graph.
-- [ ] Regenerate and commit `src-tauri/Cargo.lock` after adding the native dialog dependency, then observe locked Rust checks.
+- [ ] Regenerate and commit both lockfiles for the 2.0.12 manifests, including `tauri-plugin-dialog`, then observe locked Rust checks.
 - [x] Enforce locked dependencies in main CI and tagged release verification.
 - [x] Configure tagged Windows/macOS/Linux/web artifact builds.
 - [x] Package verified artifacts into draft GitHub releases with SHA-256 checksums.
@@ -87,25 +94,25 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Add dependency-free repository secret audit and self-tests to CI/tagged verification.
 - [x] Add synchronized application-version audit and release-tag/version agreement gate.
 - [x] Document branch protection, labels, milestones, Discussions, security settings, and release governance.
-- [ ] Verify clean builds on Windows, macOS, and Linux from the current release candidate.
-- [ ] Capture real screenshots from release-candidate builds.
+- [ ] Verify clean builds on Windows, macOS, and Linux from the 2.0.12 release candidate.
+- [ ] Capture real screenshots from verified 2.0.12 candidate builds.
 - [ ] Add signed/notarized release artifacts where credentials are available and document unsigned builds accurately otherwise.
-- [ ] Publish `v0.1.0` after draft artifact smoke checks pass.
+- [ ] Publish `v2.0.12` only after draft artifact smoke checks and the release-evidence gate pass.
 
-## Phase 6 — Final audit
+## Phase 6 — 2.0.12 final audit
 
 - [ ] Clean-checkout setup verification.
 - [ ] Full pre-install/security/version/E2E-infrastructure checks observed green on the release commit.
 - [ ] Full lint/format/type/test/build/browser-E2E suite observed green on the release commit.
 - [ ] Rust format/test/Clippy observed green on the release commit.
 - [ ] Dependency, CodeQL, repository security settings, and secret-scan results reviewed.
-- [ ] Documentation-link audit observed green on the release commit.
+- [ ] Documentation-link and tracked-file inventory audits observed green on the release commit.
 - [ ] Network-enabled external-link audit.
 - [ ] Manual keyboard and screen-reader smoke review.
 - [ ] Release-candidate artifact/provenance/checksum verification.
-- [ ] Confirm screenshots and release notes match the actual candidate build.
+- [ ] Confirm screenshots and release notes match the actual 2.0.12 candidate build.
 
-## Post-1.0 candidates
+## Future candidates
 
 These are intentionally not commitments. They should be implemented only when they improve the product without compromising the offline-first model:
 
