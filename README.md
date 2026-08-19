@@ -42,7 +42,7 @@ Real release screenshots will be captured from a verified release-candidate buil
 - Native desktop save dialogs for CSV/JSON exports through a dedicated bounded Rust command, with ordinary browser downloads retained for the web companion.
 - Spreadsheet-safe CSV handling for formula-like user-controlled cells.
 - Stable parser/probability/backup error codes mapped to localized user-facing messages.
-- Reviewed English and Hindi interface catalogs with a persisted language preference, localized built-in presets, backup compatibility, and document-language metadata.
+- Reviewed English and Hindi interface catalogs with a persisted language preference, localized built-in presets, backup compatibility, document-language metadata, and explicit locale-aware number/date/time formatting.
 - Light, dark, and system themes.
 - Reduced-motion and non-animation modes with normalized persisted settings.
 - Keyboard command palette (`Ctrl/Cmd + K`) with modal focus trapping/restoration and keyboard-first navigation.
@@ -52,6 +52,8 @@ Real release screenshots will be captured from a verified release-candidate buil
 - Dependency-free high-confidence secret audit in normal CI and tagged release verification.
 - Dependency-free Node 22 + Chromium CDP real-browser E2E smoke for the production bundle.
 - Executable benchmark suites for parser, RNG, probability, history filtering, and statistics.
+- Automated architecture/security policy gates for Tauri capabilities, CSP/offline network sources, localized formatting, runtime boundaries, native command contracts, and direct dependency-lock consistency.
+- Exhaustive tracked-file documentation inventory checked against `git ls-files` so new repository files cannot be silently omitted from the file reference.
 - Automated version synchronization checks across npm/frontend/Cargo/Tauri metadata and tag/version agreement on releases.
 - Release provenance metadata and SHA-256 checksums for draft artifact review.
 - No required sign-in, analytics service, advertising SDK, remote telemetry, or donation gate.
@@ -69,11 +71,11 @@ Real release screenshots will be captured from a verified release-candidate buil
 
 - **Native core:** Rust + Tauri 2
 - **Frontend:** TypeScript + React + Vite
-- **Localization:** typed in-repository English/Hindi catalogs with stable error-code mappings and a persisted locale boundary
-- **Tests:** Vitest, Testing Library, Node built-in quality/security/CDP tests, dependency-free real-browser CDP E2E, Rust unit/generated/adversarial parser tests, cargo-fuzz parser target
+- **Localization:** typed in-repository English/Hindi catalogs with stable error-code mappings, persisted locale state, and explicit `en-US`/`hi-IN` presentation formatting
+- **Tests:** Vitest, Testing Library, Node built-in quality/security/CDP/policy tests, dependency-free real-browser CDP E2E, Rust unit/generated/adversarial parser tests, cargo-fuzz parser target
 - **Benchmarks:** Vitest benchmark suites using the existing locked toolchain
-- **Quality:** ESLint, Prettier, rustfmt, Clippy, Markdown link audit, secret audit, version audit, GitHub Actions
-- **Security:** restrictive Tauri CSP, minimal capabilities, bounded native export command, CodeQL/dependency update configuration, validated persistence/import boundaries, redacted local logging
+- **Quality:** ESLint, Prettier, rustfmt, Clippy, Markdown link audit, exhaustive file-reference audit, secret audit, version audit, repository policy audits, GitHub Actions
+- **Security:** restrictive/offline Tauri CSP, minimal capabilities, static native command allowlist, bounded native export command, CodeQL/dependency update configuration, validated persistence/import boundaries, redacted local logging
 - **Persistence:** browser/webview local storage; no remote database is required
 
 ## Quick start — web companion
@@ -100,30 +102,47 @@ npm run tauri:dev
 
 ## Quality checks
 
+Dependency-free repository/security/documentation checks can run before application dependencies are installed:
+
 ```bash
 npm run security:secrets:test
 npm run security:secrets
+npm run docs:check:test
+npm run docs:check
+npm run docs:inventory:test
+npm run docs:inventory
+npm run policy:test
+npm run policy:all
 npm run test:e2e:infra
 npm run version:check:test
 npm run version:check
-npm run docs:check
+npm run release:verify:test
+```
+
+After `npm ci`, run the frontend/product suite:
+
+```bash
 npm run format
 npm run lint
 npm run test
 npm run build
 npm run test:e2e
+```
 
+For Rust/native work:
+
+```bash
 cd src-tauri
 cargo fmt --all -- --check
 cargo test --locked
 cargo clippy --all-targets --all-features --locked -- -D warnings
 ```
 
-The local secret audit reports only file/line/rule metadata and intentionally does not print matched credential values. GitHub CodeQL runs separately, and repository-level secret scanning/push protection should be enabled where available.
+The local secret audit reports only file/line/rule metadata and intentionally does not print matched credential values. The repository policy audits protect documented architecture/security boundaries; `policy:lockfiles` is an early structural check and does not replace normal package-manager lock generation or locked Rust checks. GitHub CodeQL runs separately, and repository-level secret scanning/push protection should be enabled where available.
 
 The real-browser E2E test requires the production build and a Chromium-compatible browser; set `CHROME_BIN` if auto-discovery cannot find one. It covers onboarding, roll/history, actual browser downloads, reload persistence, keyboard command navigation, probability, clear-data, and actual backup file restore. See [`docs/e2e.md`](docs/e2e.md).
 
-See [`docs/testing.md`](docs/testing.md) for the complete strategy and CI expectations.
+See [`docs/testing.md`](docs/testing.md) and [`docs/automation-reference.md`](docs/automation-reference.md) for the complete strategy and automation surface.
 
 ### Rust parser fuzzing
 
@@ -161,6 +180,8 @@ npm run tauri:build
 
 Version tags run the release workflow, require the tag to match the synchronized application version, verify web quality/security/browser checks, build web plus Windows/macOS/Linux desktop artifacts, package successful artifacts into ZIP files, generate `RELEASE-METADATA.json` plus `SHA256SUMS.txt`, and create/update a **draft** GitHub release for manual artifact verification. Platform-specific prerequisites, signing expectations, versioning, and release verification are documented in [`docs/release.md`](docs/release.md).
 
+Configured workflows are not the same as observed release evidence. Current blockers are tracked in [`docs/release-blockers-current.md`](docs/release-blockers-current.md), and real candidate results belong in a copy of [`docs/release-candidate-evidence-template.md`](docs/release-candidate-evidence-template.md).
+
 ## Architecture
 
 DiceLab is a modular monolith:
@@ -170,16 +191,19 @@ src/
 ├── components/      # product UI and accessible interaction surfaces
 ├── config/          # stable product metadata and URLs
 ├── domain/          # parser, engine, RNG, history query, persistence validation, probability, statistics
-├── i18n/            # typed locale catalogs and stable error-to-copy mapping
-├── services/        # persistence, export/backup, logging, native/web adapters
+├── i18n/            # typed catalogs, active locale, formatting, stable error-to-copy mapping
+├── services/        # runtime adapters, persistence, export/backup, logging
 └── test/            # shared browser test setup
 
 scripts/
-├── cdp-session*              # dependency-free browser protocol transport + tests
-├── e2e-browser.mjs           # production-bundle real-browser journey
-├── check-doc-links.mjs       # repository-relative Markdown audit
-├── check-secrets*            # high-confidence credential audit + self-test
-└── check-version-sync*       # application/tag version audit + self-test
+├── cdp-session*                 # dependency-free browser protocol transport + tests
+├── e2e-browser.mjs              # production-bundle real-browser journey
+├── check-doc-links*             # local Markdown link/anchor audit
+├── check-file-reference*        # exhaustive tracked-file documentation audit
+├── check-secrets*               # high-confidence credential audit + self-test
+├── check-version-sync*          # application/tag version audit + self-test
+├── check-*-policy/boundary*     # executable security/architecture invariants
+└── verify-release-packages*     # release checksum/provenance verification
 
 src-tauri/
 ├── capabilities/    # least-privilege desktop permissions
@@ -188,7 +212,9 @@ src-tauri/
 └── src/             # native parser, roll command, and bounded native export command
 ```
 
-The frontend uses web implementations when running as a browser companion and invokes purpose-built Rust commands when running inside Tauri. Domain rules remain explicit and testable. Seeded web/native implementations intentionally share an algorithm and fixed compatibility vectors. User-facing validation copy resolves from stable error codes rather than depending on raw exception prose. Desktop exports never accept an arbitrary destination path from the webview; the native command receives the user-selected path from the system dialog. See [`docs/architecture.md`](docs/architecture.md), [`docs/native-exports.md`](docs/native-exports.md), and [`docs/adr/`](docs/adr/) for decisions and trade-offs.
+The frontend uses web implementations when running as a browser companion and invokes purpose-built Rust commands when running inside Tauri. Domain rules remain explicit and testable. Seeded web/native implementations intentionally share an algorithm and fixed compatibility vectors. User-facing validation copy resolves from stable error codes rather than depending on raw exception prose. Desktop exports never accept an arbitrary destination path from the webview; the native command receives the user-selected path from the system dialog.
+
+Start with [`docs/architecture.md`](docs/architecture.md), [`docs/application-flows.md`](docs/application-flows.md), [`docs/data-contracts.md`](docs/data-contracts.md), [`docs/code-reference.md`](docs/code-reference.md), and [`docs/adr/`](docs/adr/) for the detailed current design and decision history.
 
 ## Dice expression syntax
 
@@ -213,35 +239,59 @@ Selection operators:
 - `dhN` — drop highest N dice
 - `dlN` — drop lowest N dice
 
+Parser/data limits and persistence invariants are documented in [`docs/data-contracts.md`](docs/data-contracts.md).
+
 ## Privacy and security
 
 DiceLab is designed to work without cloud storage. Roll history, presets, and settings remain local unless you explicitly export them. Local storage and imported backups are validated rather than trusted blindly. Seeded mode is deterministic and clearly separated from secure random mode. Current diagnostic logging is local-only and redacts sensitive/user-content key families. Native desktop exports are initiated explicitly and limited to the user-selected system-dialog destination through a bounded Rust command.
 
-Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), [`docs/native-exports.md`](docs/native-exports.md), and [`docs/logging.md`](docs/logging.md) before changing data handling, exports, or diagnostics. Please report vulnerabilities privately rather than opening a public exploit issue.
+Repository audits additionally protect capability scope, CSP/offline-network policy, Tauri runtime access, native command names/routing, localized formatter use, and lockfile consistency. Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and the [`docs/repository-policy-gates.md`](docs/repository-policy-gates.md) index before changing a trust boundary. Please report vulnerabilities privately rather than opening a public exploit issue.
 
 ## Contributing
 
-Contributions are welcome. Start with [`CONTRIBUTING.md`](CONTRIBUTING.md), follow the [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), and keep changes small, tested, accessible, localized through the message catalog where applicable, and documented. Repository labels, branch-protection rollout, Discussions categories, and release governance are described in [`docs/repository-governance.md`](docs/repository-governance.md).
+Contributions are welcome. Start with [`CONTRIBUTING.md`](CONTRIBUTING.md), follow the [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), and keep changes small, tested, accessible, localized through both reviewed catalogs where applicable, and documented. Repository labels, branch-protection rollout, Discussions categories, and release governance are described in [`docs/repository-governance.md`](docs/repository-governance.md).
+
+When a tracked file is added/renamed/deleted, update [`docs/repository-file-reference.md`](docs/repository-file-reference.md) and run `npm run docs:inventory`.
 
 ## Documentation
+
+The complete documentation index is [`docs/README.md`](docs/README.md).
+
+Core engineering references:
 
 - [Setup](docs/setup.md)
 - [Development](docs/development.md)
 - [Architecture](docs/architecture.md)
+- [Application flows](docs/application-flows.md)
+- [Data and boundary contracts](docs/data-contracts.md)
+- [Maintainer code reference](docs/code-reference.md)
+- [Automation reference](docs/automation-reference.md)
+- [Exhaustive repository file reference](docs/repository-file-reference.md)
 - [Testing](docs/testing.md)
 - [Real-browser E2E](docs/e2e.md)
 - [Accessibility](docs/accessibility.md)
 - [Localization](docs/localization.md)
 - [Hindi localization review](docs/localization/HINDI_REVIEW.md)
 - [Native exports](docs/native-exports.md)
+- [Native command contract](docs/native-command-contract.md)
+- [Runtime boundary policy](docs/runtime-boundary-policy.md)
+- [Desktop capability policy](docs/capability-policy.md)
+- [Tauri security policy](docs/tauri-security-policy.md)
+- [Offline network policy](docs/offline-network-policy.md)
+- [Repository policy gates](docs/repository-policy-gates.md)
+- [Lockfile policy](docs/lockfile-policy.md)
 - [Structured logging](docs/logging.md)
 - [Performance](docs/performance.md)
 - [Repository governance](docs/repository-governance.md)
 - [Release](docs/release.md)
+- [Current release blockers](docs/release-blockers-current.md)
+- [Release candidate evidence template](docs/release-candidate-evidence-template.md)
 - [Troubleshooting](docs/troubleshooting.md)
+- [Architecture decisions](docs/adr/README.md)
+- [Continuation handoffs](docs/handoffs/README.md)
 - [Roadmap](ROADMAP.md)
 - [Changelog](CHANGELOG.md)
-- [Work handoff](what_changed.md)
+- [Current work handoff](what_changed.md)
 
 ## Support and contact
 
