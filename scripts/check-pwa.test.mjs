@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { auditPwaBundle } from './check-pwa.mjs';
 
+const COMPLETE_SERVICE_WORKER =
+  "self.addEventListener('install',()=>precacheApplicationShell());self.addEventListener('activate',()=>{});self.addEventListener('fetch',()=>{});if (url.origin !== self.location.origin) return;if (request.method !== 'GET') return;const assets=['/manifest.webmanifest','/dicelab-icon.svg','/icon-192.png','/icon-512.png','/apple-touch-icon.png'];function precacheApplicationShell(){const buildAssets=discoverBuildAssets('');cache.addAll(buildAssets);}function discoverBuildAssets(){if(url.pathname.startsWith('/assets/')) return [];}";
+
 function fixture(overrides = {}) {
   return {
     manifest: {
@@ -18,8 +21,7 @@ function fixture(overrides = {}) {
     },
     indexHtml:
       '<meta name="viewport" content="width=device-width, viewport-fit=cover"><meta name="theme-color" content="#111827"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest">',
-    serviceWorker:
-      "self.addEventListener('install',()=>{});self.addEventListener('activate',()=>{});self.addEventListener('fetch',()=>{});if (url.origin !== self.location.origin) return;if (request.method !== 'GET') return;const assets=['/manifest.webmanifest','/dicelab-icon.svg','/icon-192.png','/icon-512.png','/apple-touch-icon.png'];",
+    serviceWorker: COMPLETE_SERVICE_WORKER,
     mainSource: 'void registerPwaServiceWorker();',
     registrationSource:
       "import.meta.env.PROD; isTauriRuntime(); environment.serviceWorker.register('/sw.js', { scope: '/' });",
@@ -44,8 +46,7 @@ test('requires mobile viewport safe-area support', () => {
 test('requires same-origin cache handling and Tauri exclusion', () => {
   const findings = auditPwaBundle(
     fixture({
-      serviceWorker:
-        "self.addEventListener('install',()=>{});self.addEventListener('activate',()=>{});self.addEventListener('fetch',()=>{});if (request.method !== 'GET') return;const assets=['/manifest.webmanifest','/dicelab-icon.svg','/icon-192.png','/icon-512.png','/apple-touch-icon.png'];",
+      serviceWorker: COMPLETE_SERVICE_WORKER.replace('if (url.origin !== self.location.origin) return;', ''),
       registrationSource:
         "import.meta.env.PROD; environment.serviceWorker.register('/sw.js', { scope: '/' });",
     }),
@@ -89,11 +90,23 @@ test('requires Apple touch icon metadata and precached install assets', () => {
     fixture({
       indexHtml:
         '<meta name="viewport" content="width=device-width, viewport-fit=cover"><meta name="theme-color" content="#111827"><link rel="manifest" href="/manifest.webmanifest">',
-      serviceWorker:
-        "self.addEventListener('install',()=>{});self.addEventListener('activate',()=>{});self.addEventListener('fetch',()=>{});if (url.origin !== self.location.origin) return;if (request.method !== 'GET') return;const assets=['/manifest.webmanifest','/dicelab-icon.svg','/icon-192.png','/icon-512.png'];",
+      serviceWorker: COMPLETE_SERVICE_WORKER.replace(",'/apple-touch-icon.png'", ''),
     }),
   );
 
   assert.ok(findings.some((finding) => finding.includes('Apple touch icon metadata')));
   assert.ok(findings.some((finding) => finding.includes('precache /apple-touch-icon.png')));
+});
+
+test('requires generated Vite runtime assets to be precached during install', () => {
+  const findings = auditPwaBundle(
+    fixture({
+      serviceWorker: COMPLETE_SERVICE_WORKER.replace(
+        "function discoverBuildAssets(){if(url.pathname.startsWith('/assets/')) return [];}",
+        'function discoverBuildAssets(){return [];}',
+      ),
+    }),
+  );
+
+  assert.ok(findings.some((finding) => finding.includes('generated Vite /assets/ runtime files')));
 });
