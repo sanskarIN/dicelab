@@ -83,3 +83,63 @@ jobs:
       - name: Clippy
         working-directory: src-tauri
         run: cargo clippy --all-targets --all-features --locked -- -D warnings
+
+  android:
+    name: Android build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Setup Rust Android targets
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+      - name: Configure Android NDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${ANDROID_HOME:-}" ]; then
+            echo "::error::ANDROID_HOME is not available on this runner."
+            exit 1
+          fi
+          NDK_DIR="$(find "$ANDROID_HOME/ndk" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -n 1)"
+          if [ -z "$NDK_DIR" ]; then
+            echo "::error::No Android NDK was found under $ANDROID_HOME/ndk."
+            exit 1
+          fi
+          echo "NDK_HOME=$NDK_DIR" >> "$GITHUB_ENV"
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Initialize Android project
+        run: npm run tauri:android:init -- --ci --skip-targets-install
+      - name: Build Android ARM64 APK and AAB
+        run: npm run tauri:android:build -- --ci --target aarch64
+
+  ios:
+    name: iOS simulator build
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Setup Rust iOS simulator target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios-sim
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Initialize iOS project
+        run: npm run tauri:ios:init -- --ci --skip-targets-install
+      - name: Build iOS ARM64 simulator application
+        run: npm run tauri:ios:build:ci
