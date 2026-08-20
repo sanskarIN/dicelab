@@ -4,29 +4,43 @@ on:
   push:
     branches: [main]
     paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'index.html'
+      - 'public/**'
       - 'src/**'
+      - 'src-tauri/Cargo.toml'
+      - 'src-tauri/Cargo.lock'
       - 'src-tauri/capabilities/**'
       - 'src-tauri/tauri.conf.json'
-      - 'public/**'
-      - 'index.html'
       - 'scripts/check-capabilities*.mjs'
       - 'scripts/check-tauri-security*.mjs'
+      - 'scripts/check-offline-csp*.mjs'
       - 'scripts/check-localized-formatting*.mjs'
       - 'scripts/check-runtime-boundaries*.mjs'
+      - 'scripts/check-native-command-contract*.mjs'
+      - 'scripts/check-lockfile-consistency*.mjs'
       - 'scripts/check-pwa*.mjs'
       - 'scripts/check-policy-boundaries*.mjs'
       - '.github/workflows/repository-policy-audit.yml'
   pull_request:
     paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'index.html'
+      - 'public/**'
       - 'src/**'
+      - 'src-tauri/Cargo.toml'
+      - 'src-tauri/Cargo.lock'
       - 'src-tauri/capabilities/**'
       - 'src-tauri/tauri.conf.json'
-      - 'public/**'
-      - 'index.html'
       - 'scripts/check-capabilities*.mjs'
       - 'scripts/check-tauri-security*.mjs'
+      - 'scripts/check-offline-csp*.mjs'
       - 'scripts/check-localized-formatting*.mjs'
       - 'scripts/check-runtime-boundaries*.mjs'
+      - 'scripts/check-native-command-contract*.mjs'
+      - 'scripts/check-lockfile-consistency*.mjs'
       - 'scripts/check-pwa*.mjs'
       - 'scripts/check-policy-boundaries*.mjs'
       - '.github/workflows/repository-policy-audit.yml'
@@ -53,16 +67,7 @@ jobs:
           node-version: 22
 
       - name: Self-test policy auditors
-        run: |
-          node --test scripts/check-capabilities.test.mjs scripts/check-capabilities.integration.test.mjs
-          node --test scripts/check-tauri-security.test.mjs scripts/check-tauri-security.integration.test.mjs
-          node --test scripts/check-localized-formatting.test.mjs scripts/check-localized-formatting.integration.test.mjs
-          node --test scripts/check-runtime-boundaries.test.mjs scripts/check-runtime-boundaries.integration.test.mjs
-          node --test scripts/check-pwa.test.mjs
-          node --test scripts/check-policy-boundaries.integration.test.mjs
+        run: npm run policy:test
 
       - name: Audit repository policy boundaries
-        run: node scripts/check-policy-boundaries.mjs
-
-      - name: Audit PWA boundaries
-        run: node --check public/sw.js && node scripts/check-pwa.mjs
+        run: npm run policy:all
