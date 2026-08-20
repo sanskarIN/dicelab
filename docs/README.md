@@ -1,6 +1,6 @@
 # DiceLab Documentation Hub
 
-This directory is the engineering and product-documentation index for DiceLab. Start with the README for the product overview, then use this page to locate the exact setup, architecture, security, testing, release, localization, and repository-maintenance reference you need.
+This directory is the engineering and product-documentation index for DiceLab. Start with the README for the product overview, then use this page to locate the exact setup, architecture, security, testing, release, localization, web/PWA, and repository-maintenance reference you need.
 
 ## Start here
 
@@ -10,6 +10,7 @@ This directory is the engineering and product-documentation index for DiceLab. S
 | [`setup.md`](setup.md) | Prerequisites and initial local setup |
 | [`development.md`](development.md) | Day-to-day development conventions and command workflow |
 | [`architecture.md`](architecture.md) | System boundaries, modules, runtime split, persistence, native commands, security, and release architecture |
+| [`web-pwa.md`](web-pwa.md) | Installable browser/ChromeOS target, offline service worker, web install assets, Tauri exclusion, and verification |
 | [`application-flows.md`](application-flows.md) | End-to-end startup, roll, history, probability, localization, backup/export, clear-data, and failure flows |
 | [`data-contracts.md`](data-contracts.md) | Domain objects, persistence records, backup schema, error contracts, native command contracts, and locale rules |
 | [`repository-file-reference.md`](repository-file-reference.md) | Exhaustive explanation of every Git-tracked file in the repository |
@@ -21,6 +22,7 @@ This directory is the engineering and product-documentation index for DiceLab. S
 | [`accessibility.md`](accessibility.md) | Keyboard, focus, screen-reader, motion, zoom/text scaling, and manual review expectations |
 | [`localization.md`](localization.md) | Typed catalog model, locale persistence, translation workflow, error localization, and number/date/time formatting |
 | [`localization/HINDI_REVIEW.md`](localization/HINDI_REVIEW.md) | Hindi catalog review record and language-specific verification checklist |
+| [`web-pwa.md`](web-pwa.md) | Web installability, offline application shell, mobile home-screen metadata, cache/security boundaries, and release smoke |
 | [`performance.md`](performance.md) | Performance budgets, benchmark scope, measurement rules, and release evidence |
 | [`troubleshooting.md`](troubleshooting.md) | Common setup/runtime/build problems and safe recovery guidance |
 | [`../PRIVACY.md`](../PRIVACY.md) | User-data handling and offline/local privacy model |
@@ -32,6 +34,7 @@ This directory is the engineering and product-documentation index for DiceLab. S
 | --- | --- |
 | [`testing.md`](testing.md) | Unit, component, integration, Rust, browser E2E, fuzz, policy, benchmark, and manual smoke strategy |
 | [`e2e.md`](e2e.md) | Dependency-free Chromium/CDP production-bundle browser runner architecture and debugging |
+| [`web-pwa.md`](web-pwa.md) | PWA policy self-tests, production install/offline verification, and manual platform checks |
 | [`logging.md`](logging.md) | Structured local logging, privacy-safe context, redaction, and operational-event policy |
 | [`automation-reference.md`](automation-reference.md) | Every repository script and GitHub Actions workflow, triggers, responsibilities, and evidence meaning |
 | [`repository-policy-gates.md`](repository-policy-gates.md) | Executable architecture/security policy boundaries and their audit commands |
@@ -106,9 +109,10 @@ Repository-level contributor material lives at the root or under `.github/`:
 2. [`setup.md`](setup.md)
 3. [`development.md`](development.md)
 4. [`architecture.md`](architecture.md)
-5. [`testing.md`](testing.md)
-6. [`repository-policy-gates.md`](repository-policy-gates.md)
-7. [`../CONTRIBUTING.md`](../CONTRIBUTING.md)
+5. [`web-pwa.md`](web-pwa.md)
+6. [`testing.md`](testing.md)
+7. [`repository-policy-gates.md`](repository-policy-gates.md)
+8. [`../CONTRIBUTING.md`](../CONTRIBUTING.md)
 
 ### Security/native change
 
@@ -120,6 +124,15 @@ Repository-level contributor material lives at the root or under `.github/`:
 6. [`runtime-boundary-policy.md`](runtime-boundary-policy.md)
 7. [`native-command-contract.md`](native-command-contract.md)
 8. relevant [`adr/`](adr/) record
+
+### Web/PWA change
+
+1. [`web-pwa.md`](web-pwa.md)
+2. [`architecture.md`](architecture.md)
+3. [`testing.md`](testing.md)
+4. [`offline-network-policy.md`](offline-network-policy.md)
+5. [`repository-policy-gates.md`](repository-policy-gates.md)
+6. [`release.md`](release.md)
 
 ### Localization/UI change
 
@@ -134,7 +147,8 @@ Repository-level contributor material lives at the root or under `.github/`:
 1. [`release-blockers-current.md`](release-blockers-current.md)
 2. [`release.md`](release.md)
 3. [`testing.md`](testing.md)
-4. [`automation-reference.md`](automation-reference.md)
-5. [`release-candidate-evidence-template.md`](release-candidate-evidence-template.md)
-6. [`../CHANGELOG.md`](../CHANGELOG.md)
-7. [`../ROADMAP.md`](../ROADMAP.md)
+4. [`web-pwa.md`](web-pwa.md)
+5. [`automation-reference.md`](automation-reference.md)
+6. [`release-candidate-evidence-template.md`](release-candidate-evidence-template.md)
+7. [`../CHANGELOG.md`](../CHANGELOG.md)
+8. [`../ROADMAP.md`](../ROADMAP.md)
