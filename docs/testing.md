@@ -1,6 +1,6 @@
 # Testing Strategy
 
-DiceLab uses layered tests so failures are caught near the responsibility that caused them.
+DiceLab uses layered tests so failures are caught near the responsibility that caused them. The same product code now targets web, Windows, macOS, Linux, Android, and iOS/iPadOS, so release verification combines platform-independent automated tests, native compiler checks, and platform-specific physical-device smoke evidence.
 
 ## Frontend/domain tests
 
@@ -43,6 +43,8 @@ Current automated coverage includes:
 
 Use `npm run test:watch` during development and `npm run test:coverage` when reviewing coverage gaps.
 
+These tests primarily exercise platform-independent frontend/domain behavior. They do not prove Android/iOS generated-project compilation or physical device picker/safe-area behavior.
+
 ## Rust tests
 
 Run:
@@ -59,12 +61,14 @@ Native tests cover:
 - deterministic seeded behavior and the same fixed seeded/hash vectors used by TypeScript;
 - native text-export suggested filename/format validation;
 - export payload size limits;
-- final selected-file extension validation;
+- selected-file extension validation when the destination is represented by a normal path;
 - generated parser normalization invariants and an adversarial malformed-input corpus.
 
-The paired seeded vectors are a compatibility guard: a given effective seed must produce the same deterministic values in web and desktop runtimes.
+The paired seeded vectors are a compatibility guard: a given effective seed must produce the same deterministic values in web and Tauri native runtimes.
 
-A manifest change is not verified merely because source code compiles conceptually. If `src-tauri/Cargo.toml` changes, regenerate `src-tauri/Cargo.lock` and run the locked Rust checks before treating the dependency graph as release-ready.
+The native export command now uses Tauri's `FilePath` and `tauri-plugin-fs` so Android document-provider URIs and iOS selected files can remain native destination types. Unit tests cover the request/path-validation boundary, while physical-device smoke validates provider/security-scoped behavior that cannot be faithfully reproduced by a generic desktop unit test.
+
+A manifest change is not verified merely because source code compiles conceptually. If `src-tauri/Cargo.toml` changes, regenerate `src-tauri/Cargo.lock` and run locked Rust checks before treating the dependency graph as release-ready.
 
 ## Coverage-guided Rust parser fuzzing
 
@@ -97,6 +101,10 @@ npm run security:secrets:test
 npm run security:secrets
 npm run test:e2e:infra
 npm run docs:check
+npm run docs:inventory
+npm run policy:test
+npm run policy:all
+npm run version:check
 npm run format
 npm run lint
 npm run test
@@ -108,9 +116,9 @@ The production build is also the TypeScript type check because the build script 
 
 `npm run security:secrets:test` uses Node's built-in test runner to verify high-confidence token/private-key detection without printing matched secret values. `npm run security:secrets` scans the checked-out repository for high-confidence credential formats and tracked `.env*` files other than documented templates. CI/release workflows run both before dependency installation.
 
-`npm run test:e2e:infra` uses Node's built-in test runner to verify the DevTools protocol transport and `node --check` to validate the browser-runner syntax. It does not require a browser, which helps separate automation-client defects from browser-environment failures.
+`npm run test:e2e:infra` uses Node's built-in test runner to verify the DevTools protocol transport and `node --check` to validate browser-runner syntax. It does not require a browser, which helps separate automation-client defects from browser-environment failures.
 
-`npm run docs:check` scans repository Markdown files and fails on missing relative link targets or malformed percent-encoding. External URLs are intentionally outside this local existence check and should still be reviewed during release preparation when network access is available.
+`npm run docs:check` scans repository Markdown files and fails on missing relative link targets or malformed percent-encoding. `npm run docs:inventory` compares Git-tracked paths with the exhaustive repository file reference, including `src/mobile.css`. External URLs are intentionally outside this local existence check and should still be reviewed during release preparation when network access is available.
 
 Rust:
 
@@ -144,13 +152,46 @@ The dependency-free Node 22/CDP runner starts the production Vite preview and dr
 
 Normal CI and tagged release web verification run this smoke after the production build. Browser discovery supports `CHROME_BIN` plus common Chrome/Chromium install locations.
 
-The hardening execution container used on August 19, 2026 has Chromium installed but its administrator policy blocks loopback browser navigation with `net::ERR_BLOCKED_BY_ADMINISTRATOR`. The full E2E journey therefore cannot be claimed locally passing from that container. The extracted CDP transport self-test was executed there independently and passed 5/5 tests. A full browser pass must be observed in GitHub Actions or another unrestricted browser environment before it counts as release evidence.
+The hardening execution container used on August 19, 2026 had Chromium installed but its administrator policy blocked loopback browser navigation with `net::ERR_BLOCKED_BY_ADMINISTRATOR`. A full browser pass must be observed in GitHub Actions or another unrestricted browser environment before it counts as release evidence.
 
 See [`e2e.md`](e2e.md) for the runner architecture, browser requirements, exact scenario, and debugging guidance.
 
-## Desktop export smoke coverage
+## Native compiler/build coverage
 
-The browser E2E suite intentionally validates the browser download path. It does not prove the Tauri-native system-dialog path.
+Normal `.github/workflows/ci.yml` now has distinct native verification layers.
+
+### Rust/Linux quality
+
+Runs rustfmt, locked Rust tests, and locked Clippy after installing Linux Tauri dependencies.
+
+### Android CI
+
+The Android job:
+
+- uses Ubuntu, Node 22, and Java 17;
+- installs the Rust Android target set;
+- discovers/configures the runner NDK;
+- performs `tauri android init` in CI mode;
+- builds an ARM64 APK/AAB validation target.
+
+An observed successful run proves that the shared app/native core integrates with the Android generated project for that candidate. It does **not** prove physical-device UI/document-provider behavior or Play signing.
+
+### iOS simulator CI
+
+The iOS job:
+
+- uses `macos-latest`;
+- installs the Apple-Silicon iOS simulator Rust target;
+- performs `tauri ios init` in CI mode;
+- compiles the ARM64 simulator target.
+
+An observed successful run proves simulator build integration. It does **not** prove physical-device Files-picker/security-scope behavior or App Store signing.
+
+## Native export smoke coverage
+
+The browser E2E suite intentionally validates the browser download path. It does not prove Tauri's native system-dialog/document-picker path.
+
+### Windows/macOS/Linux
 
 On every supported desktop release candidate, verify separately that:
 
@@ -162,7 +203,73 @@ On every supported desktop release candidate, verify separately that:
 6. A native save failure shows generic localized status rather than a private filesystem path or raw OS error.
 7. The webview still has no broad filesystem or shell capability.
 
-See [`native-exports.md`](native-exports.md) for the trust boundary.
+### Android physical device
+
+On at least one supported physical Android device:
+
+1. Open History CSV export and choose the system Documents/Downloads provider.
+2. Confirm the returned provider-backed selection writes successfully, including a real `content://` destination.
+3. Repeat for History JSON and backup export.
+4. Cancel a picker operation and confirm there is no false failure/success state.
+5. Restore a backup produced by the candidate.
+6. Induce/reproduce a safe provider failure where practical and verify UI/logging does not expose a private URI/raw provider error.
+7. Confirm no renderer `fs:*` capability was introduced.
+8. Record device model, Android version/API, ABI, and provider used.
+
+Additional cloud/vendor providers are useful evidence because provider implementations can differ, but the system/local provider is the minimum required release smoke.
+
+### iPhone/iPad physical devices
+
+On representative supported iPhone and iPad devices:
+
+1. Export History CSV/JSON and backup through the Files picker.
+2. Cancel once and confirm normal cancellation behavior.
+3. Verify successful files can be read externally where the OS allows and restored into DiceLab where applicable.
+4. Return to DiceLab after the picker and verify the app remains responsive and state is preserved.
+5. Verify failure UI does not expose a private selected file/raw native error.
+6. Confirm security-scoped selected-file access is not held indefinitely after writing.
+7. Record device model, OS version, orientation, and picker/provider notes.
+
+See [`native-exports.md`](native-exports.md) for the trust boundary and [`release-candidate-evidence-template.md`](release-candidate-evidence-template.md) for the record format.
+
+## Mobile layout/touch smoke coverage
+
+Physical-device release review must exercise the mobile styling layer rather than relying only on responsive desktop browser emulation.
+
+### Android
+
+Verify:
+
+- portrait and landscape primary journey;
+- status/navigation system insets do not cover required controls;
+- bottom navigation remains reachable;
+- coarse-pointer controls are comfortable to activate;
+- modals remain inside safe/reachable bounds;
+- English/Hindi labels remain readable;
+- reduced motion behaves as expected;
+- persistence survives app restart/background-return scenarios used during smoke.
+
+### iPhone
+
+Verify:
+
+- notch/Dynamic-Island/top safe area where applicable;
+- home-indicator/bottom safe area;
+- portrait/landscape layout;
+- touch primary journey;
+- file-picker return state;
+- English/Hindi/reduced-motion behavior.
+
+### iPad
+
+Verify:
+
+- tablet-sized layout uses available space without hiding controls;
+- portrait and landscape;
+- safe-area behavior;
+- 200%/large-text review where supported;
+- English/Hindi layout;
+- file export/restore and persistence.
 
 ## Executable benchmarks
 
@@ -186,17 +293,19 @@ Stable error codes are compatibility surfaces for localization. New parser/proba
 
 New localized presentation values should use the shared `src/i18n/format.ts` boundary and receive at least one non-English formatting regression where grouping/date/time behavior can differ.
 
-Cross-layer bugs discovered by the real-browser or desktop smoke should also receive a lower-level regression test when there is a stable unit/component/domain boundary that can reproduce them.
+Cross-layer bugs discovered by browser, desktop, Android, or iOS smoke should also receive a lower-level regression test when there is a stable unit/component/domain boundary that can reproduce them.
+
+Mobile-specific correctness fixes should include the narrowest feasible regression: CSS/layout source tests where stable, native request/path boundary tests for Rust behavior, and physical-device evidence when the issue depends on an OS picker/provider/lifecycle.
 
 ## Manual smoke matrix
 
 Before a release, verify at least:
 
-1. First-run onboarding can be completed using only a keyboard.
+1. First-run onboarding can be completed using only a keyboard on desktop/web and by touch on mobile.
 2. Quick dice and custom expressions roll successfully.
 3. Invalid expressions show useful localized errors without changing history.
 4. Secure and seeded modes are visually distinguishable.
-5. The same effective seeded expression produces identical deterministic values in web and desktop builds.
+5. The same effective seeded expression produces identical deterministic values in web and native builds.
 6. Keep/drop dice are visually and textually identifiable.
 7. History search, clear confirmation, CSV, and JSON export work.
 8. Histories above 200 matching rows progressively reveal additional entries without changing summary statistics or exports.
@@ -205,26 +314,34 @@ Before a release, verify at least:
 11. Probability calculator handles common expressions and rejects calculations whose exactness/performance budgets would be exceeded.
 12. Theme and reduced-motion preferences apply immediately.
 13. English/Hindi selection updates visible copy, document `lang`, built-in presets, and locale-sensitive presentation formatting without rewriting user-created data.
-14. Command palette opens with `Ctrl/Cmd + K`, traps focus while open, restores focus on close, and closes with Escape.
+14. Command palette opens with `Ctrl/Cmd + K`, traps focus while open, restores focus on close, and closes with Escape on keyboard-capable targets.
 15. Settings exposes version/releases/About information.
 16. About links and support details are correct.
-17. English and Hindi catalog-backed labels remain readable at narrow widths and 200% zoom.
+17. English and Hindi catalog-backed labels remain readable at narrow widths and 200% scaling where applicable.
 18. A deliberately induced development-only React render failure displays the recovery surface; reloading restores normal startup and does not clear local history/settings.
 19. Storage-blocking/privacy-mode behavior keeps the app usable and emits no private thrown text.
-20. The packaged desktop build independently completes secure/seeded roll, persistence, native export/restore, language switching, and version/About checks on each supported operating system.
+20. Packaged Windows/macOS/Linux builds independently complete secure/seeded roll, persistence, native export/restore, language switching, and version/About checks.
+21. Android physical-device candidate completes roll/persistence/locale/orientation/touch/document-provider export/restore checks.
+22. iPhone physical-device candidate completes roll/persistence/locale/safe-area/orientation/Files-picker export/restore checks.
+23. iPad candidate completes tablet/orientation/safe-area/localization/export/restore checks.
+24. Artifact/signing status is described accurately; unsigned validation outputs are never labeled store-ready.
 
 ## Accessibility checks
 
-Automated keyboard and component semantics now cover the modal entry points and selected settings/recovery behavior. Real-browser E2E checks keyboard command-palette entry/focus/dismissal in the production web bundle. Automation does not replace manual review. Follow [`accessibility.md`](accessibility.md).
+Automated keyboard and component semantics cover the modal entry points and selected settings/recovery behavior. Real-browser E2E checks keyboard command-palette entry/focus/dismissal in the production web bundle. Mobile CSS provides safe-area/coarse-pointer baselines, but automation does not replace manual Android/iPhone/iPad touch/screen-reader/safe-area review. Follow [`accessibility.md`](accessibility.md).
 
 ## CI expectations
 
-CI installs the committed npm and Cargo lockfiles with `npm ci` and Cargo `--locked` checks. It runs the secret-audit self-test and repository scan, E2E infrastructure self-test, documentation-link audit, frontend format/lint/unit/integration/build checks, real-browser E2E smoke, and Rust format/test/Clippy checks. Pull requests should not merge while required build, E2E, lint, test, format, documentation, secret, Clippy, or security checks are failing. A CI failure caused by an unavailable external service or browser policy must be documented rather than silently ignored.
+CI installs the committed npm and Cargo lockfiles with `npm ci` and Cargo `--locked` checks. It runs secret/version/browser-infrastructure checks, documentation checks, frontend format/lint/unit/integration/build/browser E2E, locked Rust format/test/Clippy, Android native compilation, and iOS simulator compilation.
 
-A stale Cargo lockfile after `Cargo.toml` changes is a hard dependency-verification blocker. Do not reinterpret a configured lockfile-generation workflow as evidence that the generated lock has actually landed; inspect the repository and run locked Rust checks against the resulting commit.
+Pull requests should not merge while required build, E2E, lint, test, format, documentation, secret, Clippy, Android, iOS, or security checks are failing. A CI failure caused by an unavailable external service or runner/tool policy must be documented rather than silently ignored.
+
+A stale Cargo lockfile after `Cargo.toml` changes is a hard dependency-verification blocker. The current generated 2.0.12 lock includes the direct `tauri-plugin-dialog` and `tauri-plugin-fs` dependencies, but any future manifest change must regenerate/reverify it.
 
 CodeQL runs separately for JavaScript/TypeScript static analysis. Repository-level secret scanning/push protection should also be enabled where available as described in [`repository-governance.md`](repository-governance.md).
 
 ## Determinism
 
 Tests must not depend on live production services or real secrets. Use explicit dates, IDs, and seeded random sources when repeatability matters. The E2E runner uses a fresh temporary browser profile and deletes its temporary downloads/profile after each run.
+
+Mobile compiler CI should generate platform projects from the committed shared source/configuration rather than relying on undocumented local generated-project edits. Physical-device smoke records should identify exact OS/device/provider details so findings can be reproduced.
