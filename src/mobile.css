@@ -1,0 +1,77 @@
+/* Mobile-specific ergonomics layered after the shared responsive stylesheet. */
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 760px) {
+  .main-content {
+    min-height: 100dvh;
+    padding-top: max(28px, env(safe-area-inset-top));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
+  }
+
+  .bottom-nav {
+    right: max(10px, env(safe-area-inset-right));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    left: max(10px, env(safe-area-inset-left));
+  }
+
+  .command-backdrop,
+  .onboarding-backdrop {
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    padding-left: max(20px, env(safe-area-inset-left));
+  }
+}
+
+@media (max-width: 520px) {
+  .main-content {
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-left: max(12px, env(safe-area-inset-left));
+  }
+}
+
+@media (pointer: coarse) {
+  .primary-button,
+  .secondary-button,
+  .danger-button,
+  .icon-text-button,
+  .quick-dice button,
+  .example-row button,
+  .preset-delete,
+  .command-search button,
+  .bottom-nav button,
+  .setting-row select,
+  .setting-row input,
+  .search-control input,
+  .preset-save-row input {
+    min-height: 44px;
+  }
+
+  .preset-delete,
+  .command-search button {
+    min-width: 44px;
+  }
+}
+
+@media (max-width: 760px) and (orientation: landscape) and (max-height: 520px) {
+  .main-content {
+    padding-top: max(16px, env(safe-area-inset-top));
+  }
+
+  .bottom-nav button {
+    height: 46px;
+  }
+}
