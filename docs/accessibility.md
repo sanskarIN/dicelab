@@ -1,10 +1,11 @@
 # Accessibility
 
-DiceLab treats accessibility as a product requirement rather than a release polish task.
+DiceLab treats accessibility as a product requirement rather than a release polish task across desktop, mobile, and browser targets.
 
 ## Current design commitments
 
-- Full core workflows are reachable with a keyboard.
+- Full core desktop/web workflows are reachable with a keyboard.
+- Mobile core workflows are designed for direct touch without requiring a hardware keyboard.
 - Interactive controls use native buttons, inputs, selects, and links where possible.
 - Visible focus styles are provided globally.
 - A skip link moves keyboard users directly to main content.
@@ -12,7 +13,9 @@ DiceLab treats accessibility as a product requirement rather than a release poli
 - Errors use text and `aria-invalid`/live regions rather than color alone.
 - Light and dark themes use shared semantic tokens.
 - Reduced-motion mode disables decorative animation and honors the operating-system preference.
-- Mobile controls use comfortable target sizes.
+- Coarse-pointer/mobile interactive controls use at least 44px minimum target height where the shared component does not already exceed it.
+- Mobile content, bottom navigation, and modal overlays account for `safe-area-inset-*` so notches, rounded corners, and home indicators do not cover required controls.
+- The mobile root uses dynamic viewport height behavior to better tolerate browser/native system UI changes.
 - Main navigation exposes `aria-current` for the active view.
 - Dice results and important state changes are announced through appropriate live regions.
 - The command palette moves focus into the modal, traps Tab/Shift+Tab within it, supports Escape, and restores focus to the invoking control when closed.
@@ -29,6 +32,25 @@ DiceLab treats accessibility as a product requirement rather than a release poli
 
 Do not add shortcuts that conflict with typing inside inputs or common browser/OS commands.
 
+Mobile users must not be forced to discover or use these shortcuts for core product functionality.
+
+## Touch and mobile layout
+
+`src/mobile.css` adds the mobile-specific accessibility/ergonomic layer after shared styles.
+
+Release review must verify at least:
+
+- top content is not hidden behind a notch/status area;
+- the bottom navigation remains above home/system gesture areas;
+- modal controls remain reachable inside safe areas;
+- 44px coarse-pointer target rules are not overridden by later CSS;
+- portrait and landscape orientations preserve required actions;
+- dynamic viewport changes do not hide form submit/confirmation controls;
+- Android and iOS system file pickers can be opened/cancelled/returned from without leaving focus or UI state unusable;
+- Android/iPhone/iPad screen-reader navigation exposes meaningful control names and status changes.
+
+The CSS rules are a baseline, not proof that every physical device is correct. Physical-device evidence is part of the 2.0.12 release gate.
+
 ## Motion
 
 Two settings are available:
@@ -38,6 +60,8 @@ Two settings are available:
 
 Persisted and imported settings normalize `animations` to `false` whenever reduced motion is enabled, preventing contradictory state after corrupted storage or backup restore. CSS also honors `prefers-reduced-motion: reduce` independently of the app setting.
 
+This behavior should be checked on desktop and representative Android/iOS devices because operating-system motion preferences can interact with the embedded webview differently across targets.
+
 ## Semantics
 
 Prefer semantic HTML before ARIA. Use ARIA only to fill a real accessibility gap. Avoid replacing native buttons with clickable `div` elements.
@@ -46,9 +70,11 @@ Modal dialogs must:
 
 - have an accessible name;
 - expose `aria-modal="true"` where interaction outside the dialog is unavailable;
-- move focus to a sensible first control;
+- move focus to a sensible first control for keyboard users;
 - keep keyboard focus inside the modal while open;
 - restore focus to the invoking control when a dismissible modal closes.
+
+Touch-only operation must remain possible even where keyboard focus-management behavior exists.
 
 ## Automated coverage
 
@@ -57,29 +83,50 @@ Vitest + Testing Library currently checks:
 - command-palette initial focus, backwards focus wrapping, Escape dismissal, focus restoration, filtering, and Enter activation;
 - onboarding dialog name/description and primary-action focus;
 - reduced-motion Settings behavior;
-- Settings → About navigation through the application integration suite.
+- Settings → About navigation through the application integration suite;
+- responsive application behavior exercised by component/integration tests where DOM semantics are platform-independent.
 
-These tests guard DOM semantics and keyboard state. They do not replace real-browser accessibility trees or screen-reader testing.
+Normal CI also compiles Android and an iOS simulator target so mobile platform integration breakage can be caught at build time.
+
+These tests guard DOM semantics, keyboard state, and build integration. They do not replace real-browser accessibility trees, screen-reader testing, touch testing, or physical-device safe-area review.
 
 ## Manual release checklist
 
 For each release candidate:
 
-1. Navigate onboarding and every main view using only a keyboard.
+1. Navigate onboarding and every desktop/web main view using only a keyboard.
 2. Verify modal focus stays inside the command palette and returns to its trigger after closing.
 3. Check focus remains visible in light and dark themes.
-4. Zoom the web UI to 200% and verify content remains usable without horizontal page scrolling at common viewport sizes.
+4. Zoom/scaled-text test to 200% where supported and verify content remains usable without hiding required controls.
 5. Test reduced motion with both the application preference and operating-system preference.
 6. Review form labels, errors, and status messages with a screen reader.
 7. Verify links have meaningful text out of context.
 8. Confirm destructive actions require deliberate intent.
 9. Check that charts/distributions have a textual interpretation or labels.
 10. Check contrast for primary, muted, danger, success, borders, and focus indicators.
-11. Verify touch targets on narrow/mobile layouts.
+11. Verify touch targets on Android/iPhone/iPad layouts.
+12. Verify Android portrait and landscape layouts on a physical supported device.
+13. Verify iPhone portrait/landscape and notch/home-indicator safe areas.
+14. Verify iPad portrait/landscape, tablet spacing, and safe areas.
+15. Complete a core touch journey on Android and iOS without relying on a hardware keyboard.
+16. Complete representative Android and iOS screen-reader journeys.
+17. Open/cancel/complete native export pickers and verify returning to DiceLab leaves controls reachable.
+18. Review English and Hindi layouts on representative phone/tablet sizes for clipping/overlap.
 
-## Pre-1.0 accessibility roadmap
+Record exact device/OS details in [`release-candidate-evidence-template.md`](release-candidate-evidence-template.md).
 
-Add real-browser automated accessibility scanning and E2E keyboard journeys before 1.0. Automated scans supplement, but do not replace, manual screen-reader and keyboard review.
+## 2.0.12 accessibility release gate
+
+The cross-platform UI implementation is present, including safe-area and coarse-pointer rules. The following remain evidence-gated before the 2.0.12 candidate can be approved:
+
+- observed Android touch/screen-reader/layout review;
+- observed iPhone touch/screen-reader/safe-area review;
+- observed iPad tablet/orientation review;
+- observed desktop keyboard/screen-reader/200% scaling review;
+- real candidate screenshots proving representative layouts;
+- any corrective regression tests required by findings from those reviews.
+
+Future automated accessibility scanning can supplement this matrix, but automated scans do not replace manual screen-reader, keyboard, touch, and physical-device review.
 
 ## Reporting accessibility issues
 
