@@ -14,13 +14,13 @@
 
 ## Why DiceLab?
 
-DiceLab goes beyond a one-button dice demo. It combines expressive dice notation, secure and cross-runtime reproducible randomness modes, roll history, statistics, presets, exports, exact probability tools, hardened local persistence, localization, accessibility, and release-focused engineering in one codebase targeting desktop, mobile, and the web. It remains useful without an account or network connection.
+DiceLab goes beyond a one-button dice demo. It combines expressive dice notation, secure and cross-runtime reproducible randomness modes, roll history, statistics, presets, exports, exact probability tools, hardened local persistence, localization, accessibility, installable offline web support, and release-focused engineering in one codebase targeting desktop, mobile, and the web. It remains useful without an account or network connection.
 
 ## Current release status
 
-The repository is preparing **DiceLab 2.0.12** with intended tag `v2.0.12`. Application manifests/configuration have been advanced to 2.0.12 and the source now contains Windows, macOS, Linux, Android, iOS/iPadOS, and browser build paths. The candidate is **not yet publishable** until generated locks and the required CI, browser, mobile, fuzz, platform, accessibility, security, screenshot, signing-status, checksum, and provenance evidence are observed for the same candidate commit.
+The repository is preparing **DiceLab 2.0.12** with intended tag `v2.0.12`. Application manifests/configuration and generated npm/Cargo lock metadata are synchronized to 2.0.12, including the direct mobile filesystem dependency. The source contains Windows, macOS, Linux, Android, iOS/iPadOS, and installable browser/PWA build paths. The candidate is **not yet publishable** until the required CI, browser/PWA, mobile, fuzz, platform, accessibility, security, screenshot, signing-status, checksum, and provenance evidence are observed for the same final candidate commit.
 
-`npm run version:check` deliberately includes generated lockfile package-version metadata. `src-tauri/Cargo.lock` must also reflect every direct Rust dependency before locked CI/release verification can pass. Current blockers are maintained in [`docs/release-blockers-current.md`](docs/release-blockers-current.md).
+`npm run version:check` verifies application-version agreement across npm/frontend/Cargo/Tauri metadata and generated lockfile package versions. `npm run policy:lockfiles` independently checks direct manifest/lock consistency. Current evidence blockers are maintained in [`docs/release-blockers-current.md`](docs/release-blockers-current.md).
 
 ## Screenshots
 
@@ -41,6 +41,7 @@ Real release screenshots will be captured from verified release-candidate builds
 - Native secure random mode backed by the operating system through Rust, with Web Crypto in the web companion.
 - Deterministic seeded mode with matching TypeScript/Rust reference vectors for cross-runtime reproducibility.
 - Offline-first local history, saved tabletop presets, statistics, and observed histograms.
+- Installable production PWA for compatible browsers and ChromeOS, with a versioned same-origin offline application shell and dedicated Android/iOS home-screen assets.
 - Progressive rendering for large retained histories while statistics and exports still use the full filtered data set.
 - Reusable domain history filtering for expression/total queries.
 - Exact probability distributions for normal sums and manageable keep/drop pools, with safe-integer exactness guards.
@@ -58,12 +59,13 @@ Real release screenshots will be captured from verified release-candidate builds
 - Structured local diagnostic logging with sensitive-key redaction, bounded context, and raw-error omission.
 - Coverage-guided Rust parser fuzz target with a bounded scheduled/manual GitHub Actions campaign.
 - Dependency-free high-confidence secret audit in normal CI and tagged release verification.
+- Dependency-free PWA integrity audit covering install metadata, local icon assets, cache boundaries, production-only registration, and Tauri exclusion.
 - Dependency-free Node 22 + Chromium CDP real-browser E2E smoke for the production web bundle.
 - Executable benchmark suites for parser, RNG, probability, history filtering, and statistics.
-- Automated architecture/security policy gates for Tauri capabilities, CSP/offline network sources, localized formatting, runtime boundaries, native command contracts, and direct dependency-lock consistency.
+- Automated architecture/security policy gates for Tauri capabilities, CSP/offline network sources, localized formatting, runtime boundaries, native command contracts, PWA boundaries, and direct dependency-lock consistency.
 - Exhaustive tracked-file documentation inventory checked against `git ls-files` so new repository files cannot be silently omitted from the file reference.
 - Automated version synchronization checks across npm/frontend/Cargo/Tauri metadata **and generated npm/Cargo lock package versions**, plus tag/version agreement on releases.
-- Main CI validates web quality, locked Rust quality, Android ARM64 native compilation, and an Apple Silicon iOS simulator build.
+- Main CI validates web quality/PWA integrity, locked Rust quality, Android ARM64 native compilation, and an Apple Silicon iOS simulator build.
 - Tag-driven releases gate artifact creation on documentation inventory, repository policy, lock/version consistency, tests, real-browser E2E, locked Rust checks, Windows/macOS/Linux bundles, Android APK/AAB validation artifacts, and an unsigned iOS device archive.
 - Release provenance metadata and SHA-256 checksums for draft artifact review.
 - No required sign-in, analytics service, advertising SDK, remote telemetry, or donation gate.
@@ -75,22 +77,24 @@ Real release screenshots will be captured from verified release-candidate builds
 | Windows | Tauri 2 desktop application | Platform Tauri/WebView2 prerequisites apply |
 | macOS | Tauri 2 desktop application | Platform Tauri/WebKit prerequisites apply |
 | Linux | Tauri 2 desktop application | WebKitGTK/native package prerequisites apply |
-| Android | Tauri 2 mobile application | Android API 24+ |
-| iOS / iPadOS | Tauri 2 mobile application | iOS/iPadOS 14.0+; builds require macOS/Xcode |
-| Modern browsers | Vite web companion | Current standards-based browser with required Web APIs |
+| Android | Tauri 2 mobile application + compatible-browser PWA | Android API 24+ for native; browser install support varies by browser/version |
+| iOS / iPadOS | Tauri 2 mobile application + home-screen web app | iOS/iPadOS 14.0+ for native; native builds require macOS/Xcode |
+| ChromeOS | Installable production PWA | Compatible standards-based browser/PWA environment |
+| Modern browsers | React/Vite production PWA/web companion | HTTPS deployment (or localhost for local verification) and required Web APIs |
 
-The repository therefore has a single product codebase for **Windows + macOS + Linux + Android + iOS/iPadOS + Web**. Store publication is a separate signing/distribution concern: the mobile source/build targets exist now, while Google Play/App Store publishing still requires private developer credentials and physical-device release evidence.
+The repository therefore has a single product codebase for **Windows + macOS + Linux + Android + iOS/iPadOS + ChromeOS/Web**. Store publication is a separate signing/distribution concern: the mobile source/build targets exist now, while Google Play/App Store publishing still requires private developer credentials and physical-device release evidence. Browser install UI is controlled by the browser/operating system and must be verified on the final deployed candidate.
 
 ## Tech stack
 
 - **Native core:** Rust + Tauri 2
 - **Native plugins:** Tauri dialog + filesystem abstractions for reviewed cross-platform export handling
 - **Frontend:** TypeScript + React + Vite
+- **Web install/offline:** standards-based web manifest + guarded production service worker + local PWA icon set
 - **Localization:** typed in-repository English/Hindi catalogs with stable error-code mappings, persisted locale state, and explicit `en-US`/`hi-IN` presentation formatting
-- **Tests:** Vitest, Testing Library, Node built-in quality/security/CDP/policy tests, dependency-free real-browser CDP E2E, Rust unit/generated/adversarial parser tests, cargo-fuzz parser target, Android/iOS compile jobs
+- **Tests:** Vitest, Testing Library, Node built-in quality/security/CDP/PWA/policy tests, dependency-free real-browser CDP E2E, Rust unit/generated/adversarial parser tests, cargo-fuzz parser target, Android/iOS compile jobs
 - **Benchmarks:** Vitest benchmark suites using the existing locked toolchain
-- **Quality:** ESLint, Prettier, rustfmt, Clippy, Markdown link audit, exhaustive file-reference audit, secret audit, lock-aware version audit, repository policy audits, GitHub Actions
-- **Security:** restrictive/offline Tauri CSP, minimal cross-platform capability scope, static native command allowlist, bounded native export command, CodeQL/dependency update configuration, validated persistence/import boundaries, redacted local logging
+- **Quality:** ESLint, Prettier, rustfmt, Clippy, Markdown link audit, exhaustive file-reference audit, secret audit, PWA integrity audit, lock-aware version audit, repository policy audits, GitHub Actions
+- **Security:** restrictive/offline Tauri CSP, minimal cross-platform capability scope, static native command allowlist, bounded native export command, same-origin/GET-only PWA cache handling, CodeQL/dependency update configuration, validated persistence/import boundaries, redacted local logging
 - **Persistence:** browser/webview local storage; no remote database is required
 
 ## Quick start — web companion
@@ -104,7 +108,18 @@ npm ci
 npm run dev
 ```
 
-Then open the local URL printed by Vite.
+Then open the local URL printed by Vite. Development mode deliberately does **not** register the production service worker.
+
+### Production PWA preview
+
+Build and preview the installable production web target with:
+
+```bash
+npm run build
+npm run preview
+```
+
+Open the preview URL in a compatible browser. After a successful production load, the service worker maintains a same-origin offline application shell and runtime asset cache. Browser install/add-to-home-screen UI varies by platform and browser. See [`docs/web-pwa.md`](docs/web-pwa.md) for the complete cache, install, security, and verification model.
 
 ## Desktop development
 
@@ -184,6 +199,8 @@ npm run docs:check:test
 npm run docs:check
 npm run docs:inventory:test
 npm run docs:inventory
+npm run policy:pwa:test
+npm run policy:pwa
 npm run policy:test
 npm run policy:all
 npm run test:e2e:infra
@@ -211,9 +228,11 @@ cargo test --locked
 cargo clippy --all-targets --all-features --locked -- -D warnings
 ```
 
-The local secret audit reports only file/line/rule metadata and intentionally does not print matched credential values. The repository policy audits protect documented architecture/security boundaries; `policy:lockfiles` is an early structural dependency check and does not replace package-manager lock generation. `version:check` separately verifies that generated npm/Cargo package versions agree with manifests/configuration. GitHub CodeQL runs separately, and repository-level secret scanning/push protection should be enabled where available.
+The local secret audit reports only file/line/rule metadata and intentionally does not print matched credential values. The repository policy audits protect documented architecture/security boundaries; `policy:lockfiles` is an early structural dependency check and does not replace package-manager lock generation. `policy:pwa` syntax-checks the service worker and enforces the committed web install/offline boundary. `version:check` separately verifies that generated npm/Cargo package versions agree with manifests/configuration. GitHub CodeQL runs separately, and repository-level secret scanning/push protection should be enabled where available.
 
 The real-browser E2E test requires the production build and a Chromium-compatible browser; set `CHROME_BIN` if auto-discovery cannot find one. It covers onboarding, roll/history, actual browser downloads, reload persistence, keyboard command navigation, probability, clear-data, and actual backup file restore. See [`docs/e2e.md`](docs/e2e.md).
+
+PWA install UI and offline reopening require a production build and a compatible secure browser context. The automated audit checks source/config invariants; final ChromeOS/desktop/Android/iOS install behavior still requires real-browser/device evidence. See [`docs/web-pwa.md`](docs/web-pwa.md).
 
 Android/iOS compiler CI does not replace physical-device release evidence. Native document-picker behavior, safe areas, touch interaction, orientation, persistence, and platform signing still require release-candidate validation. See [`docs/setup.md`](docs/setup.md) and [`docs/release.md`](docs/release.md).
 
@@ -241,7 +260,7 @@ Benchmark output is measurement evidence, not a hard CI pass/fail gate. Record t
 
 ## Production builds
 
-Web companion:
+Web/PWA companion:
 
 ```bash
 npm run build
@@ -267,7 +286,7 @@ npm run tauri:ios:init
 npm run tauri:ios:build
 ```
 
-The intended next tag is `v2.0.12`, but it should be created only after generated lockfiles are current and candidate checks have been observed. Version tags run the release workflow, require the tag to match manifest/configuration/generated-lock application versions, directly run documentation inventory and repository policy gates, verify web quality/security/browser checks, build web plus Windows/macOS/Linux desktop artifacts, build universal Android APK/AAB validation artifacts, build an unsigned iOS ARM64 device archive, package successful artifacts into ZIP files, generate `RELEASE-METADATA.json` plus `SHA256SUMS.txt`, and create/update a **draft** GitHub release for manual artifact verification.
+The intended next tag is `v2.0.12`, but it should be created only after candidate checks have been observed on the exact final commit. Version tags run the release workflow, require the tag to match manifest/configuration/generated-lock application versions, directly run documentation inventory and repository policy gates, verify web quality/security/browser checks, build web plus Windows/macOS/Linux desktop artifacts, build universal Android APK/AAB validation artifacts, build an unsigned iOS ARM64 device archive, package successful artifacts into ZIP files, generate `RELEASE-METADATA.json` plus `SHA256SUMS.txt`, and create/update a **draft** GitHub release for manual artifact verification.
 
 Unsigned mobile workflow artifacts are build-validation evidence, not Google Play/App Store publication packages. Android Play distribution requires a private signing keystore/Play Console setup, while iOS end-user distribution requires Apple Developer/App Store Connect signing/provisioning. Platform-specific prerequisites, signing expectations, versioning, physical-device evidence, and release verification are documented in [`docs/release.md`](docs/release.md).
 
@@ -283,15 +302,24 @@ src/
 ├── config/          # stable product metadata and URLs
 ├── domain/          # parser, engine, RNG, history query, persistence validation, probability, statistics
 ├── i18n/            # typed catalogs, active locale, formatting, stable error-to-copy mapping
-├── services/        # runtime adapters, persistence, export/backup, logging
+├── services/        # runtime, PWA, persistence, export/backup, logging adapters
 ├── mobile.css       # safe areas, touch sizing, mobile viewport/orientation ergonomics
 └── test/            # shared browser test setup
+
+public/
+├── manifest.webmanifest          # install identity/display/icon metadata
+├── sw.js                         # production same-origin offline/cache boundary
+├── icon-192.png                  # standard PWA install icon
+├── icon-512.png                  # large + maskable PWA install icon
+├── apple-touch-icon.png          # iOS/iPadOS home-screen icon
+└── dicelab-icon.svg              # scalable browser/favicon asset
 
 scripts/
 ├── cdp-session*                 # dependency-free browser protocol transport + tests
 ├── e2e-browser.mjs              # production-bundle real-browser journey
 ├── check-doc-links*             # local Markdown link/anchor audit
 ├── check-file-reference*        # exhaustive tracked-file documentation audit
+├── check-pwa*                   # PWA install/cache/runtime boundary audit + self-tests
 ├── check-secrets*               # high-confidence credential audit + self-test
 ├── check-version-sync*          # manifest/config/generated-lock/tag version audit + self-test
 ├── check-*-policy/boundary*     # executable security/architecture invariants
@@ -308,9 +336,11 @@ Tauri-generated Android/Xcode projects are created under `src-tauri/gen/` by `ta
 
 The frontend uses web implementations when running as a browser companion and invokes purpose-built Rust commands when running inside Tauri on desktop or mobile. Domain rules remain explicit and testable. Seeded web/native implementations intentionally share an algorithm and fixed compatibility vectors. User-facing validation copy resolves from stable error codes rather than depending on raw exception prose.
 
+Production browser builds may register the PWA service worker only when the runtime is not Tauri and the origin is HTTPS or a recognized localhost/loopback HTTP origin. Tauri desktop/mobile webviews therefore remain outside browser service-worker control.
+
 Native exports never accept an arbitrary destination path/URI from the webview. The native command opens the operating-system-selected `FilePath`; desktop paths, Android document-provider URIs, and iOS selected files remain on the Rust/plugin side of the trust boundary.
 
-Start with [`docs/architecture.md`](docs/architecture.md), [`docs/application-flows.md`](docs/application-flows.md), [`docs/data-contracts.md`](docs/data-contracts.md), [`docs/code-reference.md`](docs/code-reference.md), and [`docs/adr/`](docs/adr/) for the detailed current design and decision history.
+Start with [`docs/architecture.md`](docs/architecture.md), [`docs/web-pwa.md`](docs/web-pwa.md), [`docs/application-flows.md`](docs/application-flows.md), [`docs/data-contracts.md`](docs/data-contracts.md), [`docs/code-reference.md`](docs/code-reference.md), and [`docs/adr/`](docs/adr/) for the detailed current design and decision history.
 
 ## Dice expression syntax
 
@@ -341,9 +371,11 @@ Parser/data limits and persistence invariants are documented in [`docs/data-cont
 
 DiceLab is designed to work without cloud storage. Roll history, presets, and settings remain local unless you explicitly export them. Local storage and imported backups are validated rather than trusted blindly. Seeded mode is deterministic and clearly separated from secure random mode. Current diagnostic logging is local-only and redacts sensitive/user-content key families.
 
+The production PWA service worker handles only same-origin GET navigation/static-asset requests, bypasses cross-origin/mutation/range requests, and is never registered in Tauri. It does not add analytics, remote telemetry, cloud persistence, or remote runtime dependencies.
+
 Native exports are initiated explicitly and limited to the user-selected operating-system destination through a bounded Rust command. The filesystem plugin is used as a native implementation detail for selected desktop/mobile files; the webview capability remains `core:default` and does not receive broad filesystem, shell, HTTP, or process permission families.
 
-Repository audits additionally protect capability scope, CSP/offline-network policy, Tauri runtime access, native command names/routing, localized formatter use, and lockfile consistency. Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and the [`docs/repository-policy-gates.md`](docs/repository-policy-gates.md) index before changing a trust boundary. Please report vulnerabilities privately rather than opening a public exploit issue.
+Repository audits additionally protect capability scope, CSP/offline-network policy, Tauri runtime access, native command names/routing, PWA install/cache boundaries, localized formatter use, and lockfile consistency. Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), [`docs/web-pwa.md`](docs/web-pwa.md), and the [`docs/repository-policy-gates.md`](docs/repository-policy-gates.md) index before changing a trust boundary. Please report vulnerabilities privately rather than opening a public exploit issue.
 
 ## Contributing
 
@@ -360,6 +392,7 @@ Core engineering references:
 - [Setup](docs/setup.md)
 - [Development](docs/development.md)
 - [Architecture](docs/architecture.md)
+- [Web / PWA](docs/web-pwa.md)
 - [Application flows](docs/application-flows.md)
 - [Data and boundary contracts](docs/data-contracts.md)
 - [Maintainer code reference](docs/code-reference.md)
