@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
+import { registerPwaServiceWorker } from './services/pwa';
 import './styles.css';
 import './mobile.css';
 
@@ -15,3 +16,5 @@ createRoot(root).render(
     </AppErrorBoundary>
   </StrictMode>,
 );
+
+void registerPwaServiceWorker();
