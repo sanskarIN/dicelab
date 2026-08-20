@@ -10,7 +10,17 @@ The next publication target is **2.0.12**. The section below records the prepare
 
 ### Added
 
-- Rust + Tauri 2 desktop foundation with a TypeScript + React web companion.
+- Rust + Tauri 2 cross-platform native foundation with a TypeScript + React web companion.
+- Native Windows, macOS, and Linux desktop targets.
+- Tauri Android mobile target with an explicit Android API 24 minimum.
+- Tauri iOS/iPadOS mobile target with an explicit iOS 14.0 minimum.
+- Android init/development/APK+AAB command surface and iOS init/development/build/simulator/unsigned-archive command surface.
+- Main CI Android ARM64 build validation and Apple-Silicon iOS simulator build validation.
+- Tagged release validation for universal Android APK/AAB output and an unsigned iOS ARM64 device archive, in addition to web/Windows/macOS/Linux artifacts.
+- Mobile safe-area, dynamic viewport, coarse-pointer 44px touch-target, and compact landscape styling layered over the existing responsive UI.
+- `tauri-plugin-fs` native filesystem adapter used behind the bounded Rust export command for operating-system-selected desktop/mobile destinations.
+- Android `content://` document-provider export handling without treating provider URIs as ordinary local filesystem paths.
+- iOS security-scoped selected-file handling with explicit access release after native writes.
 - Native secure random rolling and deterministic seeded rolling.
 - Dice notation parser supporting custom sides, modifiers, `kh`, `kl`, `dh`, and `dl`.
 - Quick d4, d6, d8, d10, d12, d20, and d100 controls.
@@ -19,7 +29,7 @@ The next publication target is **2.0.12**. The section below records the prepare
 - History search, statistics, histogram, CSV export, and JSON export.
 - Exact probability calculator for ordinary sums and manageable keep/drop expressions.
 - Backup export and validated restore for history, custom presets, and settings.
-- Native desktop save dialogs for CSV/JSON exports through a dedicated bounded Rust command, while browser builds retain their ordinary download path.
+- Native operating-system save/document dialogs for CSV/JSON exports through a dedicated bounded Rust command, while browser builds retain their ordinary download path.
 - Light, dark, and system themes.
 - Reduced-motion and animation controls.
 - First-run onboarding, responsive navigation, and keyboard command palette.
@@ -38,7 +48,7 @@ The next publication target is **2.0.12**. The section below records the prepare
 - Dependency-free real-browser production-bundle E2E smoke covering onboarding, rolling, history, real CSV download, reload persistence, keyboard command palette, probability, real backup download, clear-data flow, real file-input restore, and restored history.
 - Extracted dependency-free CDP transport with Node tests for command routing, protocol errors, event waits/timeouts, and socket closure.
 - Component keyboard/accessibility regression tests for command palette, onboarding, settings, large-history behavior, and root error recovery.
-- Native/browser export-routing tests covering system-dialog cancellation, safe fallback behavior, payload/filename validation, final extension validation, and user-safe export status feedback.
+- Native/browser export-routing tests covering system-dialog cancellation, safe fallback behavior, payload/filename validation, selected-path extension validation where applicable, and user-safe export status feedback.
 - Generated TypeScript parser normalization/case/whitespace invariants.
 - Generated native Rust parser normalization corpus plus adversarial malformed-input corpus.
 - Coverage-guided native parser fuzz target with documented local workflow and a bounded scheduled/manual GitHub Actions campaign.
@@ -49,12 +59,12 @@ The next publication target is **2.0.12**. The section below records the prepare
 - Executable Vitest benchmark suites for parser, RNG, probability, 5,000-record history filtering, and 5,000-record statistics.
 - Dependency-free Markdown link audit wired into normal CI and tagged release checks.
 - Exhaustive tracked-file documentation reference plus a `git ls-files` inventory audit, unit tests, committed-repository integration regression, and repository-audit workflow gate.
-- Complete documentation hub plus deep application-flow, data-contract, maintainer-code, automation, policy, release-evidence, and every-file references.
+- Complete documentation hub plus deep application-flow, data-contract, maintainer-code, automation, policy, release-evidence, every-file, cross-platform setup, mobile export, and release references.
 - Dependency-free high-confidence secret audit plus built-in Node self-tests, wired into CI and tagged release verification before dependency installation.
 - Application version consistency audit across npm/frontend/Cargo/Tauri metadata plus release-tag/version agreement checks.
-- Dependency-free repository policy audits for desktop capabilities, Tauri CSP/remote IPC, offline network sources, localized formatting, native runtime access, native command contracts, and direct manifest/lock consistency.
+- Dependency-free repository policy audits for native capabilities, Tauri CSP/remote IPC, offline network sources, localized formatting, native runtime access, native command contracts, and direct manifest/lock consistency.
 - Dedicated and aggregate GitHub Actions policy workflows, including release-tag policy/lock consistency checks.
-- Accepted native export ADR documenting the least-privilege OS-dialog save boundary and rejected broader filesystem alternatives.
+- Accepted native export ADR documenting the least-privilege OS-dialog save boundary and rejected broader renderer filesystem alternatives.
 - Release provenance manifest containing repository/tag/source commit/workflow identifiers, included in SHA-256 checksum verification.
 - Release-candidate evidence template covering dependency integrity, CI/policy/fuzz/benchmarks, platform smoke, accessibility/localization, screenshots, signing, checksums, provenance, and final approval.
 - Current release-blocker ledger separating implemented work from still-unobserved candidate evidence.
@@ -62,16 +72,22 @@ The next publication target is **2.0.12**. The section below records the prepare
 - Structured GitHub bug/feature/accessibility issue forms, public-issue routing, expanded CODEOWNERS, PR review checklist, support guidance, and optional funding metadata.
 - GitHub CI with locked npm/Cargo dependency verification.
 - Tag-driven cross-platform draft release packaging with ZIP archives, `RELEASE-METADATA.json`, and `SHA256SUMS.txt`.
-- Tauri CSP and least-privilege capability configuration.
-- Native export trust-boundary documentation covering browser/desktop behavior, validation, cancellation, and future-format review rules.
+- Tauri CSP and least-privilege capability configuration explicitly scoped to Linux, macOS, Windows, Android, and iOS.
+- Native export trust-boundary documentation covering browser, desktop, Android, and iOS behavior, validation, cancellation, provider/file handling, and future-format review rules.
 - Professional project documentation baseline.
 
 ### Changed
 
 - Authoritative application version metadata in npm, frontend configuration, Cargo, and Tauri configuration is synchronized to `2.0.12` for the current candidate.
-- The tag-driven release workflow now runs documentation link/inventory audits, repository policy self-tests/audits, version/tag consistency, and release-verifier self-tests directly before artifact creation, so separate focused workflows cannot be the only protection on a release tag.
-- Release web/desktop/draft jobs now use explicit timeouts to prevent indefinitely hung candidate pipelines.
-- TypeScript and Rust seeded modes use the same UTF-8 FNV-1a 32-bit seed hash and xorshift32 sequence so identical effective seeds reproduce identical deterministic values across web and desktop.
+- DiceLab's declared platform scope is now Windows + macOS + Linux + Android + iOS/iPadOS + modern browsers from the shared Rust/Tauri/React codebase.
+- The package description, public README, setup guide, release guide, roadmap, release-blocker ledger, native-export guide, and exhaustive tracked-file reference now describe mobile support and its evidence/signing boundaries.
+- The native capability remains `core:default` while its platform scope now explicitly covers all five native operating-system targets.
+- Native CSV/JSON/backup export writes now use Tauri's selected `FilePath` and native filesystem abstraction rather than a desktop-only `std::fs::write` assumption.
+- The tagged release workflow now requires successful web, desktop, Android, and iOS artifact jobs before draft-release packaging.
+- Android/iOS release workflow artifacts are labeled as release-validation outputs rather than being represented as Google Play/App Store-ready packages.
+- The tag-driven release workflow runs documentation link/inventory audits, repository policy self-tests/audits, version/tag consistency, and release-verifier self-tests directly before artifact creation, so separate focused workflows cannot be the only protection on a release tag.
+- Release web/desktop/mobile/draft jobs use explicit timeouts to prevent indefinitely hung candidate pipelines.
+- TypeScript and Rust seeded modes use the same UTF-8 FNV-1a 32-bit seed hash and xorshift32 sequence so identical effective seeds reproduce identical deterministic values across web and native targets.
 - Probability calculations advertised as exact reject raw-outcome counts that exceed JavaScript safe-integer precision.
 - Roll, history, and probability presentation uses the selected DiceLab locale for explicit `Intl` number/date/time formatting instead of inheriting the host browser locale independently from UI language.
 - Persistent shell navigation and command-palette definitions read the active catalog during rendering instead of capturing translated primitive strings when modules first load.
@@ -88,15 +104,19 @@ The next publication target is **2.0.12**. The section below records the prepare
 - Tauri security/offline-network policy audits distinguish packaged production CSP from explicit loopback-only Vite/HMR development sources; production remains strict and non-loopback/broad-scheme development origins remain rejected.
 - Normal CI and tagged web release verification self-test the browser automation infrastructure and require the real-browser smoke after the production build.
 - The dependency-lockfile workflow revalidates direct lockfile edits as well as manifest/workflow changes, verifies locked Cargo metadata, checks generated diffs, and preserves exact generated lockfiles on a dedicated automation branch if protected `main` rejects its direct update.
+- Generated npm/Cargo lock metadata now reflects application version `2.0.12`; Cargo's DiceLab package graph includes both `tauri-plugin-dialog` and the direct `tauri-plugin-fs` mobile export dependency.
 - Repository-level audit commands are exposed through stable npm scripts for documentation, policy, version, secret, E2E-infrastructure, and release-package verification.
 - Repository audit validates both Markdown links/anchors and exhaustive tracked-file documentation coverage.
-- Contributor, pull-request, CODEOWNERS, README, ADR index, governance, release, roadmap, and handoff documentation reflect the current English/Hindi product, native command/security boundaries, policy gates, generated-lock rules, and 2.0.12 evidence-based release process.
+- Contributor, pull-request, CODEOWNERS, README, ADR index, governance, release, roadmap, and handoff documentation reflect the current English/Hindi product, native command/security boundaries, policy gates, generated-lock rules, cross-platform targets, and 2.0.12 evidence-based release process.
 - Release tags must match the synchronized declared application version before release dependencies/builds proceed.
-- Release tags produce a draft GitHub release only after the web and all desktop build jobs succeed; publication remains a deliberate maintainer action.
+- Release tags produce a draft GitHub release only after all required artifact jobs succeed; publication remains a deliberate maintainer action.
 - Core product metadata is centralized for Settings/About consistency.
 
 ### Fixed
 
+- Android native exports no longer depend on converting a document-provider `content://` selection into a normal filesystem path before writing.
+- iOS native export writes explicitly release security-scoped selected-file access after the operation.
+- Phone/tablet layouts account for safe-area insets around top content, bottom navigation, and modal overlays, including compact landscape conditions.
 - DiceLab no longer generates a backup larger than its own documented 5 MB restore limit; oversized serialization fails before save/download with the stable localized backup-size error instead of producing an immediately un-restorable file.
 - Oversized selected backup files are rejected before `File.text()` reads their contents into memory.
 - Backups produced from a maximum-length 120-character user seed can be restored after DiceLab appends the deterministic sequence suffix.
@@ -120,26 +140,28 @@ The next publication target is **2.0.12**. The section below records the prepare
 
 ### Security
 
-- Secure mode uses OS-backed native randomness on desktop and Web Crypto in the browser companion.
+- Secure mode uses OS-backed native randomness on Tauri targets and Web Crypto in the browser companion.
 - Untrusted dice expressions are bounded and validated.
 - CSV exports neutralize formula-like untrusted `id`/`seed` cells even when formula markers follow leading whitespace, while generated negative numeric totals/modifiers remain numeric fields.
 - Imported backups are schema-bounded and validated before replacing local state, with oversized selected files rejected before their text is read.
 - Duplicate restored identifiers are rejected to avoid ambiguous application state.
-- Desktop CSV/JSON exports use a purpose-built Rust command that accepts no frontend-supplied destination path, allows only bounded CSV/JSON payloads, validates suggested filenames and final selected extensions, and writes only to the operating-system-dialog-selected path.
-- Native export failures shown by the UI use localized safe messages and do not expose the selected private filesystem path.
+- Native CSV/JSON exports use a purpose-built Rust command that accepts no frontend-supplied destination path/URI, allows only bounded CSV/JSON payloads, validates suggested filenames, revalidates normal selected-path extensions, and writes only to the operating-system-dialog-selected `FilePath`.
+- Android content-provider URIs and iOS selected files stay behind the Rust/plugin boundary instead of being exposed as a general renderer filesystem capability.
+- Native export failures shown by the UI use localized safe messages and do not expose a selected private filesystem path, file URL, or Android content URI.
 - Structured logger redaction prevents normal operational events from serializing configured seeds, user content, backups, email/name fields, raw exception messages, or stacks.
 - Storage/recovery diagnostics emit only stable event names and bounded safe metadata.
 - CI/tagged builds run a self-tested high-confidence secret scanner that never prints matched credential values.
 - The application recovery boundary logs only a fixed structured event from DiceLab rather than serializing raw exception contents.
-- Desktop capability audits reject broad filesystem/shell/HTTP/process permission families, remote-origin capability scope, and wildcard/invalid window targets.
+- Native capability audits reject broad filesystem/shell/HTTP/process permission families, remote-origin capability scope, and wildcard/invalid window targets.
 - Tauri configuration audits reject missing/self-unanchored CSP, wildcard sources, `unsafe-eval`, non-loopback remote script sources, dangerous remote-domain IPC, and remote production CSP network origins; development exceptions are explicit loopback-only.
 - Native runtime and native-command audits keep Tauri API access, runtime probing, command names, command routing, and Rust handler entries within reviewed allowlists.
 - Release lockfile consistency audit fails candidates whose direct manifest dependencies are not represented in committed lockfiles instead of silently resolving a different graph during release verification.
 - The 2.0.12 tag workflow directly runs repository policy and documentation inventory gates before artifacts can be produced.
 - Release provenance/checksum metadata ties packaged files to a tag/source commit/workflow run for draft review.
-- Desktop content is constrained by a restrictive CSP.
-- No broad filesystem, shell, or network plugin permissions are granted to the webview.
+- Native content is constrained by a restrictive CSP.
+- No broad filesystem, shell, HTTP, process, or network plugin permission is granted to the webview for mobile support.
+- Android keystores, Apple certificates/provisioning material, store credentials, and other signing secrets are explicitly excluded from source-controlled release design.
 
 ### Candidate status
 
-The 2.0.12 candidate is **not yet publishable**. Generated npm/Cargo locks, including `tauri-plugin-dialog` in Cargo's graph, plus CI/E2E/fuzz/benchmark/platform/accessibility/security/screenshot/checksum/provenance evidence must still be observed on the intended release commit. See [`docs/release-blockers-current.md`](docs/release-blockers-current.md).
+The 2.0.12 source/configuration now contains build paths for **Windows, macOS, Linux, Android, iOS/iPadOS, and modern browsers**, and generated npm/Cargo locks are synchronized to 2.0.12 including the mobile filesystem dependency. The candidate is **not yet publishable** until the exact final commit has observed green CI/web E2E/Rust/Android/iOS build evidence plus fuzz/benchmark/physical-device/accessibility/security/screenshot/signing-status/checksum/provenance review. See [`docs/release-blockers-current.md`](docs/release-blockers-current.md).
