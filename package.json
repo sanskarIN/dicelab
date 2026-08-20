@@ -46,7 +46,7 @@
     "tauri:ios:init": "tauri ios init",
     "tauri:ios:dev": "tauri ios dev",
     "tauri:ios:build": "tauri ios build",
-    "tauri:ios:build:ci": "tauri ios build --ci --no-sign"
+    "tauri:ios:build:ci": "tauri ios build --ci --target aarch64-sim"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",
