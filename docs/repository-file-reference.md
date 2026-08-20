@@ -30,15 +30,26 @@ For deeper behavioral context, also read:
 | `SECURITY.md` | Security posture, trust boundaries, safe disclosure guidance, dependency/release expectations, native export rules, and private-reporting path. |
 | `SUPPORT.md` | Public support/feature/bug routing, privacy-safe diagnostic expectations, private security routing, business/support contacts, and optional funding note. |
 | `eslint.config.js` | ESLint flat configuration for TypeScript/React/repository source quality. `npm run lint` permits zero warnings. |
-| `index.html` | Vite renderer HTML shell containing the mount target and static document metadata used before React starts. |
+| `index.html` | Vite renderer HTML shell containing the React mount target plus manifest/theme/mobile/Apple install metadata and `viewport-fit=cover` safe-area support. |
 | `package-lock.json` | npm-generated reproducible dependency graph. It must remain synchronized with `package.json`; do not hand-edit package resolution. |
-| `package.json` | npm project metadata, direct dependencies/devDependencies, canonical development/quality commands, desktop Tauri commands, Android init/dev/build commands, iOS init/dev/build/simulator/archive commands, and release verification. |
+| `package.json` | npm project metadata, direct dependencies/devDependencies, canonical development/quality commands, PWA policy checks, desktop Tauri commands, Android init/dev/build commands, iOS init/dev/build/simulator/archive commands, and release verification. |
 | `tsconfig.app.json` | TypeScript rules for browser/application source and JSX compilation. |
 | `tsconfig.json` | TypeScript solution/project-reference root connecting application and Node/config builds. |
 | `tsconfig.node.json` | TypeScript rules for Node-side/build-tool configuration such as Vite/Vitest config. |
 | `vite.config.ts` | React/Vite dev/build configuration including Tauri `TAURI_DEV_HOST` mobile/desktop dev host and HMR handling, env prefixes, native-source watch ignore, platform targets, minification, and debug sourcemaps. |
 | `vitest.config.ts` | Vitest configuration, jsdom environment, setup-file wiring, and test discovery behavior. |
 | `what_changed.md` | Current continuation/handoff entry point. Detailed historical milestones are preserved under `docs/handoffs/`. |
+
+## Browser installation and PWA assets
+
+| Path | Purpose and relationships |
+| --- | --- |
+| `public/apple-touch-icon.png` | 180×180 PNG used by iOS/iPadOS Add to Home Screen metadata. It is also part of the service-worker application shell. |
+| `public/dicelab-icon.svg` | Scalable DiceLab browser/favicon install asset and service-worker application-shell resource. |
+| `public/icon-192.png` | Standard 192×192 PNG PWA installation icon declared by the web manifest. |
+| `public/icon-512.png` | Standard 512×512 PNG PWA installation icon; the manifest also marks it maskable for launcher-safe presentation. |
+| `public/manifest.webmanifest` | PWA identity, standalone display modes, theme/background colors, categories, and root-relative local install icons. |
+| `public/sw.js` | Production browser service worker using versioned DiceLab caches, same-origin navigation fallback, stale-while-revalidate static assets, and a precached install shell. |
 
 ## GitHub ownership, funding, issues, pull requests, and dependency metadata
 
@@ -59,7 +70,7 @@ For deeper behavioral context, also read:
 | Path | Purpose and relationships |
 | --- | --- |
 | `.github/workflows/capability-audit.yml` | Runs dependency-free Tauri capability self-tests and audits committed capability JSON for broad permission/window/origin expansion. |
-| `.github/workflows/ci.yml` | Main push/PR CI: web security/version/browser checks, locked npm quality/E2E, locked Rust fmt/test/Clippy, Android ARM64 APK/AAB compilation, and iOS Apple-Silicon simulator compilation. |
+| `.github/workflows/ci.yml` | Main push/PR CI: web secret/version/PWA/browser checks, locked npm quality/E2E, locked Rust fmt/test/Clippy, Android ARM64 APK/AAB compilation, and iOS Apple-Silicon simulator compilation. |
 | `.github/workflows/codeql.yml` | GitHub CodeQL JavaScript/TypeScript static security analysis on push/PR and schedule. |
 | `.github/workflows/fuzz.yml` | Manual/weekly Rust nightly `cargo-fuzz` parser campaign with Tauri Linux prerequisites and bounded 60-second execution. |
 | `.github/workflows/localized-formatting-audit.yml` | Enforces that localized React surfaces use the shared `src/i18n/format.ts` number/date/time boundary. |
@@ -106,6 +117,7 @@ For deeper behavioral context, also read:
 | `docs/tauri-security-policy.md` | CSP self-anchor/wildcard/unsafe-eval/remote-script/remote-IPC policy and audit/review requirements. |
 | `docs/testing.md` | Full frontend/domain/Rust/fuzz/static/security/E2E/benchmark/native-smoke/accessibility/manual/CI verification strategy. |
 | `docs/troubleshooting.md` | Common local setup/build/runtime/browser/Rust problems and safe resolution guidance. |
+| `docs/web-pwa.md` | Browser/PWA install architecture, service-worker cache strategy, Tauri exclusion, privacy/security boundaries, platform install behavior, policy commands, and release-candidate checks. |
 
 ## Architecture Decision Records
 
@@ -180,6 +192,8 @@ For deeper behavioral context, also read:
 | `scripts/check-offline-csp.integration.test.mjs` | Audits the actual committed Tauri CSP for offline-network compliance. |
 | `scripts/check-policy-boundaries.mjs` | Aggregates capability, Tauri security, localized formatting, and native runtime audits into one prefixed finding set. |
 | `scripts/check-policy-boundaries.integration.test.mjs` | Runs aggregate boundary audits against current committed repository state. |
+| `scripts/check-pwa.mjs` | Audits PWA manifest/install metadata, safe local icon paths/files, required PNG/maskable assets, Apple metadata, offline shell caching, same-origin/GET-only service-worker behavior, production-only registration, and Tauri exclusion. |
+| `scripts/check-pwa.test.mjs` | Dependency-free self-tests covering accepted PWA boundaries and representative install/cache/security regressions. |
 | `scripts/check-runtime-boundaries.mjs` | Scans production TypeScript/TSX and restricts Tauri core imports plus `__TAURI_INTERNALS__` probing to reviewed adapter files. |
 | `scripts/check-runtime-boundaries.test.mjs` | Synthetic allowed/forbidden native runtime source-placement tests. |
 | `scripts/check-runtime-boundaries.integration.test.mjs` | Audits actual committed production TypeScript runtime boundaries. |
@@ -230,9 +244,10 @@ For deeper behavioral context, also read:
 | `src/App.locale-onboarding.integration.test.tsx` | Verifies persisted Hindi preference applies to first-run onboarding before completion. |
 | `src/App.locale-startup.integration.test.tsx` | Verifies persisted Hindi settings are active on the application's first render with localized built-ins/document language. |
 | `src/App.localization.integration.test.tsx` | Verifies live English→Hindi switching localizes built-ins while preserving user-created preset name/description exactly. |
-| `src/main.tsx` | React renderer bootstrap mounting `App` under the root error boundary and loading shared styles followed by mobile-specific ergonomics. |
+| `src/main.tsx` | React renderer bootstrap mounting `App` under the root error boundary, loading shared/mobile styles, then requesting guarded production-browser PWA registration. |
 | `src/mobile.css` | Mobile Tauri/web ergonomics layered over shared styling: safe-area insets, dynamic viewport height, coarse-pointer 44px targets, mobile modal/bottom-navigation inset handling, and compact landscape behavior. |
 | `src/styles.css` | Global product design system/layout/responsive/component/focus/theme/motion/histogram/probability styling consumed by React surfaces and root data attributes. |
+| `src/vite-env.d.ts` | Vite client type declarations enabling typed `import.meta.env` access such as the production-mode PWA registration guard. |
 
 ## React components and component tests
 
@@ -307,6 +322,8 @@ For deeper behavioral context, also read:
 | --- | --- |
 | `src/services/runtime.ts` | Single production Tauri runtime detector shared by desktop and mobile; direct marker probing elsewhere is blocked by policy. |
 | `src/services/runtime.test.ts` | Browser versus mocked Tauri runtime detection regression. |
+| `src/services/pwa.ts` | Production browser PWA registration adapter enforcing Vite production mode, non-Tauri runtime, service-worker availability, and secure/loopback origin before registering `/sw.js`. |
+| `src/services/pwa.test.ts` | PWA registration regression coverage for HTTPS/localhost eligibility, insecure/dev/Tauri exclusion, root-scope registration, and failure-closed behavior. |
 | `src/services/roll-service.ts` | Browser/native roll adapter, effective seed sequence construction, Tauri `roll_expression` invocation, TypeScript RNG selection, and shared result adaptation. |
 | `src/services/storage.ts` | Versioned localStorage keys, validated/bounded history/custom presets/settings, localized built-ins, onboarding marker, clear operation, and safe storage-failure logging. |
 | `src/services/storage.test.ts` | Corrupt/malformed storage recovery, setting/locale normalization, bounded data, built-in/custom preset behavior, and persistence regressions. |
