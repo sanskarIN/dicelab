@@ -4,6 +4,13 @@ import { fileURLToPath } from 'node:url';
 
 const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(SCRIPT_DIRECTORY, '..');
+const REQUIRED_APP_SHELL_ASSETS = [
+  '/manifest.webmanifest',
+  '/dicelab-icon.svg',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/apple-touch-icon.png',
+];
 
 export function auditPwaBundle({ manifest, indexHtml, serviceWorker, mainSource, registrationSource }) {
   const findings = [];
@@ -37,12 +44,22 @@ export function auditPwaBundle({ manifest, indexHtml, serviceWorker, mainSource,
     findings.push('public/manifest.webmanifest: at least one install icon is required');
   } else {
     for (const [index, icon] of manifest.icons.entries()) {
-      if (!icon || typeof icon !== 'object' || typeof icon.src !== 'string' || !icon.src.startsWith('/')) {
-        findings.push(`public/manifest.webmanifest: icons[${index}].src must be a root-relative local path`);
+      if (!isSafeLocalAssetPath(icon?.src)) {
+        findings.push(`public/manifest.webmanifest: icons[${index}].src must be a safe root-relative local path`);
       }
-      if (typeof icon?.src === 'string' && /^(?:https?:)?\/\//i.test(icon.src)) {
-        findings.push(`public/manifest.webmanifest: icons[${index}].src must not use a remote origin`);
-      }
+    }
+
+    if (!hasPngIcon(manifest.icons, '/icon-192.png', '192x192')) {
+      findings.push('public/manifest.webmanifest: a 192x192 PNG install icon is required');
+    }
+    if (!hasPngIcon(manifest.icons, '/icon-512.png', '512x512')) {
+      findings.push('public/manifest.webmanifest: a 512x512 PNG install icon is required');
+    }
+
+    const maskableIcon = manifest.icons.find((icon) => icon?.src === '/icon-512.png');
+    const purposes = typeof maskableIcon?.purpose === 'string' ? maskableIcon.purpose.split(/\s+/) : [];
+    if (!purposes.includes('maskable')) {
+      findings.push('public/manifest.webmanifest: the 512x512 PNG icon must support maskable purpose');
     }
   }
 
@@ -54,6 +71,13 @@ export function auditPwaBundle({ manifest, indexHtml, serviceWorker, mainSource,
   }
   if (!/<meta\s+name=["']theme-color["']/i.test(indexHtml)) {
     findings.push('index.html: theme-color metadata is required');
+  }
+  if (
+    !/<link\s+rel=["']apple-touch-icon["']\s+sizes=["']180x180["']\s+href=["']\/apple-touch-icon\.png["']/i.test(
+      indexHtml,
+    )
+  ) {
+    findings.push('index.html: 180x180 Apple touch icon metadata is required');
   }
 
   for (const eventName of ['install', 'activate', 'fetch']) {
@@ -67,6 +91,11 @@ export function auditPwaBundle({ manifest, indexHtml, serviceWorker, mainSource,
   }
   if (!serviceWorker.includes("request.method !== 'GET'")) {
     findings.push('public/sw.js: non-GET requests must bypass the cache');
+  }
+  for (const asset of REQUIRED_APP_SHELL_ASSETS) {
+    if (!serviceWorker.includes(`'${asset}'`)) {
+      findings.push(`public/sw.js: app shell must precache ${asset}`);
+    }
   }
 
   if (!mainSource.includes('registerPwaServiceWorker')) {
@@ -104,7 +133,7 @@ export async function auditPwaFiles(root = ROOT) {
   const findings = auditPwaBundle({ manifest, indexHtml, serviceWorker, mainSource, registrationSource });
   if (Array.isArray(manifest.icons)) {
     for (const [index, icon] of manifest.icons.entries()) {
-      if (!icon || typeof icon.src !== 'string' || !icon.src.startsWith('/')) continue;
+      if (!isSafeLocalAssetPath(icon?.src)) continue;
       const iconPath = path.join(root, 'public', icon.src.slice(1));
       try {
         await access(iconPath);
@@ -113,7 +142,28 @@ export async function auditPwaFiles(root = ROOT) {
       }
     }
   }
+
+  try {
+    await access(path.join(root, 'public/apple-touch-icon.png'));
+  } catch {
+    findings.push('index.html: /apple-touch-icon.png does not resolve to a public asset');
+  }
+
   return findings;
+}
+
+function hasPngIcon(icons, expectedSrc, expectedSize) {
+  return icons.some(
+    (icon) => icon?.src === expectedSrc && icon?.sizes === expectedSize && icon?.type === 'image/png',
+  );
+}
+
+function isSafeLocalAssetPath(value) {
+  return (
+    typeof value === 'string' &&
+    /^\/(?!\/)[A-Za-z0-9._/-]+$/.test(value) &&
+    !/(?:^|\/)\.\.(?:\/|$)/.test(value)
+  );
 }
 
 async function main() {
@@ -121,7 +171,8 @@ async function main() {
   try {
     findings = await auditPwaFiles();
   } catch (cause) {
-    console.error(`PWA integrity audit could not read required files: ${cause instanceof Error ? cause.message : String(cause)}`);
+    const message = cause instanceof Error ? cause.message : String(cause);
+    console.error(`PWA integrity audit could not read required files: ${message}`);
     process.exitCode = 1;
     return;
   }
