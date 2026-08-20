@@ -34,6 +34,12 @@
     "shortDescription": "Offline-first dice simulator",
     "longDescription": "DiceLab is a polished offline-first dice simulator with expressions, statistics, presets, exports, and probability tools.",
     "copyright": "Copyright © 2026 Sanskar",
-    "icon": ["icons/icon.png"]
+    "icon": ["icons/icon.png"],
+    "android": {
+      "minSdkVersion": 24
+    },
+    "iOS": {
+      "minimumSystemVersion": "14.0"
+    }
   }
 }
