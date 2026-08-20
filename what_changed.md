@@ -1,10 +1,10 @@
 # DiceLab — Current Work Handoff
 
-Last updated: 2026-08-19
+Last updated: **2026-08-20**
 
 Current release-preparation target: **2.0.12** (`v2.0.12`)
 
-This file is the current continuation entry point. It records the final implementation/release-hardening state, what was actually verified, and what still requires generated artifacts or observed candidate evidence.
+This file is the current continuation entry point. It records what is implemented, what changed during the cross-platform expansion, what was directly observed, and what still requires candidate execution/device/signing evidence.
 
 ## Historical handoffs
 
@@ -17,187 +17,234 @@ Detailed earlier work remains preserved in:
 
 The handoff index is [`docs/handoffs/README.md`](docs/handoffs/README.md).
 
-## Product implementation state
+---
 
-The code-completable DiceLab product scope is implemented:
+## 2026-08-20 cross-platform objective
 
-- Rust + Tauri desktop application and React/Vite web companion;
-- bounded dice parser with modifiers and `kh`/`kl`/`dh`/`dl` selection semantics;
-- secure native/browser randomness;
-- deterministic TypeScript/Rust seeded parity;
-- localized Roll, Presets, History, Statistics, Probability, Settings, onboarding, command palette, and About surfaces;
-- reviewed English/Hindi catalogs with persisted locale and locale-aware presentation formatting;
-- bounded local history/settings/preset persistence;
-- exact persisted keep/drop semantic validation;
-- schema-v1 backup export/import with strict validation and pre-read file-size rejection;
-- CSV/JSON history export with spreadsheet-formula protection scoped to untrusted text fields;
-- Tauri-native OS save dialogs through the bounded `save_text_export` command with browser Blob fallback;
-- privacy-safe structured local diagnostics;
-- parser regression/generated/adversarial tests and Rust fuzz target;
-- production-bundle CDP real-browser E2E tooling;
-- executable benchmarks;
-- dependency-free documentation/security/policy/version/release audits;
-- cross-platform draft-release packaging with provenance metadata and SHA-256 checksums;
-- structured repository issue/PR/support/ownership/funding/governance metadata.
+The repository previously shipped/configured only:
 
-## Earlier final-audit correctness fixes retained
+- Windows Tauri desktop;
+- macOS Tauri desktop;
+- Linux Tauri desktop;
+- Vite browser companion.
 
-The preceding final audit closed concrete product defects before this 2.0.12 release pass:
+The requested continuation was to make DiceLab fully cross-platform from the same project rather than only documenting future mobile intent.
 
-- persisted/imported keep/drop rolls now verify the exact expected kept-index set rather than only the kept count;
-- oversized backup files are rejected from `File.size` before `File.text()` is allowed to read them;
-- decoded backup text still receives the exact UTF-8 5,000,000-byte check as defense in depth;
-- CSV formula markers are detected after optional leading whitespace in untrusted `id`/`seed` values;
-- generated negative total/modifier CSV values stay numeric;
-- live history-limit input is truncated/clamped to the persisted safe-integer contract;
-- the command shortcut hint is `Ctrl/⌘ K`, matching the actual cross-platform handler;
-- lockfile generation validates generated locked Cargo metadata and generated diff hygiene.
+The source/build surface now targets:
 
-Those details are also recorded in `CHANGELOG.md`, `docs/application-flows.md`, `docs/data-contracts.md`, and `docs/release-blockers-current.md`.
+| Platform | DiceLab target | Current source/config state |
+| --- | --- | --- |
+| Windows | Tauri 2 desktop | implemented |
+| macOS | Tauri 2 desktop | implemented |
+| Linux | Tauri 2 desktop | implemented |
+| Android | Tauri 2 mobile | implemented, Android API 24+ |
+| iOS/iPadOS | Tauri 2 mobile | implemented, iOS/iPadOS 14.0+ |
+| Modern browsers | React/Vite web companion | implemented |
 
-## 2.0.12 version preparation completed
+“Implemented” here means the repository contains the target configuration, commands, native/runtime support, CI/release build path, and documentation. It does **not** mean every store/signing/device release gate has already been observed on the final candidate.
 
-The four authoritative application manifest/config sources were moved from `0.1.0` to `2.0.12` in granular commits:
+---
 
-- `294f708e` — `release: bump npm package to 2.0.12`
-- `5d49ae30` — `release: expose app version 2.0.12`
-- `734f6e73` — `release: bump Rust package to 2.0.12`
-- `dcb77a6b` — `release: set Tauri version 2.0.12`
+## Cross-platform commits made in this continuation
 
-Current intended tag:
+The mobile/cross-platform expansion was intentionally split into granular commits rather than one large undifferentiated change.
 
-```text
-v2.0.12
+### Mobile command/config foundation
+
+- `0b3dff09` — `build: add mobile Tauri commands`
+  - changed the npm project description to desktop/mobile/web;
+  - added Android init/dev/build commands;
+  - added iOS init/dev/build commands.
+
+- `9b619cc3` — `build: define Android and iOS baselines`
+  - added `bundle.android.minSdkVersion = 24`;
+  - added `bundle.iOS.minimumSystemVersion = "14.0"`.
+
+- `c497e84d` — `security: scope main capability across all targets`
+  - retained only `core:default` renderer permission;
+  - explicitly scoped the capability to Linux, macOS, Windows, Android, and iOS.
+
+### Cross-platform native export implementation
+
+- `095e0198` — `native: add cross-platform filesystem adapter`
+  - added direct `tauri-plugin-fs = "2.5.1"` Rust dependency;
+  - retained the dialog plugin;
+  - did not add broad renderer filesystem capability.
+
+- `f4e60061` — `fix: support mobile export file URIs`
+  - replaced the desktop-only assumption that every selected destination is a normal `std::path::Path`;
+  - accepts the operating-system-selected Tauri `FilePath` behind the Rust command;
+  - opens/writes through `tauri-plugin-fs`;
+  - preserves selected-extension validation when the destination resolves to a normal path;
+  - supports Android document-provider `content://` selections without sending a URI from the frontend;
+  - explicitly releases iOS security-scoped selected-file access after the write;
+  - preserves generic safe native error messages that do not reveal private selected destinations;
+  - registers the filesystem plugin in the Tauri builder;
+  - keeps the existing `#[cfg_attr(mobile, tauri::mobile_entry_point)]` native mobile entry.
+
+### Mobile ergonomics
+
+- `2ed405cb` — `ui: add mobile safe-area and touch rules`
+  - added `src/mobile.css`;
+  - uses `env(safe-area-inset-*)` around app content, mobile nav, and modal overlays;
+  - uses `100dvh` for modern dynamic mobile viewport behavior;
+  - applies 44px minimum coarse-pointer targets to important controls;
+  - adds compact landscape-phone behavior;
+  - disables tap highlight and unwanted vertical overscroll behavior without changing desktop layout.
+
+- `35674142` — `ui: load mobile ergonomics after shared styles`
+  - imports `src/mobile.css` after `styles.css` in the React bootstrap.
+
+### iOS CI command correction and archive validation
+
+- `724d4be7` — `fix: use iOS simulator for unsigned CI builds`
+  - normal CI uses `tauri ios build --ci --target aarch64-sim` rather than requiring a distribution identity.
+
+- `88375088` — `build: add unsigned iOS archive command`
+  - adds `tauri:ios:archive:ci` using the locked Tauri CLI's `--ci --no-sign --archive-only` device-archive validation mode.
+
+### Normal CI expansion
+
+- `f6339a51` — `ci: build Android and iOS targets`
+  - added Android CI on Ubuntu;
+  - uses Node 22, Java 17, Android NDK discovery, and the Rust Android targets;
+  - initializes the generated Android project and builds an ARM64 APK/AAB validation target;
+  - added iOS CI on macOS;
+  - installs the Apple-Silicon simulator Rust target;
+  - initializes the generated Apple project and builds the ARM64 simulator application;
+  - retains existing web and locked Rust quality jobs.
+
+### Tagged release expansion
+
+- `ea8bc202` — `release: add Android and iOS build artifacts`
+  - keeps web + Windows/macOS/Linux artifact jobs;
+  - adds universal Android APK/AAB release-validation artifact generation;
+  - adds an unsigned iOS ARM64 device `.xcarchive` validation artifact;
+  - makes the draft-release packaging job depend on successful web, desktop, Android, and iOS jobs;
+  - labels mobile outputs accurately as unsigned/validation artifacts;
+  - preserves per-artifact ZIP packaging, `RELEASE-METADATA.json`, SHA-256 checksums, and draft-only publication behavior.
+
+### Cross-platform documentation
+
+- `d8b321bf` — `docs: document cross-platform development setup`
+- `d9d67477` — `docs: extend release process to mobile targets`
+- `895cb694` — `docs: inventory mobile platform support files`
+- `1de5dddf` — `docs: add cross-platform roadmap milestones`
+- `b9ca3f91` — `docs: advertise complete cross-platform target matrix`
+- `1721c506` — `docs: explain mobile native export boundary`
+- `5f33c3ec` — `docs: refresh blockers after mobile and lock generation`
+- `2c61ea3c` — `docs: record cross-platform mobile implementation`
+
+These synchronize README, setup, release, native-export, roadmap, release-blocker, changelog, and exhaustive file-inventory documentation with the actual source/build changes.
+
+---
+
+## Current command surface
+
+### Web
+
+```bash
+npm run dev
+npm run build
+npm run test:e2e
 ```
 
-No tag or published release has been created from this preparation state because generated locks and release evidence remain incomplete.
+### Desktop
 
-## Lock-aware version gate added
-
-The previous version checker could report a synchronized application even if generated lock metadata still contained an older package version. That release gap is closed.
-
-`scripts/check-version-sync.mjs` now reads and requires exact semantic-version agreement across:
-
-1. `package.json`
-2. `package-lock.json` top-level `version`
-3. `package-lock.json` root `packages[""]` version
-4. `src/config/app.ts`
-5. `src-tauri/Cargo.toml`
-6. the `[[package]]` block named `dicelab` in `src-tauri/Cargo.lock`
-7. `src-tauri/tauri.conf.json`
-
-When `DICELAB_EXPECT_VERSION` is supplied, the normalized release tag/version must also match.
-
-Relevant commits:
-
-- `086eac27` — `fix: include lockfile package versions in version audit`
-- `876d7f56` — `fix: parse Cargo lock package blocks portably`
-- `428be145` — `test: cover generated lock version metadata`
-- `dd78191a` — `fix: handle Cargo package section end of file`
-- `1c1c6629` — `test: cover Cargo package section at eof`
-
-The focused version-parser/agreement test suite was independently exercised after these changes and passed **14 tests, 0 failures**.
-
-The full repository version check is intentionally expected to fail until the generated npm and Cargo locks are regenerated to 2.0.12. That failure is a release-protection mechanism, not a hidden defect.
-
-## Lockfile generator now enforces the version gate before publishing
-
-A final automation gap was closed after the lock-aware version checker was added.
-
-Commit:
-
-- `57fd09c9` — `ci: verify generated lockfile versions before commit`
-
-`.github/workflows/lockfiles.yml` now requires this sequence before a generated lock commit can exist:
-
-1. regenerate npm lockfile with npm;
-2. regenerate Cargo lockfile with Cargo;
-3. validate the generated Cargo graph with `cargo metadata --locked --no-deps`;
-4. run `node scripts/check-version-sync.mjs` against the newly generated npm/Cargo lock metadata and application manifests/configuration;
-5. run `git diff --check`;
-6. commit changed lockfiles;
-7. rebase and push to `main`, or publish the exact generated commit to `automation/lockfiles` if direct `main` update is rejected.
-
-Therefore the automation cannot publish generated 2.0.12 locks that still carry a 0.1.0 DiceLab package version.
-
-Documentation follow-up commits:
-
-- `b0eee45e` — `docs: record generated version check in lock workflow`
-- `e75b6036` — `docs: define lock and version synchronization policy`
-
-## 2.0.12 release workflow hardened
-
-The tag workflow was strengthened so a draft release cannot depend only on separately scheduled/path-filtered repository audits.
-
-Commit:
-
-- `fa3f18c9` — `ci: gate 2.0.12 release on repository audits`
-
-The web artifact job now directly requires, before artifact production:
-
-- secret scanner self-test and repository secret audit;
-- documentation link self-test/audit;
-- exhaustive tracked-file inventory self-test/audit;
-- repository policy self-tests;
-- `npm run policy:all`, including direct dependency-lock consistency;
-- browser E2E infrastructure self-test;
-- version-audit self-test;
-- release tag/version agreement using the lock-aware version checker;
-- release-verifier self-test;
-- locked npm install;
-- formatting, lint, unit/integration tests, production build, and real-browser E2E.
-
-Explicit job timeouts were added:
-
-```text
-web       30 minutes
-desktop   45 minutes per platform
-release   15 minutes
+```bash
+npm run tauri:dev
+npm run tauri:build
 ```
 
-Desktop artifacts still require locked Rust formatting/tests/Clippy and Tauri builds on Windows, macOS, and Linux. The final job still creates only a **draft** release with ZIPs, `RELEASE-METADATA.json`, and `SHA256SUMS.txt`.
+Run desktop builds on the target operating system because Tauri bundles are platform-specific.
 
-Human artifact/platform/accessibility/signing/provenance review remains mandatory before publication.
+### Android
 
-## 2.0.12 release documentation synchronized
-
-The active release-facing documents were moved off obsolete pre-1.0/`v0.1.0` assumptions and synchronized to the 2.0.12 candidate:
-
-- `9f234207` / `8f935f9c` — release guide prepared for 2.0.12 and then updated for the lock-aware version gate;
-- `067da245` — roadmap targets 2.0.12 and separates implemented work from candidate evidence;
-- `1c7fd808` / `f7408f38` — current blocker ledger retargeted to 2.0.12 and then updated with exact lock mismatch evidence;
-- `435a070a` — repository governance/milestones aligned with the 2.0.12 release line;
-- `d1433abb` — changelog staged as `[2.0.12] - 2026-08-19 (release candidate)` while retaining `[Unreleased]` and explicitly not claiming publication;
-- `b744b2f6` — data/version/dependency contracts made generated-lock aware;
-- `c2b67503` / `b0eee45e` — automation reference updated for lock-aware version checking, stronger release workflow, and generator-side version validation;
-- `bfa84119` — release-candidate evidence template strengthened for 2.0.12 version/lock/policy/platform evidence;
-- `b4edc949` — README now surfaces 2.0.12 candidate status and current publication blockers;
-- `e75b6036` — lockfile policy now separates direct dependency consistency, generated application-version consistency, package-manager generation, and release evidence.
-
-No new tracked path was introduced, so the exhaustive repository-file reference does not need a new path entry for this continuation.
-
-## Exact generated-lock state — blocker remains open
-
-The latest direct checks still show both generated application lock versions at `0.1.0`.
-
-### npm
-
-Observed `package-lock.json` header/root metadata:
-
-```text
-package.json version                  2.0.12
-package-lock.json top-level version   0.1.0
-package-lock.json packages[""]        0.1.0
+```bash
+npm run tauri:android:init
+npm run tauri:android:dev
+npm run tauri:android:build
 ```
 
-### Cargo
+The default Android build requests APK and AAB output.
 
-Observed DiceLab package block in `src-tauri/Cargo.lock`:
+For ARM64-only validation:
+
+```bash
+npm run tauri:android:build -- --target aarch64
+```
+
+### iOS/iPadOS
+
+Requires macOS/Xcode:
+
+```bash
+npm run tauri:ios:init
+npm run tauri:ios:dev
+npm run tauri:ios:build
+```
+
+Unsigned/simulator CI validation paths:
+
+```bash
+npm run tauri:ios:build:ci
+npm run tauri:ios:archive:ci
+```
+
+The simulator/unsigned archive commands are build evidence only. They are not App Store-ready signed IPA publication commands.
+
+---
+
+## Native export trust boundary after mobile support
+
+The frontend behavior remains intentionally narrow.
+
+### Browser
+
+The browser companion uses the existing Blob/download implementation.
+
+### Tauri native targets
+
+The frontend calls only the allowlisted `save_text_export` command and supplies:
+
+- bounded suggested filename;
+- bounded text contents;
+- `csv` or `json` format.
+
+It does **not** send a destination path or URI.
+
+The Rust command:
+
+1. validates suggested filename, payload size, and format;
+2. opens the OS save/document dialog;
+3. receives the selected `FilePath` from Tauri;
+4. validates the selected extension again when the selection can be represented as a normal filesystem path;
+5. opens the selected `FilePath` through `tauri-plugin-fs` with create/write/truncate options;
+6. writes and synchronizes the contents;
+7. on iOS, releases security-scoped resource access;
+8. returns only safe success/cancellation/generic-failure information to the UI.
+
+This design fixes the Android `content://` compatibility problem without granting `fs:*` renderer permissions.
+
+---
+
+## Generated dependency locks — synchronized
+
+The previous 2.0.12 handoff had a stale generated-lock blocker. That blocker is now resolved.
+
+Directly observed npm lock metadata:
+
+```text
+package-lock.json top-level version   2.0.12
+package-lock.json packages[""]        2.0.12
+```
+
+Directly observed Cargo package block:
 
 ```toml
 [[package]]
 name = "dicelab"
-version = "0.1.0"
+version = "2.0.12"
 dependencies = [
  "rand",
  "regex",
@@ -205,130 +252,178 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
 ]
 ```
 
-Current manifest requires:
+The generated Cargo lock therefore records the new direct mobile filesystem adapter dependency. Do not hand-edit this graph in future continuations; use the existing lockfile workflow/package manager after manifest changes.
 
-```toml
-tauri-plugin-dialog = "2.7.2"
-```
+---
 
-Therefore `src-tauri/Cargo.lock` is stale because:
+## Current CI architecture
 
-- the DiceLab package version is `0.1.0`, not `2.0.12`;
-- `tauri-plugin-dialog` is missing from the locked DiceLab dependency graph.
+Normal `.github/workflows/ci.yml` now contains four primary jobs:
 
-The final recent-commit check still does **not** show the workflow-generated commit:
+### Web quality
 
-```text
-build: lock application dependencies
-```
+- pre-install secret/version/E2E-infrastructure checks;
+- locked `npm ci`;
+- docs links;
+- Prettier;
+- ESLint;
+- unit/integration tests;
+- production Vite build;
+- real Chromium CDP E2E.
 
-The final branch search still finds no:
+### Rust quality
 
-```text
-automation/lockfiles
-```
+- Tauri Linux prerequisites;
+- rustfmt;
+- locked Rust tests;
+- locked Clippy with warnings denied.
 
-Do not hand-edit Cargo's transitive graph.
+### Android build
 
-Required package-manager resolution on a network-enabled runner:
+- Ubuntu runner;
+- Node 22;
+- Java 17;
+- Android Rust targets;
+- NDK discovery through the runner SDK;
+- `tauri android init` CI generation;
+- ARM64 APK/AAB build validation.
 
-```bash
-npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+### iOS simulator build
 
-cd src-tauri
-cargo generate-lockfile
-cargo test --locked
-cargo clippy --all-targets --all-features --locked -- -D warnings
-cd ..
+- macOS runner;
+- Node 22;
+- `aarch64-apple-ios-sim` Rust target;
+- `tauri ios init` CI generation;
+- Apple-Silicon simulator build validation.
 
-npm run policy:lockfiles
-DICELAB_EXPECT_VERSION=v2.0.12 npm run version:check
-```
+Configuration existence is not reported as an observed green result. A final candidate still needs all required jobs observed green on the exact final commit.
 
-The existing lockfile workflow is configured to perform the generation automatically and either commit to `main` or publish the exact generated commit on `automation/lockfiles` if direct main updates are rejected. No successful generated output from that mechanism has yet been observed in this continuation.
+---
 
-## 2.0.12 continuation state audit
+## Tagged release architecture
 
-The prior final checkpoint before this version-specific continuation was:
+`.github/workflows/release.yml` now gates the draft release on:
 
-```text
-f06a08c87f4725c5b6b8ac5adbb9ec9fb5b1c509
-```
+1. web verification + web artifact;
+2. Windows desktop bundle;
+3. macOS desktop bundle;
+4. Linux desktop bundle;
+5. universal Android APK/AAB validation build;
+6. unsigned iOS ARM64 device archive validation build.
 
-The latest implementation/documentation head inspected before this handoff update was:
+Only after all prerequisite artifact jobs succeed does the release job:
 
-```text
-e75b60369f23a1d641d0895ac16a440d1456acf2
-```
+- download workflow artifacts;
+- ZIP each artifact group;
+- write `RELEASE-METADATA.json` with repository/tag/source/workflow identity;
+- generate `SHA256SUMS.txt`;
+- create/update a **draft** GitHub release;
+- upload the packages/checksum/provenance files.
 
-Comparison result:
+The workflow intentionally does not auto-publish the release.
 
-```text
-25 commits ahead
-0 commits behind
-19 tracked files modified in the net diff
-0 new tracked paths introduced
-```
+---
 
-The modified surfaces span version metadata, release/lock workflows, version auditing/tests, changelog/roadmap/README, release/governance/evidence documentation, data/automation/lockfile contracts, and this handoff.
+## Platform signing/store boundary
 
-The GitHub classic combined-status endpoint returned no individual status records for the inspected head. That absence is **not** treated as a green CI result.
+### Windows/macOS/Linux
 
-## What is actually verified in this continuation
+Existing desktop signing/notarization expectations remain release-evidence items where applicable.
 
-Observed/verified directly:
+### Android
 
-- authoritative manifest/config version edits are committed at 2.0.12;
-- stale npm lock versions are directly observed as 0.1.0;
-- stale Cargo DiceLab package version is directly observed as 0.1.0;
-- Cargo DiceLab lock dependency list directly lacks `tauri-plugin-dialog`;
-- no generated lockfile commit appears in recent commits;
-- no `automation/lockfiles` branch appears in branch search;
-- the strengthened version-parser/agreement tests passed 14/14 in the isolated execution performed during this work;
-- release/docs/governance/workflow source changes are committed to `main`;
-- the 2.0.12 continuation is 25 commits ahead of the prior final checkpoint before this handoff commit.
+The repository can build Android APK/AAB artifacts, but Google Play publication still requires private signing credentials/keystore and Play Console registration. No Android keystore is committed.
 
-Not claimed as observed 2.0.12 release evidence:
+### iOS/iPadOS
 
-- full clean-checkout npm install/test/build;
-- full repository CI green state;
-- locked Rust test/Clippy success with regenerated Cargo lock;
-- production real-browser E2E success;
-- bounded parser fuzz campaign result;
-- benchmark output for the 2.0.12 candidate;
-- Windows/macOS/Linux packaged candidate smoke;
-- native save-dialog platform smoke;
-- accessibility/manual localization candidate review;
-- CodeQL/dependency/repository-security review;
-- real candidate screenshots;
-- signing/notarization;
-- final artifact checksum/provenance verification;
-- explicit maintainer APPROVE decision;
+The repository can build the simulator and unsigned device archive validation paths, but end-user/App Store distribution still requires Apple Developer/App Store Connect signing/provisioning. No Apple private signing material is committed.
+
+Do not change docs to call unsigned CI outputs “store ready.”
+
+---
+
+## What is directly observed in this continuation
+
+Observed from the repository after the changes:
+
+- `package.json` exposes web, desktop, Android, and iOS command surfaces;
+- Tauri configuration sets Android API 24 and iOS 14.0 minimums;
+- capability JSON explicitly covers Linux/macOS/Windows/Android/iOS and retains only `core:default`;
+- Rust manifest directly includes `tauri-plugin-fs`;
+- Rust native code uses Tauri `FilePath`/filesystem handling for selected native export destinations;
+- `src/mobile.css` is tracked and loaded by `src/main.tsx`;
+- normal CI includes Android and iOS build jobs;
+- tagged release includes Android and iOS artifact jobs and requires them before draft packaging;
+- README/setup/release/native-export/roadmap/release-blocker/file-reference/changelog documentation describes the cross-platform design;
+- `package-lock.json` application versions are 2.0.12;
+- DiceLab's generated Cargo lock package is 2.0.12;
+- DiceLab's generated Cargo dependency list contains `tauri-plugin-dialog` and `tauri-plugin-fs`.
+
+Not yet claimed as observed final-candidate evidence:
+
+- all CI jobs green on the final post-documentation commit;
+- full browser E2E green on that final commit;
+- locked Rust test/Clippy green on that final commit after the mobile changes;
+- Android physical-device smoke;
+- Android system/cloud-provider export compatibility evidence;
+- iPhone physical-device smoke;
+- iPad physical-device smoke;
+- mobile screen-reader/accessibility review;
+- parser fuzz campaign on the final candidate;
+- benchmark record on the final candidate;
+- Windows/macOS/Linux packaged smoke on the final candidate;
+- CodeQL/dependency/repository-security review on the final candidate;
+- real release screenshots;
+- Windows/macOS signing/notarization status;
+- Android production signing/Google Play publication;
+- iOS App Store signing/publication;
+- final draft artifact checksum/provenance verification;
+- explicit release APPROVE decision;
 - publication of `v2.0.12`.
 
-The available local execution environment cannot perform a clean GitHub clone because its direct GitHub DNS/network path is unavailable, so it must not be used to claim full-repository verification.
+---
 
-## Current release gate
+## Remaining release gate
 
-The first unresolved gate is generated dependency-lock synchronization.
+Generated dependency locks are no longer the first blocker. Continue release verification in this order:
 
-Once the locks are regenerated, continue in this order:
+1. observe the final normal CI web/Rust/Android/iOS jobs green on the exact candidate commit;
+2. observe production browser E2E green;
+3. observe locked Rust fmt/test/Clippy green after all mobile changes;
+4. run/observe the bounded Rust parser fuzz campaign;
+5. record benchmark evidence;
+6. build and smoke Windows/macOS/Linux artifacts;
+7. run physical Android smoke including `content://` document-provider export;
+8. run physical iPhone/iPad smoke including safe areas, orientation, persistence, Files-picker export, and security-scoped access return;
+9. complete English/Hindi/accessibility/security review;
+10. capture real candidate screenshots;
+11. record actual signing/notarization/store status without overstating unsigned artifacts;
+12. trigger the tagged draft release only from the verified commit;
+13. verify every ZIP/checksum/provenance record;
+14. fill [`docs/release-candidate-evidence-template.md`](docs/release-candidate-evidence-template.md);
+15. publish `v2.0.12` only after explicit maintainer **APPROVE**.
 
-1. confirm `package-lock.json` top/root versions are `2.0.12`;
-2. confirm the DiceLab `Cargo.lock` package version is `2.0.12` and includes `tauri-plugin-dialog`;
-3. run/observe `DICELAB_EXPECT_VERSION=v2.0.12 npm run version:check`;
-4. run/observe dependency/policy/documentation/secret checks on the same candidate;
-5. run/observe frontend build/tests and real-browser E2E;
-6. run/observe locked Rust format/test/Clippy and fuzz campaign;
-7. record benchmark evidence;
-8. build/smoke Windows/macOS/Linux artifacts;
-9. complete native-save, English/Hindi, accessibility, security, screenshot, signing, checksum, and provenance review;
-10. fill [`docs/release-candidate-evidence-template.md`](docs/release-candidate-evidence-template.md);
-11. create `v2.0.12` only from the verified candidate commit;
-12. keep the generated GitHub release as a draft until explicit maintainer **APPROVE**.
+---
+
+## Important future-maintainer rules
+
+- Keep Android minimum API/iOS minimum version changes deliberate and documented.
+- Keep the renderer capability narrow; do not add generic filesystem permission merely because the Rust side uses the filesystem plugin.
+- Keep Android `content://` handling behind `FilePath`/native abstractions; do not convert provider URIs into local paths.
+- Keep iOS selected-file security scope lifecycle explicit.
+- Preserve safe-area and coarse-pointer mobile CSS when restructuring layout/navigation.
+- When `Cargo.toml` or `package.json` dependency declarations change, regenerate lockfiles using package-manager automation.
+- Treat CI configuration as implementation, not as proof of a passing candidate.
+- Never commit Android/iOS/store signing credentials.
+- Do not call unsigned Android/iOS workflow artifacts store-ready.
+- Keep README, setup, release, release blockers, changelog, roadmap, and exhaustive file inventory synchronized when platform behavior changes.
+
+---
 
 ## Canonical references
 
@@ -336,11 +431,15 @@ Once the locks are regenerated, continue in this order:
 - [`CHANGELOG.md`](CHANGELOG.md)
 - [`ROADMAP.md`](ROADMAP.md)
 - [`docs/README.md`](docs/README.md)
+- [`docs/setup.md`](docs/setup.md)
+- [`docs/native-exports.md`](docs/native-exports.md)
 - [`docs/release.md`](docs/release.md)
 - [`docs/release-blockers-current.md`](docs/release-blockers-current.md)
 - [`docs/release-candidate-evidence-template.md`](docs/release-candidate-evidence-template.md)
-- [`docs/data-contracts.md`](docs/data-contracts.md)
 - [`docs/automation-reference.md`](docs/automation-reference.md)
-- [`docs/repository-governance.md`](docs/repository-governance.md)
-- [`docs/lockfile-policy.md`](docs/lockfile-policy.md)
+- [`docs/repository-file-reference.md`](docs/repository-file-reference.md)
+- [`docs/capability-policy.md`](docs/capability-policy.md)
 - [`docs/testing.md`](docs/testing.md)
+- [`docs/lockfile-policy.md`](docs/lockfile-policy.md)
+
+**Made by the Sanskar**
