@@ -25,7 +25,7 @@ For the current release-preparation cycle, the expected identity is version `2.0
 - [ ] `src-tauri/tauri.conf.json` reports the candidate version.
 - [ ] `DICELAB_EXPECT_VERSION=v2.0.12 npm run version:check` completed successfully for this candidate.
 - [ ] `package-lock.json` matches `package.json` dependency metadata.
-- [ ] `src-tauri/Cargo.lock` matches `src-tauri/Cargo.toml` and contains every direct crate, including `tauri-plugin-dialog` when declared.
+- [ ] `src-tauri/Cargo.lock` matches `src-tauri/Cargo.toml` and contains every direct crate, including `tauri-plugin-dialog` and `tauri-plugin-fs` when declared.
 - [ ] `npm run policy:lockfiles` completed successfully.
 - [ ] `npm ci` completed from a clean checkout.
 - [ ] `cargo test --locked` completed from the candidate commit.
@@ -40,13 +40,31 @@ Evidence:
 Paste command/run identifiers and concise results here. Do not paste secrets.
 ```
 
+## Cross-platform configuration identity
+
+- [ ] Windows native target remains configured.
+- [ ] macOS native target remains configured.
+- [ ] Linux native target remains configured.
+- [ ] Android minimum is Android API 24 or the intentionally reviewed replacement.
+- [ ] iOS/iPadOS minimum is iOS 14.0 or the intentionally reviewed replacement.
+- [ ] Main Tauri capability explicitly covers Linux/macOS/Windows/Android/iOS.
+- [ ] Main renderer capability remains narrow and does not grant broad `fs:`, `shell:`, `http:`, or `process:` families.
+- [ ] Android init/dev/build npm commands resolve through the locked Tauri CLI.
+- [ ] iOS init/dev/build/simulator/archive npm commands resolve through the locked Tauri CLI on macOS.
+- [ ] `src/mobile.css` is loaded after shared styling and safe-area/touch rules remain active.
+
+Evidence:
+
+```text
+```
+
 ## Repository and documentation policy boundaries
 
 - [ ] `npm run docs:check:test` passed.
 - [ ] `npm run docs:check` passed.
 - [ ] `npm run docs:inventory:test` passed.
 - [ ] `npm run docs:inventory` passed.
-- [ ] Desktop capability policy self-tests passed.
+- [ ] Native capability policy self-tests passed.
 - [ ] Actual committed capability audit passed.
 - [ ] Tauri CSP/IPC policy self-tests passed.
 - [ ] Actual committed Tauri security configuration audit passed.
@@ -61,6 +79,20 @@ Evidence:
 
 ```text
 Record workflow names/run IDs or local command output summaries.
+```
+
+## Normal CI evidence
+
+- [ ] Web quality job green on the exact candidate commit.
+- [ ] Locked Rust quality job green on the exact candidate commit.
+- [ ] Android ARM64 build job green on the exact candidate commit.
+- [ ] iOS Apple-Silicon simulator build job green on the exact candidate commit.
+- [ ] Any rerun/retry was reviewed and did not change source identity.
+
+Evidence:
+
+```text
+Record exact workflow run/job identifiers.
 ```
 
 ## Frontend quality
@@ -196,15 +228,128 @@ Evidence/notes:
 ```text
 ```
 
+## Android candidate
+
+Build artifact/checksum:
+
+- [ ] Tagged workflow produced expected APK output.
+- [ ] Tagged workflow produced expected AAB output.
+- [ ] Artifact package checksum matches `SHA256SUMS.txt`.
+- [ ] Artifact is labeled with its actual signing/validation state.
+
+Physical-device evidence:
+
+- Device model:
+- Android version/API level:
+- CPU/ABI:
+- Document provider(s) tested:
+
+- [ ] Installs/launches successfully on a supported physical device.
+- [ ] About/Settings reports the candidate version.
+- [ ] Secure roll works.
+- [ ] Seeded reference roll matches the web companion.
+- [ ] History/settings/presets persist across restart.
+- [ ] English/Hindi selection persists across restart.
+- [ ] Portrait layout reviewed.
+- [ ] Landscape layout reviewed.
+- [ ] Safe-area/system-inset behavior reviewed.
+- [ ] Coarse-pointer/touch targets are usable.
+- [ ] History CSV export works through the Android document picker.
+- [ ] History JSON export works through the Android document picker.
+- [ ] Backup export works through the Android document picker.
+- [ ] At least one successful `content://` provider-backed save was observed.
+- [ ] Native picker cancellation creates no false failure state.
+- [ ] Backup restore works from a candidate-produced file.
+- [ ] A provider/write failure produces localized safe feedback.
+- [ ] No private content URI/raw provider error is exposed by UI/logging.
+- [ ] Android production signing/Google Play status is stated accurately.
+
+Signing/Play status:
+
+```text
+State unsigned/signed, keystore handling, and Play Console status without including secrets.
+```
+
+Evidence/notes:
+
+```text
+```
+
+## iPhone candidate
+
+Build artifact/checksum:
+
+- [ ] Normal CI simulator build succeeded for the candidate source.
+- [ ] Tagged release workflow produced the expected unsigned ARM64 device archive.
+- [ ] Archive package checksum matches `SHA256SUMS.txt`.
+- [ ] Archive is labeled as unsigned/archive validation unless a separate reviewed signing path was completed.
+
+Physical-device evidence:
+
+- Device model:
+- iOS version:
+
+- [ ] Launches successfully on a supported physical iPhone through the reviewed development/distribution path.
+- [ ] About/Settings reports the candidate version.
+- [ ] Secure roll works.
+- [ ] Seeded reference roll matches the web companion.
+- [ ] History/settings/presets persist across restart.
+- [ ] English/Hindi selection persists across restart.
+- [ ] Portrait/landscape behavior reviewed.
+- [ ] Notch/Dynamic-Island/home-indicator safe areas reviewed where applicable.
+- [ ] Touch targets are usable.
+- [ ] History CSV export works through the Files picker.
+- [ ] History JSON export works through the Files picker.
+- [ ] Backup export works through the Files picker.
+- [ ] Picker cancellation creates no false failure state.
+- [ ] Backup restore works from a candidate-produced file.
+- [ ] App remains usable after returning from the picker/security-scoped access lifecycle.
+- [ ] Native export failure UI does not expose a private selected file/raw native error.
+- [ ] Apple signing/App Store Connect status is stated accurately.
+
+Signing/App Store status:
+
+```text
+State simulator/unsigned archive/development-signed/distribution-signed status exactly. Do not include credentials.
+```
+
+Evidence/notes:
+
+```text
+```
+
+## iPad candidate
+
+- Device model:
+- iPadOS version:
+
+- [ ] Launches successfully on a supported iPad.
+- [ ] Tablet layout uses available space without hidden required controls.
+- [ ] Portrait and landscape orientations reviewed.
+- [ ] Safe-area behavior reviewed.
+- [ ] 200% text scaling/accessibility sizing reviewed where supported.
+- [ ] English/Hindi layout reviewed.
+- [ ] History CSV/JSON export works through the Files picker.
+- [ ] Backup export/restore works.
+- [ ] Picker cancellation/failure behavior is safe.
+- [ ] Settings/history persist after restart.
+
+Evidence/notes:
+
+```text
+```
+
 ## Accessibility review
 
-- [ ] Full primary journey completed with keyboard only.
+- [ ] Desktop primary journey completed with keyboard only.
 - [ ] Focus is visible and logical.
 - [ ] Command palette traps/restores focus correctly.
 - [ ] Onboarding is usable by keyboard.
-- [ ] 200% text scaling does not hide required controls/content.
+- [ ] Android/iOS touch primary journey completed.
+- [ ] 200% text scaling does not hide required controls/content on representative targets.
 - [ ] Reduced-motion preference removes nonessential movement.
-- [ ] Screen-reader names identify primary controls and dialogs.
+- [ ] Screen-reader names identify primary controls and dialogs on representative desktop/mobile targets.
+- [ ] Mobile safe areas/notches/home indicators do not cover controls.
 - [ ] English layout reviewed.
 - [ ] Hindi layout reviewed.
 
@@ -222,6 +367,9 @@ Only candidate-build screenshots belong here.
 - [ ] Probability screenshot captured.
 - [ ] Settings screenshot captured showing the candidate version.
 - [ ] Hindi interface screenshot captured.
+- [ ] Android phone screenshot captured.
+- [ ] iPhone screenshot captured.
+- [ ] iPad/tablet screenshot captured.
 
 Paths/links:
 
@@ -232,13 +380,18 @@ Paths/links:
 
 - [ ] Tag workflow's documentation and repository-policy gates completed successfully.
 - [ ] Expected Windows/macOS/Linux/web artifacts are present.
+- [ ] Expected Android APK/AAB validation artifact package is present.
+- [ ] Expected unsigned iOS device archive package is present.
 - [ ] ZIP files are non-empty and inspect correctly.
 - [ ] `RELEASE-METADATA.json` identifies the expected repository/tag/source commit/workflow run.
 - [ ] For the current candidate, `RELEASE-METADATA.json` reports tag `v2.0.12`.
 - [ ] `SHA256SUMS.txt` covers packaged artifact ZIPs and provenance metadata.
 - [ ] Every published checksum was independently verified after download.
 - [ ] Generated release notes were reviewed against `CHANGELOG.md`.
-- [ ] Signing/notarization claims exactly match the produced artifacts.
+- [ ] Desktop signing/notarization claims exactly match produced artifacts.
+- [ ] Android signing/Play claims exactly match produced artifacts/account state.
+- [ ] iOS signing/App Store claims exactly match produced artifacts/account state.
+- [ ] Unsigned validation artifacts are not described as store-ready.
 
 Evidence:
 
