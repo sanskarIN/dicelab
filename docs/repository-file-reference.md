@@ -25,18 +25,18 @@ For deeper behavioral context, also read:
 | `CONTRIBUTING.md` | Contributor workflow: setup, granular commits, quality commands, English/Hindi localization, accessibility, native/security boundaries, lockfiles, docs inventory, and release evidence. |
 | `LICENSE` | MIT license governing DiceLab source/distribution. |
 | `PRIVACY.md` | Product privacy model: offline/local storage, exports, diagnostics, and absence of required account/remote telemetry. Review when data handling changes. |
-| `README.md` | Public project entry point: product overview, features, setup, quality commands, architecture summary, syntax, privacy, contribution, documentation, and support links. |
+| `README.md` | Public project entry point: product overview, features, cross-platform setup, quality commands, architecture summary, syntax, privacy, contribution, documentation, and support links. |
 | `ROADMAP.md` | Milestone checklist separating implemented work from evidence-gated verification/release items. |
 | `SECURITY.md` | Security posture, trust boundaries, safe disclosure guidance, dependency/release expectations, native export rules, and private-reporting path. |
 | `SUPPORT.md` | Public support/feature/bug routing, privacy-safe diagnostic expectations, private security routing, business/support contacts, and optional funding note. |
 | `eslint.config.js` | ESLint flat configuration for TypeScript/React/repository source quality. `npm run lint` permits zero warnings. |
 | `index.html` | Vite renderer HTML shell containing the mount target and static document metadata used before React starts. |
 | `package-lock.json` | npm-generated reproducible dependency graph. It must remain synchronized with `package.json`; do not hand-edit package resolution. |
-| `package.json` | npm project metadata, direct dependencies/devDependencies, and canonical command surface for development, tests, docs, policy audits, version/release verification, and Tauri. |
+| `package.json` | npm project metadata, direct dependencies/devDependencies, canonical development/quality commands, desktop Tauri commands, Android init/dev/build commands, iOS init/dev/build/simulator/archive commands, and release verification. |
 | `tsconfig.app.json` | TypeScript rules for browser/application source and JSX compilation. |
 | `tsconfig.json` | TypeScript solution/project-reference root connecting application and Node/config builds. |
 | `tsconfig.node.json` | TypeScript rules for Node-side/build-tool configuration such as Vite/Vitest config. |
-| `vite.config.ts` | React/Vite dev/build configuration including Tauri dev host/HMR handling, env prefixes, native-source watch ignore, platform targets, minification, and debug sourcemaps. |
+| `vite.config.ts` | React/Vite dev/build configuration including Tauri `TAURI_DEV_HOST` mobile/desktop dev host and HMR handling, env prefixes, native-source watch ignore, platform targets, minification, and debug sourcemaps. |
 | `vitest.config.ts` | Vitest configuration, jsdom environment, setup-file wiring, and test discovery behavior. |
 | `what_changed.md` | Current continuation/handoff entry point. Detailed historical milestones are preserved under `docs/handoffs/`. |
 
@@ -59,7 +59,7 @@ For deeper behavioral context, also read:
 | Path | Purpose and relationships |
 | --- | --- |
 | `.github/workflows/capability-audit.yml` | Runs dependency-free Tauri capability self-tests and audits committed capability JSON for broad permission/window/origin expansion. |
-| `.github/workflows/ci.yml` | Main push/PR CI: repository security/version/browser-infra checks, locked npm install, docs/format/lint/tests/build/real-browser E2E, plus locked Rust fmt/test/Clippy. |
+| `.github/workflows/ci.yml` | Main push/PR CI: web security/version/browser checks, locked npm quality/E2E, locked Rust fmt/test/Clippy, Android ARM64 APK/AAB compilation, and iOS Apple-Silicon simulator compilation. |
 | `.github/workflows/codeql.yml` | GitHub CodeQL JavaScript/TypeScript static security analysis on push/PR and schedule. |
 | `.github/workflows/fuzz.yml` | Manual/weekly Rust nightly `cargo-fuzz` parser campaign with Tauri Linux prerequisites and bounded 60-second execution. |
 | `.github/workflows/localized-formatting-audit.yml` | Enforces that localized React surfaces use the shared `src/i18n/format.ts` number/date/time boundary. |
@@ -69,7 +69,7 @@ For deeper behavioral context, also read:
 | `.github/workflows/offline-csp-audit.yml` | Rejects remote network CSP sources while permitting documented local Tauri IPC/asset mechanisms; also runs on release tags. |
 | `.github/workflows/release-lockfile-consistency.yml` | Version-tag/manual gate checking direct manifest/lock consistency without silently regenerating the candidate dependency graph. |
 | `.github/workflows/release-policy-audits.yml` | Re-runs core dependency-free repository policy boundaries on version tags/manual dispatch so release verification does not rely only on path-filtered PR checks. |
-| `.github/workflows/release.yml` | `v*` release workflow: web verification/artifact, Windows/macOS/Linux locked Rust + Tauri builds, ZIP packaging, provenance metadata/checksums, and draft GitHub release upload. |
+| `.github/workflows/release.yml` | `v*` release workflow: web verification/artifact, Windows/macOS/Linux bundles, universal Android APK/AAB validation artifacts, unsigned iOS device archive, ZIP packaging, provenance/checksums, and draft GitHub release upload. |
 | `.github/workflows/repository-audit.yml` | Dependency-free repository invariant workflow for secret/doc/inventory/browser-infrastructure/version/release-verifier self-checks. |
 | `.github/workflows/repository-policy-audit.yml` | Aggregate status for committed capability, Tauri security, localized formatting, and native runtime policy boundaries. |
 | `.github/workflows/runtime-boundary-audit.yml` | Enforces approved production locations for Tauri core access and runtime-marker probing. |
@@ -93,16 +93,16 @@ For deeper behavioral context, also read:
 | `docs/lockfile-policy.md` | npm/Cargo manifest-to-lock rules, structural consistency audit, generation commands, release gate, and evidence requirements. |
 | `docs/logging.md` | Local structured logging model, redaction/key policy, bounded context, safe operational events, and no-remote-telemetry design. |
 | `docs/native-command-contract.md` | Reviewed `roll_expression` / `save_text_export` command allowlist, frontend adapters, audit rules, and safe process for adding commands. |
-| `docs/native-exports.md` | Browser Blob download versus Tauri OS-dialog save architecture, request/path validation, cancellation, failure semantics, tests, and security boundary. |
+| `docs/native-exports.md` | Browser Blob download versus cross-platform Tauri OS-dialog/document-picker save architecture, URI/path validation, cancellation, failure semantics, tests, and security boundary. |
 | `docs/offline-network-policy.md` | Offline-first CSP policy rejecting remote HTTP/HTTPS/WebSocket origins while allowing documented local Tauri mechanisms. |
 | `docs/performance.md` | Performance principles, benchmark scenarios, measurement/evidence rules, large-history/probability budgets, and release interpretation. |
-| `docs/release-blockers-current.md` | Current evidence-gated release blockers: Cargo lock, E2E/fuzz/benchmark/platform/accessibility/security/screenshots/signing/artifact review. |
+| `docs/release-blockers-current.md` | Current evidence-gated release blockers: locks, E2E/fuzz/benchmark/native platform/accessibility/security/screenshots/signing/artifact review. |
 | `docs/release-candidate-evidence-template.md` | Fill-in release candidate record for dependency integrity, policy/CI, fuzzing, benchmarks, platform smoke, accessibility, screenshots, provenance/checksums, and final decision. |
-| `docs/release.md` | Version/lock prerequisites, clean-checkout checks, browser/native/localization smoke, tagging, draft packaging, signing, artifact verification, release notes, rollback. |
+| `docs/release.md` | Cross-platform version/lock prerequisites, clean-checkout checks, browser/desktop/mobile/localization smoke, tagging, draft packaging, signing/store distinctions, artifact verification, release notes, rollback. |
 | `docs/repository-governance.md` | Branch protection, status checks, labels, milestones, Discussions, repository security settings, ownership, and release-governance rollout. |
 | `docs/repository-policy-gates.md` | Index of executable architecture/security policies, self-tests, CI workflows, branch-protection guidance, and evidence interpretation. |
 | `docs/runtime-boundary-policy.md` | Restricts production Tauri core/runtime detection to approved service adapters and documents how to add native features safely. |
-| `docs/setup.md` | Node/Rust/Tauri/platform prerequisite and initial installation/setup guidance. |
+| `docs/setup.md` | Web, Windows, macOS, Linux, Android, and iOS prerequisites plus local/mobile build commands and native export notes. |
 | `docs/tauri-security-policy.md` | CSP self-anchor/wildcard/unsafe-eval/remote-script/remote-IPC policy and audit/review requirements. |
 | `docs/testing.md` | Full frontend/domain/Rust/fuzz/static/security/E2E/benchmark/native-smoke/accessibility/manual/CI verification strategy. |
 | `docs/troubleshooting.md` | Common local setup/build/runtime/browser/Rust problems and safe resolution guidance. |
@@ -203,18 +203,18 @@ For deeper behavioral context, also read:
 | Path | Purpose and relationships |
 | --- | --- |
 | `src-tauri/Cargo.lock` | Cargo-generated reproducible Rust dependency graph. Must be regenerated after manifest dependency changes; locked CI uses it as authoritative resolution. |
-| `src-tauri/Cargo.toml` | Native crate package/library/build/runtime dependency manifest, Tauri features, dialog plugin, and fuzzing feature gate. |
+| `src-tauri/Cargo.toml` | Native crate package/library/build/runtime dependency manifest, Tauri features, dialog + filesystem plugins, and fuzzing feature gate. |
 | `src-tauri/build.rs` | Tiny Tauri build-script entry point invoking `tauri_build::build()`. |
-| `src-tauri/capabilities/default.json` | Minimal capability declaration for the `main` window; reviewed by capability policy audits. |
-| `src-tauri/tauri.conf.json` | Tauri product/version/window/build/bundle/CSP configuration used for desktop development and packages; audited by security/offline policies. |
+| `src-tauri/capabilities/default.json` | Minimal `core:default` capability for the `main` window explicitly scoped to Linux, macOS, Windows, iOS, and Android; broad renderer filesystem/shell/network permissions remain absent. |
+| `src-tauri/tauri.conf.json` | Tauri product/version/window/build/bundle/CSP configuration for desktop and mobile; defines Android API 24 and iOS 14.0 minimums and is audited by security/offline policies. |
 | `src-tauri/icons/icon.png` | Binary application icon used by README branding and Tauri bundle metadata. Source-controlled product asset, not generated documentation. |
 
 ## Rust native implementation and fuzzing
 
 | Path | Purpose and relationships |
 | --- | --- |
-| `src-tauri/src/lib.rs` | Native parser/engine/randomness and Tauri command trust boundary: `roll_expression`, `save_text_export`, OS dialog/write validation, tests, seeded parity, parser invariants/fuzz hook. |
-| `src-tauri/src/main.rs` | Minimal desktop executable entry point delegating to the library runner. |
+| `src-tauri/src/lib.rs` | Cross-platform native parser/engine/randomness and Tauri command trust boundary: mobile entry point, `roll_expression`, `save_text_export`, dialog-selected desktop paths/Android content URIs/iOS security-scoped files through `tauri-plugin-fs`, tests, seeded parity, parser invariants/fuzz hook. |
+| `src-tauri/src/main.rs` | Minimal desktop executable entry point delegating to the library runner; mobile entry uses the library's `tauri::mobile_entry_point`. |
 | `src-tauri/fuzz/Cargo.toml` | Separate cargo-fuzz manifest so fuzz-only tooling/dependencies remain outside normal app crate usage. |
 | `src-tauri/fuzz/README.md` | Nightly/cargo-fuzz setup, bounded campaign command, corpus/artifact policy, and deterministic-regression follow-up guidance. |
 | `src-tauri/fuzz/fuzz_targets/parser.rs` | Coverage-guided parser target feeding arbitrary UTF-8 into the production normalization/reparse invariant hook. |
@@ -230,7 +230,8 @@ For deeper behavioral context, also read:
 | `src/App.locale-onboarding.integration.test.tsx` | Verifies persisted Hindi preference applies to first-run onboarding before completion. |
 | `src/App.locale-startup.integration.test.tsx` | Verifies persisted Hindi settings are active on the application's first render with localized built-ins/document language. |
 | `src/App.localization.integration.test.tsx` | Verifies live English→Hindi switching localizes built-ins while preserving user-created preset name/description exactly. |
-| `src/main.tsx` | React renderer bootstrap mounting `App` under the root error boundary and loading global styles. |
+| `src/main.tsx` | React renderer bootstrap mounting `App` under the root error boundary and loading shared styles followed by mobile-specific ergonomics. |
+| `src/mobile.css` | Mobile Tauri/web ergonomics layered over shared styling: safe-area insets, dynamic viewport height, coarse-pointer 44px targets, mobile modal/bottom-navigation inset handling, and compact landscape behavior. |
 | `src/styles.css` | Global product design system/layout/responsive/component/focus/theme/motion/histogram/probability styling consumed by React surfaces and root data attributes. |
 
 ## React components and component tests
@@ -304,12 +305,12 @@ For deeper behavioral context, also read:
 
 | Path | Purpose and relationships |
 | --- | --- |
-| `src/services/runtime.ts` | Single production Tauri runtime detector; direct marker probing elsewhere is blocked by policy. |
+| `src/services/runtime.ts` | Single production Tauri runtime detector shared by desktop and mobile; direct marker probing elsewhere is blocked by policy. |
 | `src/services/runtime.test.ts` | Browser versus mocked Tauri runtime detection regression. |
 | `src/services/roll-service.ts` | Browser/native roll adapter, effective seed sequence construction, Tauri `roll_expression` invocation, TypeScript RNG selection, and shared result adaptation. |
 | `src/services/storage.ts` | Versioned localStorage keys, validated/bounded history/custom presets/settings, localized built-ins, onboarding marker, clear operation, and safe storage-failure logging. |
 | `src/services/storage.test.ts` | Corrupt/malformed storage recovery, setting/locale normalization, bounded data, built-in/custom preset behavior, and persistence regressions. |
-| `src/services/export.ts` | History CSV/JSON serialization, spreadsheet-formula neutralization, backup schema create/parse/validate, browser download, and Tauri `save_text_export` routing. |
+| `src/services/export.ts` | History CSV/JSON serialization, spreadsheet-formula neutralization, backup schema create/parse/validate, browser download, and cross-platform Tauri `save_text_export` routing. |
 | `src/services/export.test.ts` | Browser/native text export routing, cancellation, serialization, and safe export request behavior tests. |
 | `src/services/backup.test.ts` | Backup schema/bounds/duplicates/invariants/settings/locale/legacy compatibility/round-trip and hostile input regression coverage. |
 | `src/services/logger.ts` | Local structured log record creation, event normalization, recursive redaction/bounds, Error-type-only serialization, and console severity routing. |
