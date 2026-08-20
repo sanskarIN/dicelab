@@ -38,6 +38,10 @@ jobs:
         run: npm run docs:inventory
       - name: Browser E2E infrastructure self-test
         run: npm run test:e2e:infra
+      - name: PWA audit self-test
+        run: npm run policy:pwa:test
+      - name: PWA integrity
+        run: npm run policy:pwa
       - name: Version audit self-test
         run: npm run version:check:test
       - name: Version consistency
