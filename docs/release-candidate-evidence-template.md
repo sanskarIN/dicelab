@@ -13,6 +13,7 @@ For the current release-preparation cycle, the expected identity is version `2.0
 - Reviewer(s):
 - GitHub Actions run URL/ID:
 - Release draft URL/ID:
+- Production web/PWA deployment URL used for install/offline evidence:
 
 ## Version, dependency, and source integrity
 
@@ -52,6 +53,11 @@ Paste command/run identifiers and concise results here. Do not paste secrets.
 - [ ] Android init/dev/build npm commands resolve through the locked Tauri CLI.
 - [ ] iOS init/dev/build/simulator/archive npm commands resolve through the locked Tauri CLI on macOS.
 - [ ] `src/mobile.css` is loaded after shared styling and safe-area/touch rules remain active.
+- [ ] Production web target exposes the reviewed `manifest.webmanifest` and `/sw.js` files.
+- [ ] Standard 192×192 and 512×512 PNG install icons remain declared; the 512×512 icon remains maskable.
+- [ ] The 180×180 Apple touch icon remains linked from `index.html`.
+- [ ] `viewport-fit=cover` remains present for edge-to-edge/safe-area browser layouts.
+- [ ] Service-worker registration remains production-only, excludes Tauri, and requires HTTPS or reviewed loopback HTTP.
 
 Evidence:
 
@@ -72,6 +78,9 @@ Evidence:
 - [ ] Localized-formatting boundary audit passed.
 - [ ] Native runtime service-boundary audit passed.
 - [ ] Native command-contract audit passed.
+- [ ] PWA auditor self-test passed.
+- [ ] PWA integrity audit passed, including generated Vite `/assets/` precaching and Tauri exclusion.
+- [ ] Aggregate `npm run policy:test` passed.
 - [ ] Aggregate `npm run policy:all` passed.
 - [ ] Release verifier self-test passed.
 
@@ -84,9 +93,13 @@ Record workflow names/run IDs or local command output summaries.
 ## Normal CI evidence
 
 - [ ] Web quality job green on the exact candidate commit.
+- [ ] Web job's PWA policy checks are green on the exact candidate commit.
+- [ ] Web job's production browser/PWA offline-reopen E2E is green on the exact candidate commit.
 - [ ] Locked Rust quality job green on the exact candidate commit.
 - [ ] Android ARM64 build job green on the exact candidate commit.
 - [ ] iOS Apple-Silicon simulator build job green on the exact candidate commit.
+- [ ] Focused repository-policy workflow green for the candidate policy surface.
+- [ ] Dependency-free repository-audit workflow green for the candidate commit.
 - [ ] Any rerun/retry was reviewed and did not change source identity.
 
 Evidence:
@@ -102,12 +115,61 @@ Record exact workflow run/job identifiers.
 - [ ] `npm run test`
 - [ ] `npm run build`
 - [ ] `npm run test:e2e:infra`
+- [ ] `npm run policy:pwa:test`
+- [ ] `npm run policy:pwa`
 - [ ] `npm run test:e2e` in an unrestricted Chromium-compatible environment
 
 Evidence:
 
 ```text
 Record exact runtime versions and run identifiers.
+```
+
+## Web / PWA candidate
+
+Deployment identity:
+
+- URL:
+- Protocol:
+- Hosting/build identifier:
+- Browser(s) and version(s):
+
+Automated production PWA evidence:
+
+- [ ] DiceLab is controlled by the expected `/sw.js` service worker during the production E2E journey.
+- [ ] A versioned `dicelab-*` cache is created.
+- [ ] The DiceLab cache contains generated Vite `/assets/` runtime files.
+- [ ] The preview server is stopped before the automated offline reload.
+- [ ] A cache-bypassing reload succeeds while the preview server is unavailable.
+- [ ] DiceLab content renders after the offline reopen.
+- [ ] Previously restored/created roll history remains available after the offline reopen.
+
+Install metadata/artifact evidence:
+
+- [ ] `manifest.webmanifest` loads without parse errors.
+- [ ] `start_url` and `scope` match the reviewed root deployment model.
+- [ ] 192×192 install icon renders correctly.
+- [ ] 512×512 maskable install icon renders correctly.
+- [ ] Apple touch icon renders correctly.
+- [ ] Web release artifact contains `manifest.webmanifest`, `sw.js`, install icons, and generated `/assets/` files.
+- [ ] Normal non-loopback production service-worker registration uses HTTPS.
+
+Representative real install/offline evidence:
+
+- [ ] Desktop browser or ChromeOS install/standalone launch reviewed where supported.
+- [ ] Android browser install/add-to-home-screen flow reviewed where supported.
+- [ ] iOS/iPadOS Add to Home Screen title/icon behavior reviewed.
+- [ ] Representative installed/standalone browser layout reviewed.
+- [ ] Representative real browser/device offline reopen reviewed after an initial successful online load.
+- [ ] Local history/settings/locale persistence remains intact offline.
+- [ ] Browser download/export behavior remains usable where permitted by the browser.
+- [ ] Reconnecting refreshes runtime assets without corrupting local application data.
+- [ ] Tauri desktop, Android, and iOS builds do not register or become controlled by `/sw.js`.
+
+Evidence/notes:
+
+```text
+Record browser/device versions, install method, deployment identity, and offline observations.
 ```
 
 ## Parser fuzzing
@@ -160,6 +222,7 @@ Artifact/checksum:
 - [ ] Keyboard navigation reviewed.
 - [ ] Contact/project details reviewed.
 - [ ] No private path/raw OS error is exposed by native export failure UI.
+- [ ] Native Tauri runtime is not controlled by the browser service worker.
 
 Evidence/notes:
 
@@ -188,6 +251,7 @@ Artifact/checksum:
 - [ ] Keyboard navigation reviewed.
 - [ ] Contact/project details reviewed.
 - [ ] No private path/raw OS error is exposed by native export failure UI.
+- [ ] Native Tauri runtime is not controlled by the browser service worker.
 
 Signing/notarization status:
 
@@ -222,6 +286,7 @@ Artifact/checksum:
 - [ ] Keyboard navigation reviewed.
 - [ ] Contact/project details reviewed.
 - [ ] No private path/raw OS error is exposed by native export failure UI.
+- [ ] Native Tauri runtime is not controlled by the browser service worker.
 
 Evidence/notes:
 
@@ -262,6 +327,7 @@ Physical-device evidence:
 - [ ] Backup restore works from a candidate-produced file.
 - [ ] A provider/write failure produces localized safe feedback.
 - [ ] No private content URI/raw provider error is exposed by UI/logging.
+- [ ] Native Tauri runtime does not register `/sw.js`.
 - [ ] Android production signing/Google Play status is stated accurately.
 
 Signing/Play status:
@@ -305,6 +371,7 @@ Physical-device evidence:
 - [ ] Backup restore works from a candidate-produced file.
 - [ ] App remains usable after returning from the picker/security-scoped access lifecycle.
 - [ ] Native export failure UI does not expose a private selected file/raw native error.
+- [ ] Native Tauri runtime does not register `/sw.js`.
 - [ ] Apple signing/App Store Connect status is stated accurately.
 
 Signing/App Store status:
@@ -333,6 +400,7 @@ Evidence/notes:
 - [ ] Backup export/restore works.
 - [ ] Picker cancellation/failure behavior is safe.
 - [ ] Settings/history persist after restart.
+- [ ] Native Tauri runtime does not register `/sw.js`.
 
 Evidence/notes:
 
@@ -346,9 +414,10 @@ Evidence/notes:
 - [ ] Command palette traps/restores focus correctly.
 - [ ] Onboarding is usable by keyboard.
 - [ ] Android/iOS touch primary journey completed.
+- [ ] Installed/standalone PWA primary layout reviewed on a representative platform.
 - [ ] 200% text scaling does not hide required controls/content on representative targets.
 - [ ] Reduced-motion preference removes nonessential movement.
-- [ ] Screen-reader names identify primary controls and dialogs on representative desktop/mobile targets.
+- [ ] Screen-reader names identify primary controls and dialogs on representative desktop/mobile/browser targets.
 - [ ] Mobile safe areas/notches/home indicators do not cover controls.
 - [ ] English layout reviewed.
 - [ ] Hindi layout reviewed.
@@ -367,6 +436,7 @@ Only candidate-build screenshots belong here.
 - [ ] Probability screenshot captured.
 - [ ] Settings screenshot captured showing the candidate version.
 - [ ] Hindi interface screenshot captured.
+- [ ] Installed/standalone PWA or ChromeOS screenshot captured.
 - [ ] Android phone screenshot captured.
 - [ ] iPhone screenshot captured.
 - [ ] iPad/tablet screenshot captured.
@@ -380,6 +450,7 @@ Paths/links:
 
 - [ ] Tag workflow's documentation and repository-policy gates completed successfully.
 - [ ] Expected Windows/macOS/Linux/web artifacts are present.
+- [ ] Web artifact contains `manifest.webmanifest`, `sw.js`, required install icons, and generated `/assets/` runtime files.
 - [ ] Expected Android APK/AAB validation artifact package is present.
 - [ ] Expected unsigned iOS device archive package is present.
 - [ ] ZIP files are non-empty and inspect correctly.
@@ -392,6 +463,7 @@ Paths/links:
 - [ ] Android signing/Play claims exactly match produced artifacts/account state.
 - [ ] iOS signing/App Store claims exactly match produced artifacts/account state.
 - [ ] Unsigned validation artifacts are not described as store-ready.
+- [ ] PWA install/offline claims match observed candidate deployment evidence rather than source configuration alone.
 
 Evidence:
 
