@@ -2,7 +2,7 @@
   "name": "dicelab",
   "version": "2.0.12",
   "private": true,
-  "description": "A polished offline-first dice simulator for desktop and web.",
+  "description": "A polished offline-first dice simulator for desktop, mobile, and web.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -39,7 +39,14 @@
     "release:verify:test": "node --test scripts/verify-release-packages.test.mjs",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "tauri:android:init": "tauri android init",
+    "tauri:android:dev": "tauri android dev",
+    "tauri:android:build": "tauri android build --apk --aab",
+    "tauri:ios:init": "tauri ios init",
+    "tauri:ios:dev": "tauri ios dev",
+    "tauri:ios:build": "tauri ios build",
+    "tauri:ios:build:ci": "tauri ios build --ci --no-sign"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",
