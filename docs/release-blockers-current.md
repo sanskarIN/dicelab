@@ -2,40 +2,28 @@
 
 Current candidate: **2.0.12** (`v2.0.12`)
 
-Last reviewed: 2026-08-19
+Last reviewed: 2026-08-20
 
-This file separates **implemented product/repository work** from **release evidence that still must be observed**. It should be updated only when a blocker is actually resolved on the intended candidate commit.
+This file separates **implemented product/repository work** from **release evidence that still must be observed**. A configured workflow or compilable-looking source change is not treated as passing evidence until it is actually observed on the intended candidate commit.
 
-## Blocker 1 — Generated dependency lockfiles
+## Resolved — generated dependency lock synchronization
 
-The authoritative manifests/configuration are now prepared for 2.0.12, but both generated dependency locks remain on the previous application version and the Rust lock is also missing the native dialog dependency.
+The generated dependency-lock blocker is now closed.
 
-### npm lock state
-
-Current observed state:
+Current observed npm state:
 
 ```text
 package.json version                  2.0.12
-package-lock.json top-level version   0.1.0
-package-lock.json packages[""]        0.1.0
+package-lock.json top-level version   2.0.12
+package-lock.json packages[""]        2.0.12
 ```
 
-The dependency ranges remain represented, but npm must regenerate its lock metadata before the 2.0.12 candidate can make a reproducibility/version-synchronization claim.
-
-### Cargo lock state
-
-`src-tauri/Cargo.toml` declares package version `2.0.12` and includes:
-
-```toml
-tauri-plugin-dialog = "2.7.2"
-```
-
-The directly inspected DiceLab package block in `src-tauri/Cargo.lock` still reads:
+Current observed Cargo package block:
 
 ```toml
 [[package]]
 name = "dicelab"
-version = "0.1.0"
+version = "2.0.12"
 dependencies = [
  "rand",
  "regex",
@@ -43,55 +31,34 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
 ]
 ```
 
-Therefore the generated Rust lock is stale in two independently observable ways:
+This includes the direct `tauri-plugin-fs` dependency introduced for cross-platform native export handling. The generated Cargo lock must continue to be treated as package-manager output rather than hand-edited dependency metadata.
 
-- DiceLab's lock package version is still `0.1.0` rather than `2.0.12`;
-- `tauri-plugin-dialog` is absent from DiceLab's direct dependency list/lock graph.
+The lockfile workflow remains responsible for regenerating npm/Cargo locks after manifest changes, verifying locked Cargo metadata and synchronized application versions, checking generated diff hygiene, and committing the generated locks to `main` or the `automation/lockfiles` fallback branch when required.
 
-The lockfile workflow is configured to:
+## Blocker 1 — Observed full CI on the cross-platform candidate
 
-- trigger on `package.json`, `package-lock.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, and its own workflow definition;
-- regenerate npm and Cargo lockfiles with the package managers;
-- verify the generated Cargo lock with `cargo metadata --locked --no-deps --format-version 1`;
-- run `git diff --check` before committing generated lockfiles;
-- attempt a direct `main` update and otherwise publish the generated commit on `automation/lockfiles`.
+The repository now configures normal CI for:
 
-The latest commit check still shows no generated `build: lock application dependencies` commit for the 2.0.12 bump, and the latest branch check still shows no `automation/lockfiles` fallback branch. This blocker remains open.
+- web quality and production real-browser E2E;
+- locked Rust formatting/tests/Clippy;
+- Android ARM64 native APK/AAB compilation;
+- iOS Apple-Silicon simulator compilation.
 
-### Stronger version gate now in place
+The configuration itself is implemented. Release readiness still requires those jobs to be observed green for the exact final 2.0.12 candidate commit after all cross-platform changes and documentation updates are present.
 
-`scripts/check-version-sync.mjs` now includes generated lock metadata in the version contract. It verifies:
+Required evidence:
 
-- `package.json`;
-- `package-lock.json` top-level version;
-- `package-lock.json packages[""]` version;
-- `src/config/app.ts`;
-- `src-tauri/Cargo.toml`;
-- DiceLab's `src-tauri/Cargo.lock` package version;
-- `src-tauri/tauri.conf.json`;
-- optional release tag/version agreement.
-
-Its focused parser/agreement suite was independently exercised after the hardening and passed **14/14 tests**. The full repository `version:check` is expected to fail while the two generated locks remain at `0.1.0`; that failure is now intentional protection rather than an undocumented inconsistency.
-
-Required sequence on a network-enabled runner:
-
-```bash
-npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-
-cd src-tauri
-cargo generate-lockfile
-cargo test --locked
-cargo clippy --all-targets --all-features --locked -- -D warnings
-cd ..
-
-npm run policy:lockfiles
-DICELAB_EXPECT_VERSION=v2.0.12 npm run version:check
-```
-
-Do not hand-edit Cargo's transitive lock entries.
+- exact candidate source commit;
+- successful web job;
+- successful Rust job;
+- successful Android job;
+- successful iOS simulator job;
+- no ignored required failure/retry that changes the candidate commit.
 
 ## Blocker 2 — Observed full browser E2E
 
@@ -124,7 +91,7 @@ Any discovered reproducible case should become a deterministic Rust regression b
 
 The 2.0.12 candidate needs an actual recorded run rather than an assumed performance claim.
 
-## Blocker 5 — Platform candidate builds
+## Blocker 5 — Desktop candidate builds and smoke evidence
 
 Windows, macOS, and Linux 2.0.12 candidate artifacts must each be built from the intended source commit and smoke-tested.
 
@@ -145,26 +112,67 @@ For every supported desktop candidate verify at least:
 - reduced-motion/keyboard behavior is usable;
 - native errors do not expose a private selected filesystem path.
 
-## Blocker 6 — Accessibility/manual localization review
+## Blocker 6 — Android physical-device evidence
+
+DiceLab now has an Android Tauri target with Android API 24 minimum, Android init/dev/build scripts, safe-area/touch UI behavior, native Rust mobile entry, and CI/release build jobs.
+
+A compiler result alone is not enough for release. On at least one representative physical Android device, record:
+
+- launch/startup and version display;
+- secure and deterministic seeded rolls;
+- local history/settings/locale persistence across restart;
+- portrait and landscape layout behavior;
+- bottom navigation and 44px coarse-pointer target usability;
+- English/Hindi switching and 200% text scaling where the device permits it;
+- History CSV/JSON export through the system document picker;
+- backup export and restore;
+- successful handling of an Android `content://` document-provider destination;
+- cancellation behavior;
+- a provider/write failure showing generic localized feedback without leaking a private URI/raw native error.
+
+Cloud/vendor document providers can behave differently from the local Documents/Downloads provider, so at least the system provider must be included in the release record and any additional provider limitations must be documented accurately.
+
+## Blocker 7 — iPhone/iPad physical-device evidence
+
+DiceLab now has an iOS/iPadOS Tauri target with iOS 14.0 minimum, iOS init/dev/build/simulator/archive scripts, safe-area/touch UI behavior, native Rust mobile entry, and CI/release build jobs.
+
+Before release, record physical-device evidence for representative iPhone and iPad form factors:
+
+- launch/startup and version display;
+- secure and deterministic seeded rolls;
+- local history/settings/locale persistence across restart;
+- portrait/landscape and safe-area behavior;
+- English/Hindi switching;
+- History CSV/JSON export through the Files picker;
+- backup export and restore;
+- cancellation behavior;
+- successful return from the file picker after security-scoped access is released;
+- user-safe failure feedback without private selected file details.
+
+The CI simulator build and unsigned device archive validate buildability, not App Store distribution readiness.
+
+## Blocker 8 — Accessibility/manual localization review
 
 Automated tests do not replace candidate review.
 
-Still required for the 2.0.12 build:
+Still required for the 2.0.12 build across representative desktop/mobile layouts:
 
-- keyboard-only primary journey;
+- keyboard-only desktop primary journey;
+- touch primary journey on Android/iOS;
 - focus visibility/order;
-- modal focus trapping/restoration;
+- modal focus trapping/restoration where keyboard interaction applies;
 - 200% text scaling;
+- safe-area/notch/home-indicator review;
 - reduced-motion review;
 - representative screen-reader labels/landmarks;
 - English layout review;
 - Hindi layout review.
 
-## Blocker 7 — Repository/security evidence
+## Blocker 9 — Repository/security evidence
 
 The repository contains executable policy audits for:
 
-- desktop capabilities;
+- cross-platform native capabilities;
 - Tauri CSP/remote IPC;
 - offline CSP network sources;
 - localized formatting boundary;
@@ -174,15 +182,16 @@ The repository contains executable policy audits for:
 - generated-lock-aware application version agreement;
 - exhaustive tracked-file documentation inventory.
 
-The tag-driven release workflow now also runs documentation inventory and repository policy gates directly before artifact production. Release readiness still requires observed successful 2.0.12 candidate runs plus review of:
+The tag-driven release workflow also runs documentation inventory and repository policy gates directly before artifact production. Release readiness still requires observed successful 2.0.12 candidate runs plus review of:
 
 - secret scanning;
 - CodeQL/code scanning;
 - dependency alerts;
 - repository security settings;
-- release workflow permissions.
+- release workflow permissions;
+- confirmation that renderer capabilities did not gain broad filesystem/shell/HTTP/process access while adding mobile export support.
 
-## Blocker 8 — Real 2.0.12 candidate screenshots
+## Blocker 10 — Real 2.0.12 candidate screenshots
 
 README/release screenshots must be captured from verified candidate builds rather than mocked or development-only representations.
 
@@ -192,43 +201,58 @@ Required minimum set:
 - History;
 - Probability;
 - Settings showing 2.0.12;
-- representative Hindi interface.
+- representative Hindi interface;
+- representative Android phone view;
+- representative iPhone view;
+- representative iPad/tablet view.
 
-## Blocker 9 — Signing/notarization status
+## Blocker 11 — Signing, notarization, and store status
 
-Signing/notarization should be completed where credentials/infrastructure are available.
+Signing/distribution credentials are intentionally not stored in the repository.
 
-If not configured, 2.0.12 release documentation must state that accurately. Never commit signing credentials or private keys.
+Before publication, accurately record the actual state of:
 
-## Blocker 10 — Artifact/checksum/provenance review
+- Windows signing, if configured;
+- macOS signing/notarization, if configured;
+- Android APK/AAB signing and Google Play registration;
+- iOS distribution signing/provisioning and App Store Connect registration.
+
+The current mobile release jobs intentionally produce **release-validation artifacts**. The Android workflow output and unsigned iOS `.xcarchive` must not be described as store-ready unless a separate reviewed signing/distribution process has actually been completed.
+
+Never commit signing credentials, Android keystores, Apple certificates/private keys, provisioning secrets, or store API credentials.
+
+## Blocker 12 — Artifact/checksum/provenance review
 
 Before publishing the 2.0.12 draft release:
 
-- download produced artifacts;
+- download produced web/Windows/macOS/Linux/Android/iOS artifact packages;
 - verify SHA-256 checksums;
 - inspect expected package contents;
 - verify `RELEASE-METADATA.json` reports tag `v2.0.12`, the exact source commit, and workflow identity;
+- confirm Android/iOS artifact labels accurately state signing/archive status;
 - confirm release notes match `CHANGELOG.md`;
 - confirm signing claims match reality.
 
-## Final code-audit findings closed before candidate verification
+## Cross-platform implementation completed before candidate verification
 
-The final source/release audit on 2026-08-19 closed additional issues before release evidence is collected:
+The 2026-08-20 cross-platform implementation wave added or updated:
 
-- persisted keep/drop history validates the **exact expected kept indices**, not only the number of kept dice;
-- backup imports inherit the same semantic keep/drop integrity check and have dedicated regression coverage;
-- selected backup files larger than the 5,000,000-byte contract are rejected from `File.size` **before** `File.text()` reads them, while the existing UTF-8 byte check still runs after reading as defense in depth;
-- CSV formula-injection protection catches whitespace-prefixed formula markers in untrusted text fields;
-- CSV numeric total/modifier fields remain numeric instead of being unnecessarily apostrophe-prefixed when negative;
-- the history-limit UI emits a bounded integer immediately instead of allowing a fractional live value that would normalize differently after reload;
-- the visible command-palette shortcut advertises `Ctrl/⌘ K`, matching the implemented Ctrl-or-Command handler;
-- lockfile automation validates its generated diff and generated locked Cargo metadata before committing;
-- authoritative application manifest/config metadata has been advanced to `2.0.12`;
-- version synchronization now includes generated npm/Cargo application package versions;
-- the release workflow directly gates artifact creation on documentation inventory, policy checks, lock/version checks, release-verifier self-tests, and explicit job timeouts;
-- roadmap, governance, changelog, release guide, README, data contracts, automation reference, and release-evidence template now consistently target the 2.0.12 candidate.
+- Android Tauri configuration with API 24 minimum;
+- iOS/iPadOS Tauri configuration with iOS 14.0 minimum;
+- explicit native capability scope for Linux, macOS, Windows, Android, and iOS while retaining only `core:default` renderer permission;
+- Android init/dev/APK+AAB npm commands;
+- iOS init/dev/build/simulator/unsigned-archive npm commands;
+- normal CI Android ARM64 and iOS simulator compilation jobs;
+- tagged release universal Android APK/AAB validation job;
+- tagged release unsigned iOS device archive job;
+- draft-release dependency on successful web, desktop, Android, and iOS artifact jobs;
+- mobile safe-area, dynamic-viewport, coarse-pointer target, and compact-landscape CSS;
+- native export writes through Tauri's `FilePath`/filesystem abstraction so Android `content://` selections are not treated as ordinary paths;
+- explicit iOS release of security-scoped selected-file access after writing;
+- cross-platform setup/release/native-export/README/roadmap/inventory documentation;
+- generated Cargo lock synchronization including the direct `tauri-plugin-fs` dependency.
 
-These fixes are implementation/configuration work, not substitutes for the candidate execution evidence listed above.
+These are implementation/configuration changes, not substitutes for the execution evidence listed above.
 
 ## Final publication gate
 
