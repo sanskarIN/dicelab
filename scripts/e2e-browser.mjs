@@ -460,19 +460,19 @@ function captureProcessOutput(child, label) {
 }
 
 async function stopProcessAndWait(child) {
-  if (!child || child.exitCode !== null) return;
+  if (!child || child.exitCode !== null || child.signalCode !== null) return;
 
   const exited = new Promise((resolve) => child.once('exit', resolve));
-  child.kill('SIGTERM');
+  if (!child.kill('SIGTERM')) return;
   await Promise.race([exited, delay(3_000)]);
 
-  if (child.exitCode === null) {
+  if (child.exitCode === null && child.signalCode === null) {
     child.kill('SIGKILL');
     await Promise.race([exited, delay(1_000)]);
   }
 }
 
 function stopProcess(child) {
-  if (!child || child.killed) return;
+  if (!child || child.killed || child.exitCode !== null || child.signalCode !== null) return;
   child.kill('SIGTERM');
 }
