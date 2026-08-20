@@ -1,0 +1,23 @@
+{
+  "id": "/",
+  "name": "DiceLab",
+  "short_name": "DiceLab",
+  "description": "An offline-first dice simulator with expressions, statistics, presets, exports, and probability tools.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "categories": ["games", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/dicelab-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "prefer_related_applications": false
+}
