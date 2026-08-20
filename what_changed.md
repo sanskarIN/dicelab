@@ -4,7 +4,7 @@ Last updated: **2026-08-20**
 
 Current release-preparation target: **2.0.12** (`v2.0.12`)
 
-This file is the current continuation entry point. It records what is implemented, what changed during the cross-platform expansion, what was directly observed, and what still requires candidate execution/device/signing evidence.
+This file is the current continuation entry point. It records what is implemented, what changed during the cross-platform expansion and subsequent PWA hardening, what was directly observed from repository state, and what still requires candidate execution/device/signing evidence.
 
 ## Historical handoffs
 
@@ -16,6 +16,107 @@ Detailed earlier work remains preserved in:
 4. [`docs/handoffs/2026-08-19-documentation-completion.md`](docs/handoffs/2026-08-19-documentation-completion.md)
 
 The handoff index is [`docs/handoffs/README.md`](docs/handoffs/README.md).
+
+---
+
+## 2026-08-20 PWA / browser-install hardening continuation
+
+After the native Windows/macOS/Linux/Android/iOS cross-platform expansion, the browser target was strengthened from a normal Vite companion into an installable production PWA without changing the native Tauri trust boundary.
+
+### Browser install and offline implementation
+
+The repository now includes:
+
+- `public/manifest.webmanifest` with standalone install metadata;
+- `public/dicelab-icon.svg` browser branding;
+- standard 192×192 and 512×512 PNG install icons;
+- maskable purpose on the 512×512 icon;
+- a dedicated 180×180 Apple touch icon;
+- iOS/iPadOS home-screen metadata;
+- `viewport-fit=cover` so existing safe-area CSS works correctly in edge-to-edge browser/home-screen layouts;
+- `public/sw.js` with a versioned DiceLab cache;
+- `src/services/pwa.ts` with production-only, non-Tauri service-worker registration;
+- HTTPS-or-reviewed-loopback registration rules;
+- unit tests for the registration boundary;
+- a dependency-free PWA integrity audit and self-tests.
+
+The service worker precaches both the stable shell and the generated content-hashed Vite `/assets/` files discovered from the built `index.html`. This avoids relying on the browser's ordinary HTTP cache for the first offline reopen.
+
+### Real offline browser evidence path
+
+`scripts/e2e-browser.mjs` now extends the existing production Chromium journey by:
+
+1. waiting for the DiceLab `/sw.js` controller;
+2. confirming a versioned `dicelab-*` cache exists;
+3. confirming generated `/assets/` runtime files are cached;
+4. stopping the Vite preview process;
+5. performing a cache-bypassing page reload with the server unavailable;
+6. confirming DiceLab renders from the service-worker cache;
+7. confirming restored roll history remains available after the offline reopen.
+
+The preview-process shutdown lifecycle was also hardened so signal-based exits are distinguished from normal exits and the file again has the final newline required by formatting hygiene.
+
+### Policy and CI hardening
+
+PWA integrity is now enforced through multiple existing repository gates rather than a one-off check:
+
+- the normal CI web-quality job runs `policy:pwa:test` and `policy:pwa` before dependency installation;
+- the dependency-free repository-audit workflow runs the same PWA self-test/audit;
+- the focused repository-policy workflow now watches PWA, manifest, lock, native, and policy inputs and runs the canonical `policy:test` + `policy:all` commands;
+- the tag/manual release-policy workflow also uses the canonical `policy:test` + `policy:all` commands;
+- `policy:test` now includes the PWA auditor self-test;
+- `policy:all` includes the PWA integrity audit.
+
+This reduces policy drift: future additions to the canonical package scripts automatically flow into the focused/release policy workflows instead of requiring several duplicated hard-coded command lists.
+
+### PWA/release documentation
+
+The following release-facing documents now describe the browser-install/offline path and its evidence boundaries:
+
+- [`README.md`](README.md) — installable PWA/ChromeOS support and current lock status;
+- [`docs/web-pwa.md`](docs/web-pwa.md) — source-of-truth PWA architecture, caching, security, install behavior, CI, and manual verification;
+- [`docs/release-blockers-current.md`](docs/release-blockers-current.md) — candidate PWA/offline/install evidence blockers;
+- [`docs/release-candidate-evidence-template.md`](docs/release-candidate-evidence-template.md) — fields/checklists for automated offline reopen, production deployment, install UI, icons, secure origin, packaging, screenshots, accessibility, and Tauri exclusion;
+- [`docs/README.md`](docs/README.md) — documentation-hub link to the PWA guide;
+- [`docs/repository-file-reference.md`](docs/repository-file-reference.md) — exhaustive tracked-file entries for the new PWA assets/source/tests/audit.
+
+### Key PWA hardening commits
+
+- `ed7167fe` — `build: add Vite client type declarations`
+- `bbac6028` — `feat(web): add installable app icon`
+- `ffabf486` — `feat(web): add PWA manifest`
+- `de06d898` — `feat(web): add offline service worker`
+- `cf784b9c` — `feat(web): add guarded PWA registration service`
+- `f6cdf583` — `test(web): cover PWA registration boundaries`
+- `a24e925d` — `feat(web): register offline service worker`
+- `d24628fb` — `feat(web): wire install metadata and iOS safe areas`
+- `02c641a3` — `chore(web): add PWA integrity audit`
+- `3d3acfe3` — `test(web): cover PWA integrity audit`
+- `99158d47` — `build(web): expose PWA audit commands`
+- `ae376443` — `build(web): syntax-check service worker in audit`
+- `ca56b08e` — `ci(web): enforce PWA integrity`
+- `fa2e45ae` — `feat(web): publish install-ready PNG icons`
+- `98e963ae` — `feat(web): add iOS home-screen icon metadata`
+- `d1ae4107` — `feat(web): cache complete install asset set`
+- `3ae8744a` — `chore(web): harden install asset audit`
+- `c289d0c8` — `test(web): enforce production install icon contract`
+- `a692c6e6` — `docs(web): document installable offline web target`
+- `5aaa8f2f` — `docs(web): register PWA files in exhaustive inventory`
+- `486fe638` — `docs(web): link PWA guide from documentation hub`
+- `b29e26fc` — `docs(web): document installable PWA and current lock status`
+- `f6795ef3` — `fix(web): precache generated Vite runtime assets`
+- `b1ebc211` — `chore(web): require generated runtime precaching`
+- `75dfb74d` — `test(web): protect generated runtime precaching`
+- `e3a8b1c4` — `test(web): verify production PWA offline reopen`
+- `29761424` — `test(policy): include PWA auditor in aggregate self-tests`
+- `0c42d4e1` — `ci(policy): include PWA boundaries in focused audit`
+- `844a43c4` — `ci(release): unify tag policy audits with canonical scripts`
+- `a1728d86` — `fix(e2e): harden preview shutdown lifecycle`
+- `d6d88f42` — `docs(web): align PWA guide with offline E2E`
+- `b7e27822` — `ci(policy): unify focused policy workflow with canonical scripts`
+- `7af6f2ab` — `ci(audit): include PWA repository invariants`
+- `602fc7ca` — `docs(release): add PWA candidate evidence gates`
+- `a4bde08a` — `docs(release): add PWA evidence checklist`
 
 ---
 
@@ -39,9 +140,9 @@ The source/build surface now targets:
 | Linux | Tauri 2 desktop | implemented |
 | Android | Tauri 2 mobile | implemented, Android API 24+ |
 | iOS/iPadOS | Tauri 2 mobile | implemented, iOS/iPadOS 14.0+ |
-| Modern browsers | React/Vite web companion | implemented |
+| Modern browsers / ChromeOS | React/Vite installable PWA | implemented |
 
-“Implemented” here means the repository contains the target configuration, commands, native/runtime support, CI/release build path, and documentation. It does **not** mean every store/signing/device release gate has already been observed on the final candidate.
+“Implemented” here means the repository contains the target configuration, commands, native/runtime or browser-install support, CI/release build path, and documentation. It does **not** mean every store/signing/device/browser-install release gate has already been observed on the final candidate.
 
 ---
 
@@ -141,13 +242,17 @@ These synchronize README, setup, release, native-export, roadmap, release-blocke
 
 ## Current command surface
 
-### Web
+### Web / PWA
 
 ```bash
 npm run dev
 npm run build
+npm run policy:pwa:test
+npm run policy:pwa
 npm run test:e2e
 ```
+
+`npm run dev` deliberately does not register the service worker. Production PWA behavior is validated from the built application.
 
 ### Desktop
 
@@ -268,13 +373,14 @@ Normal `.github/workflows/ci.yml` now contains four primary jobs:
 ### Web quality
 
 - pre-install secret/version/E2E-infrastructure checks;
+- pre-install PWA auditor self-test and PWA integrity audit;
 - locked `npm ci`;
 - docs links;
 - Prettier;
 - ESLint;
 - unit/integration tests;
 - production Vite build;
-- real Chromium CDP E2E.
+- real Chromium CDP E2E including PWA cache inspection and server-offline reopen.
 
 ### Rust quality
 
@@ -301,6 +407,8 @@ Normal `.github/workflows/ci.yml` now contains four primary jobs:
 - `tauri ios init` CI generation;
 - Apple-Silicon simulator build validation.
 
+Additional repository-wide policy/audit workflows now run the canonical PWA checks as described above.
+
 Configuration existence is not reported as an observed green result. A final candidate still needs all required jobs observed green on the exact final commit.
 
 ---
@@ -315,6 +423,8 @@ Configuration existence is not reported as an observed green result. A final can
 4. Linux desktop bundle;
 5. universal Android APK/AAB validation build;
 6. unsigned iOS ARM64 device archive validation build.
+
+The release web verification runs canonical repository policy checks, which now include the PWA integrity boundary and its generated-asset precaching requirements.
 
 Only after all prerequisite artifact jobs succeed does the release job:
 
@@ -343,6 +453,10 @@ The repository can build Android APK/AAB artifacts, but Google Play publication 
 
 The repository can build the simulator and unsigned device archive validation paths, but end-user/App Store distribution still requires Apple Developer/App Store Connect signing/provisioning. No Apple private signing material is committed.
 
+### Browser / PWA
+
+The browser/PWA distribution path has no native package-signing requirement, but normal non-loopback service-worker registration requires a secure HTTPS origin. Browser/ChromeOS/Android/iOS install UI and offline behavior remain candidate evidence items rather than assumptions from source configuration.
+
 Do not change docs to call unsigned CI outputs “store ready.”
 
 ---
@@ -352,33 +466,42 @@ Do not change docs to call unsigned CI outputs “store ready.”
 Observed from the repository after the changes:
 
 - `package.json` exposes web, desktop, Android, and iOS command surfaces;
+- `package.json` exposes PWA audit/self-test commands and includes the PWA auditor in aggregate policy self-tests;
 - Tauri configuration sets Android API 24 and iOS 14.0 minimums;
 - capability JSON explicitly covers Linux/macOS/Windows/Android/iOS and retains only `core:default`;
 - Rust manifest directly includes `tauri-plugin-fs`;
 - Rust native code uses Tauri `FilePath`/filesystem handling for selected native export destinations;
 - `src/mobile.css` is tracked and loaded by `src/main.tsx`;
-- normal CI includes Android and iOS build jobs;
+- the web target includes a manifest, service worker, standard PNG install icons, Apple touch icon, and guarded production registration;
+- the service worker discovers and precaches generated same-origin Vite `/assets/` runtime files;
+- the browser E2E source explicitly verifies PWA controller/cache state, stops the preview process, reloads offline, and checks persisted history;
+- normal CI includes Android and iOS build jobs plus PWA policy/offline E2E checks;
+- focused repository-policy and dependency-free repository-audit workflows include PWA boundaries;
+- the release-policy workflow uses canonical `policy:test` + `policy:all` commands;
 - tagged release includes Android and iOS artifact jobs and requires them before draft packaging;
-- README/setup/release/native-export/roadmap/release-blocker/file-reference/changelog documentation describes the cross-platform design;
+- README/setup/release/native-export/roadmap/release-blocker/file-reference/PWA/evidence documentation describes the cross-platform design;
 - `package-lock.json` application versions are 2.0.12;
 - DiceLab's generated Cargo lock package is 2.0.12;
 - DiceLab's generated Cargo dependency list contains `tauri-plugin-dialog` and `tauri-plugin-fs`.
 
 Not yet claimed as observed final-candidate evidence:
 
-- all CI jobs green on the final post-documentation commit;
-- full browser E2E green on that final commit;
-- locked Rust test/Clippy green on that final commit after the mobile changes;
+- all CI jobs green on the exact latest candidate commit;
+- full browser/PWA E2E green on that exact commit;
+- a deployed HTTPS PWA install reviewed on representative desktop/ChromeOS/browser environments;
+- representative Android-browser install/add-to-home-screen evidence;
+- representative iOS/iPadOS Add to Home Screen evidence;
+- locked Rust test/Clippy green on that exact commit after all changes;
 - Android physical-device smoke;
 - Android system/cloud-provider export compatibility evidence;
 - iPhone physical-device smoke;
 - iPad physical-device smoke;
-- mobile screen-reader/accessibility review;
+- mobile/browser screen-reader/accessibility review;
 - parser fuzz campaign on the final candidate;
 - benchmark record on the final candidate;
 - Windows/macOS/Linux packaged smoke on the final candidate;
 - CodeQL/dependency/repository-security review on the final candidate;
-- real release screenshots;
+- real release screenshots including a representative installed/standalone PWA view;
 - Windows/macOS signing/notarization status;
 - Android production signing/Google Play publication;
 - iOS App Store signing/publication;
@@ -393,20 +516,21 @@ Not yet claimed as observed final-candidate evidence:
 Generated dependency locks are no longer the first blocker. Continue release verification in this order:
 
 1. observe the final normal CI web/Rust/Android/iOS jobs green on the exact candidate commit;
-2. observe production browser E2E green;
-3. observe locked Rust fmt/test/Clippy green after all mobile changes;
-4. run/observe the bounded Rust parser fuzz campaign;
-5. record benchmark evidence;
-6. build and smoke Windows/macOS/Linux artifacts;
-7. run physical Android smoke including `content://` document-provider export;
-8. run physical iPhone/iPad smoke including safe areas, orientation, persistence, Files-picker export, and security-scoped access return;
-9. complete English/Hindi/accessibility/security review;
-10. capture real candidate screenshots;
-11. record actual signing/notarization/store status without overstating unsigned artifacts;
-12. trigger the tagged draft release only from the verified commit;
-13. verify every ZIP/checksum/provenance record;
-14. fill [`docs/release-candidate-evidence-template.md`](docs/release-candidate-evidence-template.md);
-15. publish `v2.0.12` only after explicit maintainer **APPROVE**.
+2. observe production browser/PWA E2E green, including the generated-runtime cache check and server-offline reopen;
+3. verify the actual production HTTPS PWA install path on representative desktop/ChromeOS plus Android/iOS browser/home-screen flows where supported;
+4. observe locked Rust fmt/test/Clippy green after all cross-platform/PWA changes;
+5. run/observe the bounded Rust parser fuzz campaign;
+6. record benchmark evidence;
+7. build and smoke Windows/macOS/Linux artifacts;
+8. run physical Android smoke including `content://` document-provider export;
+9. run physical iPhone/iPad smoke including safe areas, orientation, persistence, Files-picker export, and security-scoped access return;
+10. complete English/Hindi/accessibility/security review across native and installed-browser layouts;
+11. capture real candidate screenshots, including representative installed/standalone PWA evidence;
+12. record actual signing/notarization/store/deployment status without overstating unsigned artifacts or unobserved browser behavior;
+13. trigger the tagged draft release only from the verified commit;
+14. verify every ZIP/checksum/provenance record and web install/offline artifact contents;
+15. fill [`docs/release-candidate-evidence-template.md`](docs/release-candidate-evidence-template.md);
+16. publish `v2.0.12` only after explicit maintainer **APPROVE**.
 
 ---
 
@@ -417,11 +541,17 @@ Generated dependency locks are no longer the first blocker. Continue release ver
 - Keep Android `content://` handling behind `FilePath`/native abstractions; do not convert provider URIs into local paths.
 - Keep iOS selected-file security scope lifecycle explicit.
 - Preserve safe-area and coarse-pointer mobile CSS when restructuring layout/navigation.
+- Keep service-worker registration production-only and excluded from all Tauri runtimes.
+- Keep PWA caching same-origin; do not introduce remote runtime/CDN dependencies without an explicit architecture/security review.
+- Keep generated build-asset precaching restricted to the production `/assets/` namespace.
+- Increment the service-worker cache generation when the precached shell changes materially.
+- Preserve the real-browser server-offline reopen step when modifying E2E lifecycle/process control.
+- Keep canonical `policy:test` and `policy:all` scripts synchronized with any new executable policy and let focused/release workflows call those canonical scripts rather than duplicating command lists.
 - When `Cargo.toml` or `package.json` dependency declarations change, regenerate lockfiles using package-manager automation.
 - Treat CI configuration as implementation, not as proof of a passing candidate.
 - Never commit Android/iOS/store signing credentials.
 - Do not call unsigned Android/iOS workflow artifacts store-ready.
-- Keep README, setup, release, release blockers, changelog, roadmap, and exhaustive file inventory synchronized when platform behavior changes.
+- Keep README, setup, release, release blockers, changelog, roadmap, PWA guide, release-evidence template, and exhaustive file inventory synchronized when platform behavior changes.
 
 ---
 
@@ -432,6 +562,7 @@ Generated dependency locks are no longer the first blocker. Continue release ver
 - [`ROADMAP.md`](ROADMAP.md)
 - [`docs/README.md`](docs/README.md)
 - [`docs/setup.md`](docs/setup.md)
+- [`docs/web-pwa.md`](docs/web-pwa.md)
 - [`docs/native-exports.md`](docs/native-exports.md)
 - [`docs/release.md`](docs/release.md)
 - [`docs/release-blockers-current.md`](docs/release-blockers-current.md)
