@@ -1,8 +1,9 @@
 use rand::{rngs::OsRng, Rng};
 use regex::Regex;
 use serde::Serialize;
-use std::{path::Path, sync::OnceLock};
+use std::{io::Write as _, path::Path, sync::OnceLock};
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_fs::{FsExt as _, OpenOptions};
 
 const MAX_DICE: usize = 1_000;
 const MAX_SIDES: u32 = 1_000_000;
@@ -126,17 +127,42 @@ async fn save_text_export(
     let Some(file_path) = selected else {
         return Ok(false);
     };
-    let path = file_path
-        .into_path()
-        .map_err(|_| "DiceLab could not resolve the selected file path.".to_string())?;
-    if !selected_export_path_is_valid(&path, spec) {
-        return Err(format!(
-            "Selected export file must use the .{} extension.",
-            spec.extension
-        ));
+
+    // Desktop and iOS selections can be resolved to filesystem paths, so keep
+    // the existing extension guard there. Android document providers return
+    // content:// URIs; the requested filename has already been validated and
+    // the filesystem plugin is responsible for opening that URI safely.
+    if let Ok(path) = file_path.clone().into_path() {
+        if !selected_export_path_is_valid(&path, spec) {
+            return Err(format!(
+                "Selected export file must use the .{} extension.",
+                spec.extension
+            ));
+        }
     }
-    std::fs::write(path, contents.as_bytes())
-        .map_err(|_| "DiceLab could not save the selected file.".to_string())?;
+
+    let mut options = OpenOptions::new();
+    options.write(true).create(true).truncate(true);
+    let mut file = app
+        .fs()
+        .open(file_path.clone(), options)
+        .map_err(|_| "DiceLab could not open the selected file for writing.".to_string())?;
+    let write_result = file
+        .write_all(contents.as_bytes())
+        .and_then(|_| file.sync_all())
+        .map_err(|_| "DiceLab could not save the selected file.".to_string());
+    drop(file);
+
+    #[cfg(target_os = "ios")]
+    let stop_result = app
+        .fs()
+        .stop_accessing_security_scoped_resource(file_path)
+        .map_err(|_| "DiceLab could not release access to the selected file.".to_string());
+
+    write_result?;
+    #[cfg(target_os = "ios")]
+    stop_result?;
+
     Ok(true)
 }
 
@@ -393,6 +419,7 @@ fn hash_seed(seed: &str) -> u32 {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .invoke_handler(tauri::generate_handler![roll_expression, save_text_export])
         .run(tauri::generate_context!())
         .expect("error while running DiceLab");
