@@ -44,7 +44,7 @@ The lockfile workflow remains responsible for regenerating npm/Cargo locks after
 
 The repository now configures normal CI for:
 
-- web quality and production real-browser E2E;
+- web quality, PWA integrity, and production real-browser/offline E2E;
 - locked Rust formatting/tests/Clippy;
 - Android ARM64 native APK/AAB compilation;
 - iOS Apple-Silicon simulator compilation.
@@ -54,22 +54,41 @@ The configuration itself is implemented. Release readiness still requires those 
 Required evidence:
 
 - exact candidate source commit;
-- successful web job;
+- successful web job, including PWA policy checks and offline-reopen E2E;
 - successful Rust job;
 - successful Android job;
 - successful iOS simulator job;
 - no ignored required failure/retry that changes the candidate commit.
 
-## Blocker 2 — Observed full browser E2E
+## Blocker 2 — Observed full browser/PWA E2E
 
-The production real-browser journey is implemented, but 2.0.12 release evidence requires an observed successful run on infrastructure that permits the required local preview/browser navigation.
+The production real-browser journey is implemented, including install-time PWA cache verification and an actual offline reopen after the Vite preview server is stopped. However, 2.0.12 release evidence requires an observed successful run on infrastructure that permits the required local preview/browser navigation and service-worker lifecycle.
+
+The automated journey now verifies:
+
+- onboarding and primary roll/history behavior;
+- real CSV and backup downloads;
+- reload persistence;
+- keyboard command-palette behavior;
+- exact probability workflow;
+- clear-data and real backup restore;
+- active DiceLab `/sw.js` service-worker control;
+- a DiceLab cache containing generated Vite `/assets/` runtime files;
+- preview-server shutdown before the offline check;
+- successful cache-bypassing reload with the server unavailable;
+- persisted roll history still available after the offline reopen.
 
 Required evidence:
 
 - exact 2.0.12 source commit;
 - browser/runtime versions;
 - successful E2E workflow/run identifier or preserved local output;
+- observed successful service-worker controller/cache checks;
+- observed successful server-offline reload with generated runtime assets served from the DiceLab cache;
+- persisted application/history state surviving that offline reopen;
 - no skipped primary journey steps.
+
+Representative manual browser/ChromeOS/Android/iOS install UI remains a separate release review because one Chromium automation path cannot prove every browser's install/add-to-home-screen behavior.
 
 ## Blocker 3 — Observed parser fuzz campaign
 
@@ -110,7 +129,8 @@ For every supported desktop candidate verify at least:
 - backup restore works;
 - contact/project data is correct;
 - reduced-motion/keyboard behavior is usable;
-- native errors do not expose a private selected filesystem path.
+- native errors do not expose a private selected filesystem path;
+- Tauri desktop runtimes do not register or become controlled by `/sw.js`.
 
 ## Blocker 6 — Android physical-device evidence
 
@@ -128,9 +148,12 @@ A compiler result alone is not enough for release. On at least one representativ
 - backup export and restore;
 - successful handling of an Android `content://` document-provider destination;
 - cancellation behavior;
-- a provider/write failure showing generic localized feedback without leaking a private URI/raw native error.
+- a provider/write failure showing generic localized feedback without leaking a private URI/raw native error;
+- confirmation that the native Tauri runtime does not register `/sw.js`.
 
 Cloud/vendor document providers can behave differently from the local Documents/Downloads provider, so at least the system provider must be included in the release record and any additional provider limitations must be documented accurately.
+
+For the separate browser/PWA distribution path on Android, also verify a compatible browser's install/add-to-home-screen behavior, icon presentation, offline reopening, and local persistence without treating that browser install as evidence for the native Tauri APK/AAB path.
 
 ## Blocker 7 — iPhone/iPad physical-device evidence
 
@@ -147,18 +170,22 @@ Before release, record physical-device evidence for representative iPhone and iP
 - backup export and restore;
 - cancellation behavior;
 - successful return from the file picker after security-scoped access is released;
-- user-safe failure feedback without private selected file details.
+- user-safe failure feedback without private selected file details;
+- confirmation that the native Tauri runtime does not register `/sw.js`.
 
 The CI simulator build and unsigned device archive validate buildability, not App Store distribution readiness.
+
+For the separate browser/PWA distribution path, verify iOS/iPadOS Add to Home Screen title/icon behavior, safe-area presentation, offline reopening, and local persistence independently from the native Tauri evidence.
 
 ## Blocker 8 — Accessibility/manual localization review
 
 Automated tests do not replace candidate review.
 
-Still required for the 2.0.12 build across representative desktop/mobile layouts:
+Still required for the 2.0.12 build across representative desktop/mobile/browser layouts:
 
 - keyboard-only desktop primary journey;
 - touch primary journey on Android/iOS;
+- installed/standalone PWA layout on at least one representative browser or ChromeOS environment;
 - focus visibility/order;
 - modal focus trapping/restoration where keyboard interaction applies;
 - 200% text scaling;
@@ -179,17 +206,21 @@ The repository contains executable policy audits for:
 - native runtime boundary;
 - native command contract;
 - dependency lock consistency;
+- PWA manifest/install metadata, local icon paths, service-worker same-origin/GET-only boundaries, generated Vite runtime precaching, production-only registration, and Tauri exclusion;
 - generated-lock-aware application version agreement;
 - exhaustive tracked-file documentation inventory.
 
-The tag-driven release workflow also runs documentation inventory and repository policy gates directly before artifact production. Release readiness still requires observed successful 2.0.12 candidate runs plus review of:
+The main CI, focused repository-policy workflow, dependency-free repository audit, and tag/manual release-policy workflow now all enforce the PWA boundary through the canonical repository scripts. The tag-driven release workflow also runs documentation inventory and repository policy gates directly before artifact production.
+
+Release readiness still requires observed successful 2.0.12 candidate runs plus review of:
 
 - secret scanning;
 - CodeQL/code scanning;
 - dependency alerts;
 - repository security settings;
 - release workflow permissions;
-- confirmation that renderer capabilities did not gain broad filesystem/shell/HTTP/process access while adding mobile export support.
+- confirmation that renderer capabilities did not gain broad filesystem/shell/HTTP/process access while adding mobile export support;
+- confirmation that the browser PWA cache remains same-origin/local and does not introduce remote runtime dependencies.
 
 ## Blocker 10 — Real 2.0.12 candidate screenshots
 
@@ -202,6 +233,7 @@ Required minimum set:
 - Probability;
 - Settings showing 2.0.12;
 - representative Hindi interface;
+- representative installed/standalone PWA or ChromeOS view;
 - representative Android phone view;
 - representative iPhone view;
 - representative iPad/tablet view.
@@ -219,6 +251,8 @@ Before publication, accurately record the actual state of:
 
 The current mobile release jobs intentionally produce **release-validation artifacts**. The Android workflow output and unsigned iOS `.xcarchive` must not be described as store-ready unless a separate reviewed signing/distribution process has actually been completed.
 
+The browser/PWA path has no native signing requirement, but its production deployment still requires an appropriate secure origin for normal non-loopback service-worker registration and release evidence must identify the actual deployment used for install/offline verification.
+
 Never commit signing credentials, Android keystores, Apple certificates/private keys, provisioning secrets, or store API credentials.
 
 ## Blocker 12 — Artifact/checksum/provenance review
@@ -228,6 +262,7 @@ Before publishing the 2.0.12 draft release:
 - download produced web/Windows/macOS/Linux/Android/iOS artifact packages;
 - verify SHA-256 checksums;
 - inspect expected package contents;
+- verify the web artifact includes `manifest.webmanifest`, `sw.js`, required install icons, and generated production `/assets/` files;
 - verify `RELEASE-METADATA.json` reports tag `v2.0.12`, the exact source commit, and workflow identity;
 - confirm Android/iOS artifact labels accurately state signing/archive status;
 - confirm release notes match `CHANGELOG.md`;
@@ -249,7 +284,13 @@ The 2026-08-20 cross-platform implementation wave added or updated:
 - mobile safe-area, dynamic-viewport, coarse-pointer target, and compact-landscape CSS;
 - native export writes through Tauri's `FilePath`/filesystem abstraction so Android `content://` selections are not treated as ordinary paths;
 - explicit iOS release of security-scoped selected-file access after writing;
-- cross-platform setup/release/native-export/README/roadmap/inventory documentation;
+- installable production PWA metadata for desktop browsers, ChromeOS, Android browsers, and iOS/iPadOS Add to Home Screen;
+- standard 192×192, maskable 512×512, and Apple 180×180 install icons plus SVG browser branding;
+- production-only/non-Tauri service-worker registration with secure-origin/loopback guards;
+- versioned same-origin service-worker caching of the stable shell plus generated Vite `/assets/` runtime files;
+- real-browser E2E that stops the preview server and verifies an offline reopen with persisted roll history;
+- PWA policy audit/self-tests enforced by normal CI, focused policy CI, repository audit, and tag/manual release policy;
+- cross-platform setup/release/native-export/README/roadmap/inventory/PWA documentation;
 - generated Cargo lock synchronization including the direct `tauri-plugin-fs` dependency.
 
 These are implementation/configuration changes, not substitutes for the execution evidence listed above.
@@ -263,6 +304,7 @@ These are implementation/configuration changes, not substitutes for the executio
 ## Handoff references
 
 - [`../what_changed.md`](../what_changed.md)
+- [`web-pwa.md`](web-pwa.md)
 - [`handoffs/README.md`](handoffs/README.md)
 - [`lockfile-policy.md`](lockfile-policy.md)
 - [`release.md`](release.md)
