@@ -1,6 +1,6 @@
-# Desktop capability policy
+# Native capability policy
 
-DiceLab keeps the Tauri webview capability surface intentionally narrow. The repository includes a dependency-free policy auditor so changes to `src-tauri/capabilities/*.json` cannot quietly introduce broad high-risk permission families without review.
+DiceLab keeps the Tauri webview capability surface intentionally narrow across Windows, macOS, Linux, Android, and iOS/iPadOS. The repository includes a dependency-free policy auditor so changes to `src-tauri/capabilities/*.json` cannot quietly introduce broad high-risk permission families without review.
 
 ## Policy goals
 
@@ -13,7 +13,17 @@ The current application does not need the webview to have general access to:
 - remote-origin capability access;
 - wildcard window targets.
 
-Native CSV/JSON output is deliberately handled by the purpose-built `save_text_export` Rust command. The webview does not need broad filesystem permissions to support that feature.
+Native CSV/JSON/backup output is deliberately handled by the purpose-built `save_text_export` Rust command. The webview does not need broad filesystem permissions to support desktop or mobile exports, including Android document-provider and iOS selected-file behavior.
+
+The current main capability is explicitly scoped to:
+
+- `linux`;
+- `macOS`;
+- `windows`;
+- `android`;
+- `iOS`.
+
+Its permission list remains only `core:default`.
 
 ## Auditor
 
@@ -36,6 +46,19 @@ The auditor reads every JSON file under `src-tauri/capabilities/` and fails if i
 
 The current main-window capability uses only the narrow core capability baseline required by DiceLab.
 
+## Native plugins versus renderer capabilities
+
+A Rust-side Tauri plugin dependency is not the same as granting that plugin's command permissions to the renderer.
+
+DiceLab initializes `tauri-plugin-dialog` and `tauri-plugin-fs` from Rust so the dedicated native export command can work with operating-system-selected destinations. The frontend still calls only DiceLab's allowlisted Rust application command; it is not given generic `fs:*` access.
+
+This distinction is especially important on mobile:
+
+- Android can return a `content://` document-provider selection;
+- iOS can return a security-scoped selected file;
+- the Rust/plugin layer handles those native destination types;
+- the renderer does not receive a broad arbitrary file API as a workaround.
+
 ## Self-tests
 
 Synthetic policy tests:
@@ -56,7 +79,7 @@ The integration regression invokes the same auditor against the actual committed
 
 `.github/workflows/capability-audit.yml` runs the dependency-free auditor when capability policy files, the auditor, or its core self-test change. It also supports manual dispatch.
 
-The workflow's final audit step always evaluates the actual checked-out capability files, so the committed configuration is checked even independently of the synthetic fixtures.
+The workflow's final audit step always evaluates the actual checked-out capability files, so the committed configuration is checked independently of the synthetic fixtures.
 
 A configured workflow is not a substitute for release evidence. Required status-check names should only be added to branch protection after a successful run has been observed.
 
@@ -68,12 +91,12 @@ If a future DiceLab feature genuinely requires a currently forbidden capability 
 
 1. write an ADR describing the user need and narrower alternatives considered;
 2. identify the minimum Tauri permission(s) required;
-3. scope the permission to explicit windows and resources;
+3. scope the permission to explicit windows, native platforms, and resources;
 4. add tests for expected and denied behavior;
 5. update `SECURITY.md`, architecture, and threat-boundary documentation;
 6. update this auditor deliberately in the same reviewed change;
-7. verify the permission in packaged Windows/macOS/Linux candidates;
-8. keep credentials, private paths, and user content out of diagnostic logs.
+7. verify the permission on every affected native target, including Android/iOS where applicable;
+8. keep credentials, private paths/URIs, and user content out of diagnostic logs.
 
 Broad `default` permissions for a high-risk plugin should not be granted merely for convenience.
 
@@ -81,11 +104,13 @@ Broad `default` permissions for a high-risk plugin should not be granted merely 
 
 The native export design is intentionally compatible with this policy:
 
-- the renderer passes no output path;
-- Rust opens the operating-system save dialog;
-- the selected path originates from that dialog;
-- Rust validates format, filename, payload size, and final extension;
-- native errors returned to the UI omit the private selected path;
+- the renderer passes no output path or content URI;
+- Rust opens the operating-system save/document dialog;
+- the selected `FilePath` originates from that dialog;
+- Rust validates format, suggested filename, and payload size;
+- normal filesystem destinations also receive selected-extension validation before writing;
+- Android `content://` and iOS security-scoped selections stay behind the native Rust/plugin boundary;
+- native errors returned to the UI omit private selected paths/URIs;
 - no `fs:` capability is needed in the webview.
 
 See:
