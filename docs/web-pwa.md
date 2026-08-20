@@ -30,6 +30,7 @@ The PWA layer does not replace the native Tauri applications. It strengthens the
 | `src/services/pwa.test.ts` | Unit coverage for registration eligibility and failure behavior. |
 | `scripts/check-pwa.mjs` | Dependency-free repository audit for install/offline invariants. |
 | `scripts/check-pwa.test.mjs` | Self-tests proving the PWA audit catches representative regressions. |
+| `scripts/e2e-browser.mjs` | Real Chromium production journey including PWA cache inspection and an offline reopen after the preview server is stopped. |
 
 ## Registration boundary
 
@@ -50,7 +51,7 @@ A registration failure is non-fatal. DiceLab continues to run as a normal web ap
 
 ### Install
 
-The service worker precaches the stable application shell:
+The service worker first precaches the stable application shell:
 
 - `/`;
 - `/index.html`;
@@ -59,7 +60,9 @@ The service worker precaches the stable application shell:
 - the 192×192 and 512×512 PNG install icons;
 - the Apple touch icon.
 
-A changed cache generation should use a new `CACHE_NAME` so old DiceLab cache generations can be removed during activation.
+It then reads the cached production `index.html`, discovers same-origin references under `/assets/`, and precaches those generated Vite runtime files in the same cache. This second phase is important because production JavaScript and CSS filenames are content-hashed and cannot be listed statically in source control.
+
+The generated-asset discovery accepts only same-origin `/assets/` URLs. A changed cache generation should use a new `CACHE_NAME` so older DiceLab cache generations can be removed during activation.
 
 ### Activate
 
@@ -80,7 +83,7 @@ Same-origin scripts, styles, images, fonts, and manifests use stale-while-revali
 3. cache successful same-origin basic responses;
 4. fall back to the network result when there was no cache hit.
 
-Non-GET requests, range requests, and cross-origin requests bypass DiceLab's cache handler.
+The install-time `/assets/` precache makes the first established production PWA cache self-contained for offline reopening rather than depending on the browser's ordinary HTTP cache. Non-GET requests, range requests, and cross-origin requests bypass DiceLab's cache handler.
 
 ## Security and privacy boundaries
 
@@ -88,6 +91,7 @@ The PWA layer must preserve the repository's offline-first and least-privilege m
 
 - The service worker must not cache or intercept cross-origin requests.
 - No remote CDN/runtime asset is required by the PWA files.
+- Generated build-asset discovery is limited to same-origin `/assets/` paths.
 - The manifest must use local root-relative icon paths.
 - Manifest icon paths must not contain path traversal.
 - The service worker must not handle mutation requests.
@@ -134,22 +138,26 @@ npm run policy:pwa:test
 npm run policy:pwa
 npm run test
 npm run build
+npm run test:e2e
 ```
 
-`policy:pwa` first syntax-checks `public/sw.js`, then validates the committed manifest, install metadata, local icon paths/files, required PNG sizes, maskable support, Apple touch metadata, service-worker event/same-origin/GET-only boundaries, complete application-shell precache, production-only registration, and Tauri exclusion.
+`policy:pwa` first syntax-checks `public/sw.js`, then validates the committed manifest, install metadata, local icon paths/files, required PNG sizes, maskable support, Apple touch metadata, service-worker event/same-origin/GET-only boundaries, stable application-shell precache, generated Vite `/assets/` precaching, production-only registration, and Tauri exclusion.
 
-The main GitHub Actions web-quality job runs both the PWA audit self-test and the real PWA integrity audit before installing application dependencies.
+`test:e2e` exercises the production browser journey and then waits for the DiceLab service worker to control the page, verifies that its cache contains generated `/assets/` runtime files, stops the Vite preview process, reloads with the server unavailable, and confirms that the application plus persisted roll history still reopen successfully.
+
+The main GitHub Actions web-quality job runs both the PWA audit self-test and the real PWA integrity audit before installing application dependencies. The focused repository-policy workflow also triggers for PWA source/asset changes, and tag/manual release-policy verification uses the canonical aggregate `policy:test` and `policy:all` commands.
 
 ## Manual release-candidate checks
 
-Automated checks cannot prove every browser's install UI. For a release candidate, record at least:
+Automated checks now prove one Chromium production-cache/offline-reopen path, but they cannot prove every browser's install UI or platform-specific home-screen behavior. For a release candidate, record at least:
 
 - manifest loads without browser parse errors;
 - 192×192, 512×512, and Apple icons render correctly;
 - a compatible desktop/ChromeOS browser offers installation where supported;
 - a compatible Android browser can add/install the app where supported;
 - iOS/iPadOS Add to Home Screen uses the expected icon/title;
-- reopening after a successful first load works with the network disabled;
+- automated production E2E is observed green on the exact candidate commit;
+- reopening after a successful first load works with the network disabled on representative real browsers/devices;
 - rolling/history/settings continue to use local persisted data offline;
 - browser export/download behavior still works when permitted by the browser;
 - reconnecting refreshes application assets without corrupting stored user data;
@@ -163,9 +171,10 @@ When changing manifest metadata, icons, caching, or service-worker registration:
 
 1. keep the browser/native runtime boundary explicit;
 2. avoid remote runtime dependencies;
-3. update the cache generation when the precached shell changes materially;
-4. update `scripts/check-pwa.mjs` when a new invariant should be permanent;
-5. add or update audit self-tests before relying on a new check;
-6. update this guide and the repository file reference for new/renamed/deleted files;
-7. run the PWA policy checks, normal frontend tests/build, and documentation checks;
-8. verify install/offline behavior in a real production build before claiming release evidence.
+3. keep generated build-asset discovery same-origin and restricted to `/assets/`;
+4. update the cache generation when the precached shell changes materially;
+5. update `scripts/check-pwa.mjs` when a new invariant should be permanent;
+6. add or update audit self-tests before relying on a new check;
+7. update this guide and the repository file reference for new/renamed/deleted files;
+8. run the PWA policy checks, normal frontend tests/build, real-browser E2E, and documentation checks;
+9. verify install/offline behavior in representative real browsers/devices before claiming release evidence.
