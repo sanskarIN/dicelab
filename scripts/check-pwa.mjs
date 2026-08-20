@@ -97,6 +97,16 @@ export function auditPwaBundle({ manifest, indexHtml, serviceWorker, mainSource,
       findings.push(`public/sw.js: app shell must precache ${asset}`);
     }
   }
+  if (!serviceWorker.includes('precacheApplicationShell')) {
+    findings.push('public/sw.js: install must use the complete application-shell precache path');
+  }
+  if (
+    !serviceWorker.includes('discoverBuildAssets') ||
+    !serviceWorker.includes("url.pathname.startsWith('/assets/')") ||
+    !serviceWorker.includes('cache.addAll(buildAssets)')
+  ) {
+    findings.push('public/sw.js: generated Vite /assets/ runtime files must be discovered and precached');
+  }
 
   if (!mainSource.includes('registerPwaServiceWorker')) {
     findings.push('src/main.tsx: PWA registration call is missing');
