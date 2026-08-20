@@ -148,6 +148,41 @@ try {
     await waitForText('2d6+1');
   });
 
+  await step('verify production PWA cache and offline reopen', async () => {
+    await waitFor(
+      async () =>
+        Boolean(
+          await evaluateValue(`(() => {
+            const controller = navigator.serviceWorker?.controller;
+            return controller?.scriptURL?.endsWith('/sw.js') ?? false;
+          })()`),
+        ),
+      'active DiceLab service worker controller',
+    );
+
+    const cacheState = await evaluateValue(`(async () => {
+      const names = await caches.keys();
+      const diceLabCache = names.find((name) => name.startsWith('dicelab-'));
+      if (!diceLabCache) return { found: false, hasRuntimeAsset: false };
+      const cache = await caches.open(diceLabCache);
+      const requests = await cache.keys();
+      return {
+        found: true,
+        hasRuntimeAsset: requests.some((request) => new URL(request.url).pathname.startsWith('/assets/')),
+      };
+    })()`);
+    assert(cacheState?.found, 'DiceLab service-worker cache was not created.');
+    assert(cacheState?.hasRuntimeAsset, 'DiceLab service-worker cache did not contain generated Vite runtime assets.');
+
+    await stopProcessAndWait(previewProcess);
+    previewProcess = undefined;
+    await reloadPage();
+    await waitForText('Roll with confidence.');
+    assert(!(await documentContains('Start rolling')), 'Onboarding unexpectedly returned during offline reopen.');
+    await clickButton('History');
+    await waitForText('2d6+1');
+  });
+
   console.log('DiceLab real-browser E2E passed.');
 } catch (error) {
   console.error('DiceLab real-browser E2E failed.');
@@ -422,6 +457,19 @@ function captureProcessOutput(child, label) {
       if (stderr.trim()) console.error(stderr.trim());
     }
   });
+}
+
+async function stopProcessAndWait(child) {
+  if (!child || child.exitCode !== null) return;
+
+  const exited = new Promise((resolve) => child.once('exit', resolve));
+  child.kill('SIGTERM');
+  await Promise.race([exited, delay(3_000)]);
+
+  if (child.exitCode === null) {
+    child.kill('SIGKILL');
+    await Promise.race([exited, delay(1_000)]);
+  }
 }
 
 function stopProcess(child) {
