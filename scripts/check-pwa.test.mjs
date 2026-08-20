@@ -11,12 +11,15 @@ function fixture(overrides = {}) {
       start_url: '/',
       scope: '/',
       display: 'standalone',
-      icons: [{ src: '/dicelab-icon.svg' }],
+      icons: [
+        { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+      ],
     },
     indexHtml:
-      '<meta name="viewport" content="width=device-width, viewport-fit=cover"><meta name="theme-color" content="#111827"><link rel="manifest" href="/manifest.webmanifest">',
+      '<meta name="viewport" content="width=device-width, viewport-fit=cover"><meta name="theme-color" content="#111827"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest">',
     serviceWorker:
-      "self.addEventListener('install',()=>{});self.addEventListener('activate',()=>{});self.addEventListener('fetch',()=>{});if (url.origin !== self.location.origin) return;if (request.method !== 'GET') return;",
+      "self.addEventListener('install',()=>{});self.addEventListener('activate',()=>{});self.addEventListener('fetch',()=>{});if (url.origin !== self.location.origin) return;if (request.method !== 'GET') return;const assets=['/manifest.webmanifest','/dicelab-icon.svg','/icon-192.png','/icon-512.png','/apple-touch-icon.png'];",
     mainSource: 'void registerPwaServiceWorker();',
     registrationSource:
       "import.meta.env.PROD; isTauriRuntime(); environment.serviceWorker.register('/sw.js', { scope: '/' });",
@@ -32,7 +35,7 @@ test('requires mobile viewport safe-area support', () => {
   const findings = auditPwaBundle(
     fixture({
       indexHtml:
-        '<meta name="viewport" content="width=device-width"><meta name="theme-color" content="#111827"><link rel="manifest" href="/manifest.webmanifest">',
+        '<meta name="viewport" content="width=device-width"><meta name="theme-color" content="#111827"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest">',
     }),
   );
   assert.ok(findings.some((finding) => finding.includes('viewport-fit=cover')));
@@ -42,11 +45,55 @@ test('requires same-origin cache handling and Tauri exclusion', () => {
   const findings = auditPwaBundle(
     fixture({
       serviceWorker:
-        "self.addEventListener('install',()=>{});self.addEventListener('activate',()=>{});self.addEventListener('fetch',()=>{});if (request.method !== 'GET') return;",
+        "self.addEventListener('install',()=>{});self.addEventListener('activate',()=>{});self.addEventListener('fetch',()=>{});if (request.method !== 'GET') return;const assets=['/manifest.webmanifest','/dicelab-icon.svg','/icon-192.png','/icon-512.png','/apple-touch-icon.png'];",
       registrationSource:
         "import.meta.env.PROD; environment.serviceWorker.register('/sw.js', { scope: '/' });",
     }),
   );
   assert.ok(findings.some((finding) => finding.includes('current origin')));
   assert.ok(findings.some((finding) => finding.includes('Tauri runtime exclusion')));
+});
+
+test('requires standard PNG install sizes and a maskable large icon', () => {
+  const findings = auditPwaBundle(
+    fixture({
+      manifest: {
+        ...fixture().manifest,
+        icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' }],
+      },
+    }),
+  );
+
+  assert.ok(findings.some((finding) => finding.includes('512x512 PNG install icon')));
+  assert.ok(findings.some((finding) => finding.includes('maskable purpose')));
+});
+
+test('rejects remote and path-traversing manifest icon sources', () => {
+  const findings = auditPwaBundle(
+    fixture({
+      manifest: {
+        ...fixture().manifest,
+        icons: [
+          { src: '//example.test/icon.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/../icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+        ],
+      },
+    }),
+  );
+
+  assert.equal(findings.filter((finding) => finding.includes('safe root-relative local path')).length, 2);
+});
+
+test('requires Apple touch icon metadata and precached install assets', () => {
+  const findings = auditPwaBundle(
+    fixture({
+      indexHtml:
+        '<meta name="viewport" content="width=device-width, viewport-fit=cover"><meta name="theme-color" content="#111827"><link rel="manifest" href="/manifest.webmanifest">',
+      serviceWorker:
+        "self.addEventListener('install',()=>{});self.addEventListener('activate',()=>{});self.addEventListener('fetch',()=>{});if (url.origin !== self.location.origin) return;if (request.method !== 'GET') return;const assets=['/manifest.webmanifest','/dicelab-icon.svg','/icon-192.png','/icon-512.png'];",
+    }),
+  );
+
+  assert.ok(findings.some((finding) => finding.includes('Apple touch icon metadata')));
+  assert.ok(findings.some((finding) => finding.includes('precache /apple-touch-icon.png')));
 });
