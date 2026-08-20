@@ -1,6 +1,14 @@
 const CACHE_PREFIX = 'dicelab-';
-const CACHE_NAME = `${CACHE_PREFIX}runtime-v1`;
-const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/dicelab-icon.svg'];
+const CACHE_NAME = `${CACHE_PREFIX}runtime-v2`;
+const APP_SHELL = [
+  '/',
+  '/index.html',
+  '/manifest.webmanifest',
+  '/dicelab-icon.svg',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/apple-touch-icon.png',
+];
 const CACHEABLE_DESTINATIONS = new Set(['script', 'style', 'image', 'font', 'manifest']);
 
 self.addEventListener('install', (event) => {
