@@ -3,15 +3,17 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { calculateProbability } from '../domain/probability';
 import type { ProbabilityDistribution } from '../domain/types';
 import { messages } from '../i18n';
-import { formatDecimal, formatFixedDecimal, formatInteger } from '../i18n/format';
 import { formatDomainError } from '../i18n/errors';
+import { formatFixedDecimal, formatInteger } from '../i18n/format';
 
 const examples = ['2d6', '1d20+5', '4d6kh3', '2d20kh1'];
 const MAX_VISIBLE_POINTS = 180;
 
 export function ProbabilityPanel() {
   const [expression, setExpression] = useState('2d6');
-  const [distribution, setDistribution] = useState<ProbabilityDistribution>(() => calculateProbability('2d6'));
+  const [distribution, setDistribution] = useState<ProbabilityDistribution>(() =>
+    calculateProbability('2d6'),
+  );
   const [error, setError] = useState<string | null>(null);
   const visiblePoints = distribution.points.slice(0, MAX_VISIBLE_POINTS);
   const maxProbability = useMemo(
@@ -50,22 +52,39 @@ export function ProbabilityPanel() {
               onChange={(event) => setExpression(event.target.value)}
               spellCheck={false}
             />
-            <button type="submit" className="primary-button">{messages.probability.calculate}</button>
+            <button type="submit" className="primary-button">
+              {messages.probability.calculate}
+            </button>
           </div>
-          {error ? <p className="field-error" role="alert">{error}</p> : null}
+          {error ? (
+            <p className="field-error" role="alert">
+              {error}
+            </p>
+          ) : null}
         </form>
         <div className="example-row" aria-label={messages.probability.examples}>
           {examples.map((example) => (
-            <button key={example} type="button" onClick={() => setExpression(example)}>{example}</button>
+            <button key={example} type="button" onClick={() => setExpression(example)}>
+              {example}
+            </button>
           ))}
         </div>
       </section>
 
       <div className="stats-grid">
         <ProbabilityStat label={messages.probability.expression} value={distribution.expression} />
-        <ProbabilityStat label={messages.probability.expectedValue} value={formatFixedDecimal(distribution.expectedValue, 3)} />
-        <ProbabilityStat label={messages.probability.range} value={`${formatInteger(distribution.minimum)}–${formatInteger(distribution.maximum)}`} />
-        <ProbabilityStat label={messages.probability.outcomes} value={formatOutcomes(distribution.totalOutcomes)} />
+        <ProbabilityStat
+          label={messages.probability.expectedValue}
+          value={formatFixedDecimal(distribution.expectedValue, 3)}
+        />
+        <ProbabilityStat
+          label={messages.probability.range}
+          value={`${formatInteger(distribution.minimum)}–${formatInteger(distribution.maximum)}`}
+        />
+        <ProbabilityStat
+          label={messages.probability.outcomes}
+          value={formatOutcomes(distribution.totalOutcomes)}
+        />
       </div>
 
       <section className="panel probability-chart" aria-labelledby="probability-chart-heading">
@@ -74,7 +93,9 @@ export function ProbabilityPanel() {
             <p className="eyebrow">{messages.probability.distribution}</p>
             <h2 id="probability-chart-heading">{messages.probability.chartHeading}</h2>
           </div>
-          <span><Sigma size={15} aria-hidden="true" /> {messages.probability.exactCalculation}</span>
+          <span>
+            <Sigma size={15} aria-hidden="true" /> {messages.probability.exactCalculation}
+          </span>
         </div>
         <div className="probability-rows">
           {visiblePoints.map((point) => (
@@ -83,7 +104,9 @@ export function ProbabilityPanel() {
               <div className="probability-track" aria-hidden="true">
                 <span style={{ width: `${(point.probability / maxProbability) * 100}%` }} />
               </div>
-              <span>{formatFixedDecimal(point.probability * 100, point.probability < 0.001 ? 4 : 2)}%</span>
+              <span>
+                {formatFixedDecimal(point.probability * 100, point.probability < 0.001 ? 4 : 2)}%
+              </span>
             </div>
           ))}
         </div>
