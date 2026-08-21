@@ -243,8 +243,8 @@ export function SettingsPanel({
         </div>
         <div className="setting-row">
           <span>
-            <strong>{messages.settings.installedVersion}</strong>
-            <small>{messages.settings.installedVersionBody}</small>
+            <strong>{messages.common.version}</strong>
+            <small>{messages.settings.updatesAboutBody}</small>
           </span>
           <code>{APP_VERSION}</code>
         </div>
@@ -253,10 +253,12 @@ export function SettingsPanel({
             <Info size={16} aria-hidden="true" /> {messages.settings.openAbout}
           </button>
           <a className="secondary-button link-button" href={RELEASES_URL} target="_blank" rel="noreferrer">
-            <ExternalLink size={16} aria-hidden="true" /> {messages.settings.viewReleases}
+            <ExternalLink size={16} aria-hidden="true" /> {messages.settings.releases}
           </a>
         </div>
-        <p className="panel-note">{messages.settings.manualUpdates(APP_NAME)}</p>
+        <p className="panel-note">
+          {APP_NAME}: {messages.settings.releaseBody}
+        </p>
       </section>
     </section>
   );
