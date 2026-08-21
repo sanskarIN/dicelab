@@ -43,39 +43,6 @@ jobs:
           fi
       - name: Install dependencies
         run: npm ci
-      - name: Repair frontend compile regressions
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          probability = Path('src/components/ProbabilityPanel.tsx')
-          source = probability.read_text()
-          source = source.replace(
-              "import { formatDecimal, formatFixedDecimal, formatInteger } from '../i18n/format';",
-              "import { formatFixedDecimal, formatInteger } from '../i18n/format';",
-          )
-          probability.write_text(source)
-
-          settings = Path('src/components/SettingsPanel.tsx')
-          source = settings.read_text()
-          source = source.replace(
-              "import { APP_NAME, APP_VERSION, RELEASES_URL } from '../config/app';",
-              "import { APP_VERSION, RELEASES_URL } from '../config/app';",
-          )
-          replacements = [
-              ('messages.settings.installedVersionBody', 'messages.settings.releaseBody'),
-              ('messages.settings.installedVersion', 'messages.common.version'),
-              ('messages.settings.viewReleases', 'messages.settings.releases'),
-              ('messages.settings.manualUpdates(APP_NAME)', 'messages.settings.releaseBody'),
-          ]
-          for old, new in replacements:
-              source = source.replace(old, new)
-          settings.write_text(source)
-          PY
-          if ! git diff --quiet -- src/components/ProbabilityPanel.tsx src/components/SettingsPanel.tsx; then
-            git add src/components/ProbabilityPanel.tsx src/components/SettingsPanel.tsx
-            git commit -m "fix(web): restore strict TypeScript build"
-          fi
       - name: Normalize Prettier formatting
         run: |
           npm run format:write
@@ -100,6 +67,8 @@ jobs:
           npm run format
           npm run build
           npm run test
+          npm run policy:all
+          npm audit --audit-level=high
           (cd src-tauri && cargo fmt --all -- --check)
           git diff --check
       - name: Push repaired commits
