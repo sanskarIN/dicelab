@@ -21,6 +21,7 @@ on:
       - 'scripts/check-native-command-contract*.mjs'
       - 'scripts/check-lockfile-consistency*.mjs'
       - 'scripts/check-pwa*.mjs'
+      - 'scripts/check-accessibility-contract*.mjs'
       - 'scripts/check-policy-boundaries*.mjs'
       - '.github/workflows/repository-policy-audit.yml'
   pull_request:
@@ -42,6 +43,7 @@ on:
       - 'scripts/check-native-command-contract*.mjs'
       - 'scripts/check-lockfile-consistency*.mjs'
       - 'scripts/check-pwa*.mjs'
+      - 'scripts/check-accessibility-contract*.mjs'
       - 'scripts/check-policy-boundaries*.mjs'
       - '.github/workflows/repository-policy-audit.yml'
   workflow_dispatch:
