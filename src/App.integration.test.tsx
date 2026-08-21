@@ -102,7 +102,9 @@ describe('DiceLab primary journeys', () => {
       presets: [],
       settings: { ...DEFAULT_SETTINGS, randomMode: 'seeded', seed: 'restore-test' },
     };
-    const file = new File([JSON.stringify(backup)], 'dicelab-backup.json', { type: 'application/json' });
+    const file = new File([JSON.stringify(backup)], 'dicelab-backup.json', {
+      type: 'application/json',
+    });
 
     fireEvent.change(screen.getByLabelText('Import backup'), { target: { files: [file] } });
     expect(await screen.findByRole('status')).toHaveTextContent('Backup restored successfully.');
@@ -117,7 +119,9 @@ describe('DiceLab primary journeys', () => {
     render(<App />);
     openView('Settings');
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Language' }), { target: { value: 'hi' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Language' }), {
+      target: { value: 'hi' },
+    });
 
     expect(screen.getByRole('heading', { name: 'सेटिंग्स' })).toBeInTheDocument();
     expect(document.documentElement).toHaveAttribute('lang', 'hi');
@@ -135,6 +139,6 @@ describe('DiceLab primary journeys', () => {
     openView('Settings');
     fireEvent.click(screen.getByRole('button', { name: /Open About/i }));
     expect(screen.getByRole('heading', { name: 'About DiceLab' })).toBeInTheDocument();
-    expect(screen.getByText('Made by the Sanskar')).toBeInTheDocument();
+    expect(within(screen.getByRole('main')).getByText('Made by the Sanskar')).toBeInTheDocument();
   });
 });

@@ -1,45 +1,56 @@
 import '@testing-library/jest-dom/vitest';
+import { cleanup } from '@testing-library/react';
+import { afterEach, vi } from 'vitest';
 
-if (typeof window.matchMedia !== 'function') {
-  Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: (query: string): MediaQueryList => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: () => undefined,
-      removeListener: () => undefined,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-      dispatchEvent: () => false,
-    }),
-  });
-}
+afterEach(() => {
+  cleanup();
+});
 
-if (typeof window.requestAnimationFrame !== 'function') {
-  Object.defineProperty(window, 'requestAnimationFrame', {
-    writable: true,
-    value: (callback: FrameRequestCallback) => window.setTimeout(() => callback(performance.now()), 0),
-  });
-}
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
 
-if (typeof window.cancelAnimationFrame !== 'function') {
-  Object.defineProperty(window, 'cancelAnimationFrame', {
-    writable: true,
-    value: (handle: number) => window.clearTimeout(handle),
-  });
-}
+Object.defineProperty(window, 'requestAnimationFrame', {
+  writable: true,
+  value: (callback: FrameRequestCallback) => window.setTimeout(() => callback(performance.now()), 0),
+});
 
-if (typeof URL.createObjectURL !== 'function') {
-  Object.defineProperty(URL, 'createObjectURL', {
-    writable: true,
-    value: () => 'blob:dicelab-test',
-  });
-}
+Object.defineProperty(window, 'cancelAnimationFrame', {
+  writable: true,
+  value: (handle: number) => window.clearTimeout(handle),
+});
 
-if (typeof URL.revokeObjectURL !== 'function') {
-  Object.defineProperty(URL, 'revokeObjectURL', {
+Object.defineProperty(URL, 'createObjectURL', {
+  writable: true,
+  value: vi.fn(() => 'blob:dicelab-test'),
+});
+
+Object.defineProperty(URL, 'revokeObjectURL', {
+  writable: true,
+  value: vi.fn(),
+});
+
+if (typeof File !== 'undefined' && typeof File.prototype.text !== 'function') {
+  Object.defineProperty(File.prototype, 'text', {
+    configurable: true,
     writable: true,
-    value: () => undefined,
+    value(this: File) {
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.addEventListener('load', () => resolve(String(reader.result ?? '')));
+        reader.addEventListener('error', () => reject(reader.error ?? new Error('Unable to read test file.')));
+        reader.readAsText(this);
+      });
+    },
   });
 }

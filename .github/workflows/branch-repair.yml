@@ -1,0 +1,116 @@
+name: Branch repair
+
+on:
+  push:
+    branches:
+      - hardening/accessibility-contract-20260821
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: branch-repair-accessibility
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: hardening/accessibility-contract-20260821
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Configure commit identity
+        run: |
+          git config user.name "Sanskar"
+          git config user.email "sanskarin@outlook.in"
+
+      - name: Refresh npm lockfile
+        run: |
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          if ! git diff --quiet -- package-lock.json; then
+            git add package-lock.json
+            git commit -m "build(deps): regenerate npm lockfile"
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Repair frontend compile regressions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          probability = Path('src/components/ProbabilityPanel.tsx')
+          source = probability.read_text()
+          source = source.replace(
+              "import { formatDecimal, formatFixedDecimal, formatInteger } from '../i18n/format';",
+              "import { formatFixedDecimal, formatInteger } from '../i18n/format';",
+          )
+          probability.write_text(source)
+
+          settings = Path('src/components/SettingsPanel.tsx')
+          source = settings.read_text()
+          source = source.replace(
+              "import { APP_NAME, APP_VERSION, RELEASES_URL } from '../config/app';",
+              "import { APP_VERSION, RELEASES_URL } from '../config/app';",
+          )
+          replacements = {
+              'messages.settings.installedVersion': 'messages.common.version',
+              'messages.settings.installedVersionBody': 'messages.settings.releaseBody',
+              'messages.settings.viewReleases': 'messages.settings.releases',
+              'messages.settings.manualUpdates(APP_NAME)': 'messages.settings.releaseBody',
+          }
+          for old, new in replacements.items():
+              source = source.replace(old, new)
+          settings.write_text(source)
+          PY
+          if ! git diff --quiet -- src/components/ProbabilityPanel.tsx src/components/SettingsPanel.tsx; then
+            git add src/components/ProbabilityPanel.tsx src/components/SettingsPanel.tsx
+            git commit -m "fix(web): restore strict TypeScript build"
+          fi
+
+      - name: Normalize Prettier formatting
+        run: |
+          npm run format:write
+          if ! git diff --quiet; then
+            git add -A
+            git commit -m "style: normalize repository formatting"
+          fi
+
+      - name: Setup Rust formatter
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Normalize Rust formatting
+        working-directory: src-tauri
+        run: |
+          cargo fmt --all
+          if ! git diff --quiet; then
+            git add -A
+            git commit -m "style(rust): align with rustfmt 1.98"
+          fi
+
+      - name: Verify repaired branch
+        run: |
+          npm run format
+          npm run build
+          npm run test
+          npm run policy:all
+          npm audit --audit-level=high
+          (cd src-tauri && cargo fmt --all -- --check)
+          git diff --check
+
+      - name: Push repaired commits
+        run: git push origin HEAD:hardening/accessibility-contract-20260821

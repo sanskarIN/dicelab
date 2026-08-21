@@ -18,6 +18,7 @@ DiceLab treats accessibility as a product requirement rather than a release poli
 - The mobile root uses dynamic viewport height behavior to better tolerate browser/native system UI changes.
 - Main navigation exposes `aria-current` for the active view.
 - Dice results and important state changes are announced through appropriate live regions.
+- The command-palette trigger declares dialog intent with `aria-haspopup="dialog"` and advertises the `Control+K` / `Meta+K` shortcuts through `aria-keyshortcuts`.
 - The command palette moves focus into the modal, traps Tab/Shift+Tab within it, supports Escape, and restores focus to the invoking control when closed.
 - First-run onboarding exposes modal semantics, an accessible description, and initial focus on the primary action.
 
@@ -86,9 +87,29 @@ Vitest + Testing Library currently checks:
 - Settings → About navigation through the application integration suite;
 - responsive application behavior exercised by component/integration tests where DOM semantics are platform-independent.
 
+A dependency-free repository accessibility contract is also part of `scripts/check-policy-boundaries.mjs`. It protects high-value semantics that should not silently disappear during refactors, including:
+
+- the localized skip link and `#main-content` landmark;
+- active-navigation `aria-current` semantics;
+- command-palette trigger dialog/shortcut metadata;
+- roll-result live-region and validation announcement semantics;
+- command-palette dialog naming, focus restoration, and Tab containment;
+- onboarding modal naming/description/initial focus;
+- Settings status/toggle/file-input semantics;
+- visible focus indicators and skip-link reveal styling.
+
+Use these commands for the focused contract:
+
+```bash
+npm run policy:accessibility:test
+npm run policy:accessibility
+```
+
+The accessibility contract is also included in the canonical aggregate policy audit, so `npm run policy:boundaries`, `npm run policy:test`, and release-facing `npm run policy:all` coverage protect the same boundary. Normal CI and the dependency-free repository-audit workflow execute the focused accessibility checks before dependency installation.
+
 Normal CI also compiles Android and an iOS simulator target so mobile platform integration breakage can be caught at build time.
 
-These tests guard DOM semantics, keyboard state, and build integration. They do not replace real-browser accessibility trees, screen-reader testing, touch testing, or physical-device safe-area review.
+These automated checks guard source-level invariants, DOM semantics, keyboard state, and build integration. They do not replace real-browser accessibility trees, screen-reader testing, touch testing, color/contrast review, text scaling, or physical-device safe-area review.
 
 ## Manual release checklist
 
@@ -117,7 +138,7 @@ Record exact device/OS details in [`release-candidate-evidence-template.md`](rel
 
 ## 2.0.12 accessibility release gate
 
-The cross-platform UI implementation is present, including safe-area and coarse-pointer rules. The following remain evidence-gated before the 2.0.12 candidate can be approved:
+The cross-platform UI implementation and executable source-level accessibility contract are present, including safe-area, coarse-pointer, dialog, live-region, focus, and shortcut semantics. The following remain evidence-gated before the 2.0.12 candidate can be approved:
 
 - observed Android touch/screen-reader/layout review;
 - observed iPhone touch/screen-reader/safe-area review;
@@ -126,7 +147,7 @@ The cross-platform UI implementation is present, including safe-area and coarse-
 - real candidate screenshots proving representative layouts;
 - any corrective regression tests required by findings from those reviews.
 
-Future automated accessibility scanning can supplement this matrix, but automated scans do not replace manual screen-reader, keyboard, touch, and physical-device review.
+Automated accessibility checks supplement this matrix, but they do not replace manual screen-reader, keyboard, touch, and physical-device review.
 
 ## Reporting accessibility issues
 

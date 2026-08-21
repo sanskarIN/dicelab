@@ -32,6 +32,8 @@
     "policy:lockfiles": "node scripts/check-lockfile-consistency.mjs",
     "policy:pwa": "node --check public/sw.js && node scripts/check-pwa.mjs",
     "policy:pwa:test": "node --test scripts/check-pwa.test.mjs",
+    "policy:accessibility": "node scripts/check-policy-boundaries.mjs --accessibility",
+    "policy:accessibility:test": "node --test scripts/check-policy-boundaries.integration.test.mjs",
     "policy:boundaries": "node scripts/check-policy-boundaries.mjs",
     "policy:test": "node --test scripts/check-capabilities.test.mjs scripts/check-capabilities.integration.test.mjs scripts/check-tauri-security.test.mjs scripts/check-tauri-security.integration.test.mjs scripts/check-offline-csp.test.mjs scripts/check-offline-csp.integration.test.mjs scripts/check-localized-formatting.test.mjs scripts/check-localized-formatting.integration.test.mjs scripts/check-runtime-boundaries.test.mjs scripts/check-runtime-boundaries.integration.test.mjs scripts/check-native-command-contract.test.mjs scripts/check-native-command-contract.integration.test.mjs scripts/check-lockfile-consistency.test.mjs scripts/check-pwa.test.mjs scripts/check-policy-boundaries.integration.test.mjs",
     "policy:all": "npm run policy:boundaries && npm run policy:offline-csp && npm run policy:native-commands && npm run policy:lockfiles && npm run policy:pwa",
@@ -66,7 +68,7 @@
     "@types/react": "^19.0.3",
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^4.3.4",
-    "@vitest/coverage-v8": "^2.1.8",
+    "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.16",
@@ -75,7 +77,7 @@
     "prettier": "^3.4.2",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.18.1",
-    "vite": "^6.0.5",
-    "vitest": "^2.1.8"
+    "vite": "^6.4.3",
+    "vitest": "^4.1.11"
   }
 }

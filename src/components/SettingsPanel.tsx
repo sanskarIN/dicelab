@@ -128,7 +128,12 @@ export function SettingsPanel({
           label={messages.settings.reducedMotion}
           detail={messages.settings.reducedMotionBody}
           checked={settings.reducedMotion}
-          onChange={(checked) => patch({ reducedMotion: checked, animations: checked ? false : settings.animations })}
+          onChange={(checked) =>
+            patch({
+              reducedMotion: checked,
+              animations: checked ? false : settings.animations,
+            })
+          }
         />
         <ToggleRow
           label={messages.settings.diceAnimations}
@@ -154,7 +159,9 @@ export function SettingsPanel({
           </span>
           <select
             value={settings.randomMode}
-            onChange={(event) => patch({ randomMode: event.target.value as DiceLabSettings['randomMode'] })}
+            onChange={(event) =>
+              patch({ randomMode: event.target.value as DiceLabSettings['randomMode'] })
+            }
           >
             <option value="secure">{messages.settings.secure}</option>
             <option value="seeded">{messages.settings.seeded}</option>
@@ -243,8 +250,10 @@ export function SettingsPanel({
         </div>
         <div className="setting-row">
           <span>
-            <strong>{messages.settings.installedVersion}</strong>
-            <small>{messages.settings.installedVersionBody}</small>
+            <strong>{messages.common.version}</strong>
+            <small>
+              {APP_NAME} {APP_VERSION}
+            </small>
           </span>
           <code>{APP_VERSION}</code>
         </div>
@@ -252,11 +261,16 @@ export function SettingsPanel({
           <button type="button" className="secondary-button" onClick={onOpenAbout}>
             <Info size={16} aria-hidden="true" /> {messages.settings.openAbout}
           </button>
-          <a className="secondary-button link-button" href={RELEASES_URL} target="_blank" rel="noreferrer">
-            <ExternalLink size={16} aria-hidden="true" /> {messages.settings.viewReleases}
+          <a
+            className="secondary-button link-button"
+            href={RELEASES_URL}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <ExternalLink size={16} aria-hidden="true" /> {messages.settings.releases}
           </a>
         </div>
-        <p className="panel-note">{messages.settings.manualUpdates(APP_NAME)}</p>
+        <p className="panel-note">{messages.settings.releaseBody}</p>
       </section>
     </section>
   );
