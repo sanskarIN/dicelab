@@ -62,13 +62,13 @@ jobs:
               "import { APP_NAME, APP_VERSION, RELEASES_URL } from '../config/app';",
               "import { APP_VERSION, RELEASES_URL } from '../config/app';",
           )
-          replacements = {
-              'messages.settings.installedVersion': 'messages.common.version',
-              'messages.settings.installedVersionBody': 'messages.settings.releaseBody',
-              'messages.settings.viewReleases': 'messages.settings.releases',
-              'messages.settings.manualUpdates(APP_NAME)': 'messages.settings.releaseBody',
-          }
-          for old, new in replacements.items():
+          replacements = [
+              ('messages.settings.installedVersionBody', 'messages.settings.releaseBody'),
+              ('messages.settings.installedVersion', 'messages.common.version'),
+              ('messages.settings.viewReleases', 'messages.settings.releases'),
+              ('messages.settings.manualUpdates(APP_NAME)', 'messages.settings.releaseBody'),
+          ]
+          for old, new in replacements:
               source = source.replace(old, new)
           settings.write_text(source)
           PY
