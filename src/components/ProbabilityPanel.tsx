@@ -3,7 +3,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { calculateProbability } from '../domain/probability';
 import type { ProbabilityDistribution } from '../domain/types';
 import { messages } from '../i18n';
-import { formatDecimal, formatFixedDecimal, formatInteger } from '../i18n/format';
+import { formatFixedDecimal, formatInteger } from '../i18n/format';
 import { formatDomainError } from '../i18n/errors';
 
 const examples = ['2d6', '1d20+5', '4d6kh3', '2d20kh1'];
