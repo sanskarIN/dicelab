@@ -37,6 +37,10 @@ jobs:
         run: npm run policy:pwa:test
       - name: PWA integrity
         run: npm run policy:pwa
+      - name: Accessibility audit self-test
+        run: npm run policy:accessibility:test
+      - name: Accessibility contract
+        run: npm run policy:accessibility
       - name: Install dependencies
         run: npm ci
       - name: Documentation links
