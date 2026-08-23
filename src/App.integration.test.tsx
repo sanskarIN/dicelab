@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS } from './domain/types';
 import { setLocale } from './i18n';
 
 const HISTORY_KEY = 'dicelab.history.v1';
+const PRESETS_KEY = 'dicelab.presets.v1';
 const SETTINGS_KEY = 'dicelab.settings.v1';
 const ONBOARDED_KEY = 'dicelab.onboarded.v1';
 
@@ -50,6 +51,46 @@ describe('DiceLab primary journeys', () => {
     fireEvent.click(screen.getByRole('button', { name: 'CSV' }));
     expect(createObjectUrl).toHaveBeenCalledTimes(1);
     expect(revokeObjectUrl).toHaveBeenCalledWith('blob:dicelab-export');
+  });
+
+  it('imports, persists, uses, and re-exports a shared preset file', async () => {
+    const createObjectUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:dicelab-presets');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    render(<App />);
+
+    const sharedFile = {
+      kind: 'dicelab-presets',
+      schemaVersion: 1,
+      exportedAt: '2026-08-23T04:00:00.000Z',
+      presets: [
+        {
+          name: 'Shared advantage',
+          expression: '2D20KH1+3',
+          description: 'Imported locally',
+        },
+      ],
+    };
+    const file = new File([JSON.stringify(sharedFile)], 'dicelab-presets.json', { type: 'application/json' });
+
+    fireEvent.change(screen.getByLabelText('Import presets'), { target: { files: [file] } });
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Imported 1 preset.');
+    expect(screen.getByText('Shared advantage')).toBeInTheDocument();
+    expect(screen.getByText('2d20kh1+3')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Shared advantage'));
+    expect(screen.getByLabelText('Dice expression')).toHaveValue('2d20kh1+3');
+    await waitFor(() =>
+      expect(JSON.parse(localStorage.getItem(PRESETS_KEY) ?? '[]')).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name: 'Shared advantage', expression: '2d20kh1+3' }),
+        ]),
+      ),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Export presets' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Preset file ready.');
+    expect(createObjectUrl).toHaveBeenCalledTimes(1);
   });
 
   it('enforces the configured history limit during initial storage recovery', async () => {
