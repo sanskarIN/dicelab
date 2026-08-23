@@ -27,6 +27,8 @@ import {
   saveSettings,
 } from './services/storage';
 
+let fallbackPresetIdSequence = 0;
+
 export default function App() {
   const [view, setView] = useState<AppView>('roll');
   const [expression, setExpression] = useState('1d20');
@@ -100,15 +102,11 @@ export default function App() {
 
   const savePreset = (name: string) => {
     const parsed = parseDiceExpression(expression);
-    const id =
-      typeof globalThis.crypto.randomUUID === 'function'
-        ? globalThis.crypto.randomUUID()
-        : `preset-${Date.now()}`;
     setPresets((current) =>
       limitPresetCollection([
         ...current,
         {
-          id,
+          id: createPresetId(),
           name,
           expression: parsed.normalized,
           description: messages.common.customPresetDescription,
@@ -206,4 +204,10 @@ export default function App() {
       {showOnboarding ? <Onboarding onComplete={finishOnboarding} /> : null}
     </>
   );
+}
+
+function createPresetId(): string {
+  if (typeof globalThis.crypto.randomUUID === 'function') return globalThis.crypto.randomUUID();
+  const sequence = fallbackPresetIdSequence++;
+  return `preset-${Date.now()}-${sequence}`;
 }
