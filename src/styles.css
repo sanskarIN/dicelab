@@ -167,6 +167,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .probability-controls { padding: 22px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 16px; }
 .probability-form { min-width: 0; }
 .example-row { display: flex; flex-wrap: wrap; gap: 7px; }
+.probability-insights-panel { padding: 24px; display: grid; gap: 18px; }
+.probability-insights-heading { align-items: center; }
+.threshold-control { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.78rem; font-weight: 750; }
+.threshold-control input { border: 1px solid var(--border); border-radius: 9px; background: var(--bg); color: var(--text); padding: 8px 10px; text-align: right; }
+.probability-threshold-grid .stat-card { background: var(--bg); }
 .probability-chart { padding: 24px; }
 .probability-rows { display: grid; gap: 8px; margin-top: 20px; max-height: 560px; overflow: auto; padding-right: 6px; }
 .probability-row { display: grid; grid-template-columns: 58px minmax(80px, 1fr) 84px; gap: 12px; align-items: center; min-height: 28px; font-size: 0.75rem; }
@@ -260,6 +265,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   .header-actions { width: 100%; }
   .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .probability-controls { grid-template-columns: 1fr; align-items: stretch; }
+  .probability-insights-heading { align-items: flex-start; flex-direction: column; }
   .history-row { grid-template-columns: 54px minmax(0, 1fr); }
   .history-time { grid-column: 2; text-align: left; }
   .about-grid { grid-template-columns: 1fr; }
@@ -268,7 +274,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 @media (max-width: 520px) {
   .main-content { padding-inline: 12px; }
   .panel { border-radius: 18px; }
-  .roll-panel, .result-panel, .presets-panel, .histogram-panel, .probability-chart, .settings-section { padding: 18px; }
+  .roll-panel, .result-panel, .presets-panel, .histogram-panel, .probability-insights-panel, .probability-chart, .settings-section { padding: 18px; }
   .expression-control { align-items: stretch; flex-wrap: wrap; padding: 10px; }
   .expression-control > svg { margin: 8px 0 0 3px; }
   .expression-control input { min-height: 38px; }
@@ -278,6 +284,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   .history-toolbar-panel { flex-direction: column; }
   .search-control input { width: 100%; }
   .history-toolbar-panel .danger-button { width: 100%; }
+  .threshold-control { width: 100%; }
+  .threshold-control .number-input { width: 100%; }
   .probability-row { grid-template-columns: 42px minmax(60px, 1fr) 70px; gap: 8px; }
   .setting-row { align-items: flex-start; flex-direction: column; padding: 13px 0; gap: 10px; }
   .setting-row select, .setting-row .number-input { width: 100%; }
