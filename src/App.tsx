@@ -12,6 +12,7 @@ import { DEFAULT_SETTINGS, type DiceLabSettings, type DicePreset, type RollResul
 import { messages, setLocale } from './i18n';
 import { formatDomainError } from './i18n/errors';
 import { backupToJson, createBackup, parseBackupFile, saveTextExport } from './services/export';
+import { createPresetFile, parsePresetFile, presetFileToJson } from './services/preset-file';
 import { rollDice } from './services/roll-service';
 import {
   clearDiceLabData,
@@ -121,6 +122,26 @@ export default function App() {
     setPresets((current) => current.filter((preset) => preset.id !== id));
   };
 
+  const exportPresets = () =>
+    saveTextExport(
+      'dicelab-presets.json',
+      presetFileToJson(createPresetFile(presets)),
+      'application/json',
+      'json',
+    );
+
+  const importPresets = async (file: File) => {
+    const presetFile = await parsePresetFile(file);
+    const createdAt = new Date().toISOString();
+    const imported = presetFile.presets.map<DicePreset>((preset) => ({
+      ...preset,
+      id: createPresetId(),
+      createdAt,
+    }));
+    setPresets((current) => limitPresetCollection([...current, ...imported]));
+    return imported.length;
+  };
+
   const updateSettings = (next: DiceLabSettings) => {
     if (next.locale !== settings.locale) {
       setLocale(next.locale);
@@ -176,6 +197,8 @@ export default function App() {
             presets={presets}
             onSavePreset={savePreset}
             onDeletePreset={deletePreset}
+            onExportPresets={exportPresets}
+            onImportPresets={importPresets}
             randomMode={settings.randomMode}
             busy={busy}
             error={rollError}
