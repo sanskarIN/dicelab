@@ -1,5 +1,6 @@
 import { Calculator, Sigma } from 'lucide-react';
 import { useMemo, useState, type FormEvent } from 'react';
+import { getQuantileTotal, summarizeProbabilityDistribution } from '../domain/probability-insights';
 import { calculateProbability } from '../domain/probability';
 import type { ProbabilityDistribution } from '../domain/types';
 import { messages } from '../i18n';
@@ -14,6 +15,15 @@ export function ProbabilityPanel() {
   const [distribution, setDistribution] = useState<ProbabilityDistribution>(() => calculateProbability('2d6'));
   const [error, setError] = useState<string | null>(null);
   const visiblePoints = distribution.points.slice(0, MAX_VISIBLE_POINTS);
+  const insights = useMemo(() => summarizeProbabilityDistribution(distribution), [distribution]);
+  const quartiles = useMemo(
+    () => ({
+      lower: getQuantileTotal(distribution, 0.25),
+      median: getQuantileTotal(distribution, 0.5),
+      upper: getQuantileTotal(distribution, 0.75),
+    }),
+    [distribution],
+  );
   const maxProbability = useMemo(
     () => Math.max(...visiblePoints.map((point) => point.probability), Number.EPSILON),
     [visiblePoints],
@@ -64,6 +74,10 @@ export function ProbabilityPanel() {
       <div className="stats-grid">
         <ProbabilityStat label={messages.probability.expression} value={distribution.expression} />
         <ProbabilityStat label={messages.probability.expectedValue} value={formatFixedDecimal(distribution.expectedValue, 3)} />
+        <ProbabilityStat label="P25" value={formatInteger(quartiles.lower)} />
+        <ProbabilityStat label="P50" value={formatInteger(quartiles.median)} />
+        <ProbabilityStat label="P75" value={formatInteger(quartiles.upper)} />
+        <ProbabilityStat label="σ" value={formatFixedDecimal(insights.standardDeviation, 3)} />
         <ProbabilityStat label={messages.probability.range} value={`${formatInteger(distribution.minimum)}–${formatInteger(distribution.maximum)}`} />
         <ProbabilityStat label={messages.probability.outcomes} value={formatOutcomes(distribution.totalOutcomes)} />
       </div>
