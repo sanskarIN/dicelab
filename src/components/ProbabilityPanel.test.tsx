@@ -10,6 +10,11 @@ function calculate(expression: string) {
   fireEvent.click(screen.getByRole('button', { name: /Calculate|गणना करें/ }));
 }
 
+function compare(expression: string) {
+  fireEvent.change(screen.getByLabelText('B'), { target: { value: expression } });
+  fireEvent.click(screen.getByRole('button', { name: 'A ↔ B' }));
+}
+
 function statValue(label: string): string | null {
   const card = screen.getByText(label).closest('.stat-card');
   return card?.querySelector('strong')?.textContent ?? null;
@@ -65,5 +70,29 @@ describe('ProbabilityPanel exact insights', () => {
 
     expect(screen.getByLabelText('n')).toHaveValue(11);
     expect(statValue('P50')).toBe('10');
+  });
+});
+
+describe('ProbabilityPanel distribution comparison', () => {
+  it('compares two exact distributions', () => {
+    render(<ProbabilityPanel />);
+
+    calculate('1d6');
+    compare('1d4');
+
+    expect(statValue('P(A > B)')).toBe('58.33%');
+    expect(statValue('P(A = B)')).toBe('16.67%');
+    expect(statValue('P(A < B)')).toBe('25%');
+    expect(statValue('ΔE(A − B)')).toBe('+1.000');
+  });
+
+  it('keeps the last valid comparison when the comparison expression is invalid', () => {
+    render(<ProbabilityPanel />);
+    const before = statValue('P(A = B)');
+
+    compare('not-dice');
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Use an expression such as');
+    expect(statValue('P(A = B)')).toBe(before);
   });
 });
