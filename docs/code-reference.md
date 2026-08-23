@@ -39,7 +39,9 @@ Application coordinator. It owns cross-surface state and operations that require
 - roll busy/error state;
 - deterministic sequence counter.
 
-It coordinates startup persistence loading, locale activation, theme/motion/document metadata, keyboard shortcuts, runtime-agnostic rolling, preset mutation, locale switching, backup export/import, clear-all-data, and onboarding completion.
+It coordinates startup persistence loading, locale activation, theme/motion/document metadata, keyboard shortcuts, runtime-agnostic rolling, preset mutation, shareable preset import/export, locale switching, backup export/import, clear-all-data, and onboarding completion.
+
+Imported shareable presets receive fresh local IDs and timestamps before being merged into the bounded local collection. Export deliberately shares only custom preset content—not local IDs, timestamps, built-ins, history, or settings.
 
 Do not turn `App.tsx` into a second domain layer. New dice/business rules belong in `src/domain/`; new platform I/O belongs in `src/services/`.
 
@@ -63,9 +65,11 @@ Primary dice interaction surface. Responsibilities:
 - secure/seeded mode status;
 - locale-aware result/time/modifier formatting;
 - custom preset creation controls;
-- built-in/custom preset cards and custom deletion affordance.
+- built-in/custom preset cards and custom deletion affordance;
+- shareable preset-file import/export controls;
+- localized, privacy-safe preset transfer status.
 
-The component does not choose browser versus native randomness; it delegates rolling through props to the coordinator/service boundary.
+The component does not parse preset files or choose browser versus native output. It delegates those operations through coordinator callbacks, just as rolling remains behind its application/service boundary.
 
 ### `src/components/HistoryPanel.tsx`
 
@@ -85,9 +89,18 @@ UI pagination must never silently reduce statistics or export scope: those conti
 
 ### `src/components/ProbabilityPanel.tsx`
 
-Exact probability calculator surface. It owns expression input, calculation action, safe localized errors, example expressions, summary cards, bounded visible chart rows, and locale-aware probability/number formatting.
+Exact probability exploration surface. It owns:
 
-Complexity/exactness policy remains in `src/domain/probability.ts`.
+- primary expression input and exact distribution calculation;
+- safe localized parser/probability errors;
+- example expressions;
+- expected value/range/outcome summary;
+- exact P25/P50/P75 quantiles and standard deviation;
+- configurable exact `P(X = n)`, `P(X ≤ n)`, and `P(X ≥ n)` threshold analysis;
+- an independent comparison expression with `P(A > B)`, `P(A = B)`, `P(A < B)`, and expected-value delta;
+- bounded visible chart rows and locale-aware probability/number formatting.
+
+Distribution construction/complexity policy remains in `src/domain/probability.ts`. Derived statistics and comparison mathematics remain in `probability-insights.ts` and `probability-comparison.ts`, keeping the React component focused on state and presentation.
 
 ### `src/components/SettingsPanel.tsx`
 
@@ -187,6 +200,23 @@ Two strategies:
 
 It explicitly refuses calculations that exceed configured interactive complexity or safe-integer exactness and exposes stable `ProbabilityComplexityError` codes.
 
+### `src/domain/probability-insights.ts`
+
+Pure derived-statistics layer over an already validated exact `ProbabilityDistribution`. It computes:
+
+- lower exact quantiles such as P25/P50/P75;
+- median and all tied modes;
+- weighted variance and standard deviation;
+- exact, at-most, and at-least probabilities for a selected integer threshold.
+
+It does not rebuild distributions or weaken the complexity/exactness guard from `probability.ts`.
+
+### `src/domain/probability-comparison.ts`
+
+Pure pairwise comparison of two independently generated exact distributions. It computes left-higher, tie, right-higher probability and expected-value delta using ordered distribution points rather than enumerating cross-product raw dice outcomes.
+
+The result probabilities are normalized/clamped only for tiny floating-point artifacts after multiplying already exact probability masses.
+
 ### `src/domain/persistence.ts`
 
 Runtime validators for data crossing persistence/backup boundaries. Validation checks far more than object shape: expression validity, canonical timestamps, die ranges/indices, selection kept count, modifier consistency, recomputed totals, random-mode/seed rules, and preset bounds.
@@ -249,6 +279,20 @@ Serialization + backup + output boundary. Owns:
 - native save command routing.
 
 The frontend never supplies an arbitrary native output path.
+
+### `src/services/preset-file.ts`
+
+Versioned shareable preset-file boundary. It:
+
+- exports only custom presets and omits built-in IDs/local IDs/creation timestamps;
+- canonicalizes dice expressions through the parser;
+- emits schema version `1` plus a canonical export timestamp;
+- caps shared files at 1,000,000 UTF-8 bytes and 500 preset entries;
+- checks `File.size` before reading oversized selected files;
+- validates root kind/schema/timestamp/name/description/expression bounds;
+- trims imported user text where appropriate before it reaches local preset materialization.
+
+This is intentionally narrower than the full backup format: it is for sharing reusable roll setups, not cloning DiceLab application state.
 
 ### `src/services/logger.ts`
 
@@ -386,6 +430,8 @@ See [`testing.md`](testing.md) for the complete verification strategy and [`repo
 | Dice syntax/bounds | `domain/parser.ts`, `src-tauri/src/lib.rs` | errors/i18n, persistence, probability, parity tests, fuzz, docs |
 | Keep/drop semantics | `domain/engine.ts`, native Rust | probability enumeration, persistence total/kept validation, seeded tests |
 | Randomness | `domain/random.ts`, native Rust, `roll-service.ts` | cross-runtime vectors, security docs, UI mode copy |
+| Probability analysis | `domain/probability*.ts`, `ProbabilityPanel.tsx` | exactness/complexity limits, formatting, unit/component tests, performance/docs |
+| Preset sharing | `services/preset-file.ts`, `App.tsx`, `RollWorkspace.tsx` | parser bounds, local preset limits, i18n, transfer tests, data contracts |
 | Settings field | `domain/types.ts`, storage, Settings UI | backup normalization, defaults, tests, docs, possibly schema migration |
 | Locale/copy | `i18n/en.ts`, `i18n/hi.ts` | formatter mapping, UI tests, review record, document lang/persistence |
 | Export/backup | `services/export.ts` | Rust save command, security boundaries, tests, release smoke docs |
