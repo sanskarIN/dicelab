@@ -237,8 +237,8 @@ For deeper behavioral context, also read:
 
 | Path | Purpose and relationships |
 | --- | --- |
-| `src/App.tsx` | Cross-surface application coordinator: views, expression/history/settings/presets, locale/theme/motion, keyboard palette, roll service, backup import/export, clear-data, onboarding. |
-| `src/App.integration.test.tsx` | Main application integration journeys covering cross-component behavior such as roll/history/export/backup/About navigation. |
+| `src/App.tsx` | Cross-surface application coordinator: views, expression/history/settings/presets, locale/theme/motion, keyboard palette, roll service, backup and shareable preset import/export, clear-data, onboarding. |
+| `src/App.integration.test.tsx` | Main application integration journeys covering roll/history/export, backup restore, shareable preset import/use/persistence/re-export, and About navigation. |
 | `src/App.locale-backup.integration.test.tsx` | Verifies backup restoration switches live locale and preserves restored user-created preset text. |
 | `src/App.locale-clear.integration.test.tsx` | Verifies clear-all-data resets Hindi state/document language/onboarding back to default English behavior. |
 | `src/App.locale-onboarding.integration.test.tsx` | Verifies persisted Hindi preference applies to first-run onboarding before completion. |
@@ -264,10 +264,10 @@ For deeper behavioral context, also read:
 | `src/components/HistoryPanel.export.localization.test.tsx` | Hindi success/failure export-status regressions ensuring raw browser error details are not shown. |
 | `src/components/Onboarding.tsx` | First-run modal explaining product concepts and invoking onboarding completion; copy follows active locale. |
 | `src/components/Onboarding.test.tsx` | Dialog semantics/initial-focus accessibility regression for onboarding. |
-| `src/components/ProbabilityPanel.tsx` | Exact probability UI, examples, localized validation, summary statistics, bounded chart rendering, and locale-aware values. |
-| `src/components/ProbabilityPanel.test.tsx` | Probability presentation regression including English/Hindi large-number grouping. |
-| `src/components/RollWorkspace.tsx` | Main roll expression/quick dice/result/preset surface with immediate parser validation, secure/seeded status, kept/dropped dice, and locale formatting. |
-| `src/components/RollWorkspace.test.tsx` | Roll-result localization/presentation component regression. |
+| `src/components/ProbabilityPanel.tsx` | Exact probability UI with quartiles, standard deviation, threshold probabilities, pairwise distribution comparison, bounded chart rendering, localized validation, and locale-aware values. |
+| `src/components/ProbabilityPanel.test.tsx` | Probability presentation regression covering localization, exact insight/threshold values, and pairwise comparison behavior. |
+| `src/components/RollWorkspace.tsx` | Main roll expression/quick dice/result/preset surface with immediate parser validation, secure/seeded status, shareable preset-file controls, kept/dropped dice, and locale formatting. |
+| `src/components/RollWorkspace.test.tsx` | Roll-result localization plus preset transfer success/failure and privacy-safe status regressions. |
 | `src/components/RollWorkspace.validation.localization.test.tsx` | Hindi invalid-expression correction and disabled-roll regression. |
 | `src/components/SettingsPanel.tsx` | Theme/language/accessibility/random/seed/history-limit/data backup/import/clear/About/version/release settings surface with safe status handling. |
 | `src/components/SettingsPanel.test.tsx` | Settings component regressions for preference changes, backup export status, release/About actions, and related behavior. |
@@ -301,16 +301,20 @@ For deeper behavioral context, also read:
 | `src/domain/probability.ts` | Exact ordinary-sum DP and bounded keep/drop enumeration, safe-integer guard, expected value, stable probability error codes. |
 | `src/domain/probability.test.ts` | Exact distribution/expected-value/complexity/safe-integer/error-code regression coverage. |
 | `src/domain/probability.bench.ts` | Ordinary and keep/drop probability performance benchmarks within supported budgets. |
+| `src/domain/probability-insights.ts` | Derived exact distribution statistics: quantiles, median/modes, variance/standard deviation, and exact/at-most/at-least threshold probabilities. |
+| `src/domain/probability-insights.test.ts` | Regression coverage for exact 2d6 moments/quantiles, tied modes, threshold boundaries, and invalid quantiles. |
+| `src/domain/probability-comparison.ts` | Pairwise independent distribution comparison computing exact left-higher/tie/right-higher probability and expected-value delta. |
+| `src/domain/probability-comparison.test.ts` | Pairwise comparison regressions for identical, different-sized, non-overlapping, and normalized exact distributions. |
 | `src/domain/persistence.ts` | Runtime persisted roll/preset validators checking structure, expression, timestamps, dice indices/ranges, kept counts, totals, seed/mode, text bounds. |
 
 ## Internationalization implementation and tests
 
 | Path | Purpose and relationships |
 | --- | --- |
-| `src/i18n/en.ts` | English source catalog and `MessageCatalog` structural contract for user-facing copy/dynamic message helpers. |
-| `src/i18n/hi.ts` | Complete reviewed Hindi catalog matching `MessageCatalog`; technical identifiers/dice syntax stay stable where appropriate. |
+| `src/i18n/en.ts` | English source catalog and `MessageCatalog` structural contract for user-facing copy/dynamic message helpers, including preset transfer and release/version messages. |
+| `src/i18n/hi.ts` | Complete reviewed Hindi catalog matching `MessageCatalog`, including preset transfer and release/version copy; technical identifiers/dice syntax stay stable where appropriate. |
 | `src/i18n/index.ts` | Supported-catalog registry, active locale state, live exported `messages`, catalog lookup, and `setLocale()`. |
-| `src/i18n/index.test.ts` | English default, Hindi lookup/dynamic helper, and live active-catalog/locale switching tests. |
+| `src/i18n/index.test.ts` | English default, Hindi lookup/dynamic helper, preset-transfer/release-message, and live active-catalog/locale switching tests. |
 | `src/i18n/format.ts` | Explicit `en-US` / `hi-IN` Intl mapping and shared integer/decimal/date-time/time presentation helpers. |
 | `src/i18n/format.test.ts` | Locale mapping, English versus Indian grouping, and decimal formatting regressions. |
 | `src/i18n/errors.ts` | Stable parser/probability/backup error code/context to active localized message mapping with safe unknown fallback. |
@@ -330,6 +334,8 @@ For deeper behavioral context, also read:
 | `src/services/export.ts` | History CSV/JSON serialization, spreadsheet-formula neutralization, backup schema create/parse/validate, browser download, and cross-platform Tauri `save_text_export` routing. |
 | `src/services/export.test.ts` | Browser/native text export routing, cancellation, serialization, and safe export request behavior tests. |
 | `src/services/backup.test.ts` | Backup schema/bounds/duplicates/invariants/settings/locale/legacy compatibility/round-trip and hostile input regression coverage. |
+| `src/services/preset-file.ts` | Versioned shareable preset-file serializer/parser with built-in exclusion, expression normalization, UTF-8 size/count/text bounds, canonical timestamp validation, and no local ids/timestamps in shared payloads. |
+| `src/services/preset-file.test.ts` | Shareable preset-file round-trip, normalization, schema/kind/expression/timestamp rejection, built-in exclusion, and pre-read size-limit regression coverage. |
 | `src/services/logger.ts` | Local structured log record creation, event normalization, recursive redaction/bounds, Error-type-only serialization, and console severity routing. |
 | `src/services/logger.test.ts` | Sensitive-key/raw-error/context-depth/size redaction and structured logger behavior tests. |
 
