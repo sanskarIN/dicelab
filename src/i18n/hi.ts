@@ -182,8 +182,12 @@ export const hi: MessageCatalog = {
     importFailed: 'बैकअप आयात विफल हुआ।',
     updatesAbout: 'अपडेट और परिचय',
     updatesAboutBody: 'इंस्टॉल संस्करण, रिलीज़ नोट्स, लाइसेंस, सहायता और प्रोजेक्ट क्रेडिट देखें।',
+    installedVersion: 'इंस्टॉल किया गया संस्करण',
+    installedVersionBody: 'इस डिवाइस पर वर्तमान में चल रहा संस्करण।',
     releaseBody: 'डेस्कटॉप अपडेट पैकेज और रिलीज़ नोट्स प्रोजेक्ट रिलीज़ पेज पर प्रकाशित होते हैं।',
     releases: 'रिलीज़',
+    viewReleases: 'रिलीज़ देखें',
+    manualUpdates: (appName) => `${appName} में स्वचालित अपडेट सक्षम नहीं हैं; रिलीज़ मैन्युअल रूप से इंस्टॉल करें।`,
     openAbout: 'परिचय खोलें',
   },
   about: {
