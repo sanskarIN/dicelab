@@ -60,6 +60,9 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Reject oversized backup files before reading their text into memory.
 - [x] Keep CSV formula protection scoped to untrusted text while preserving numeric columns.
 - [x] Normalize live history-limit input to the persisted integer contract.
+- [x] Add exact probability quartiles, standard deviation, and configurable threshold probabilities.
+- [x] Add exact pairwise comparison for independent dice-expression distributions.
+- [x] Add versioned, bounded, validated local preset-file import/export with English/Hindi UI states.
 
 ## Phase 4 — Cross-platform native targets
 
@@ -88,7 +91,9 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] TypeScript parser tests.
 - [x] Dice-engine tests.
 - [x] Exact probability tests and safe-integer precision guards.
+- [x] Exact probability insight, threshold, and pairwise-comparison regression tests.
 - [x] Export/backup serialization and hostile-input tests.
+- [x] Versioned preset-file validation, normalization, size-limit, and transfer-control tests.
 - [x] Rust native tests and TypeScript/Rust seeded reference vectors.
 - [x] Roll-statistics and deterministic RNG edge coverage.
 - [x] Component keyboard/accessibility smoke tests for modal and settings surfaces.
@@ -143,10 +148,8 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 
 These are intentionally not commitments. They should be implemented only when they improve the product without compromising the offline-first model:
 
-- additional probability visualizations;
-- shareable local preset files;
+- additional comparative probability visualizations beyond the exact threshold and pairwise views;
 - more built-in tabletop preset packs;
-- deeper distribution comparison tools;
 - optional native updater after signing/release infrastructure is mature;
 - additional localizations after catalog review infrastructure is established;
 - optional automated store delivery after signing, first manual registrations, and store governance are established.
