@@ -186,8 +186,12 @@ export const en = {
     importFailed: 'Backup import failed.',
     updatesAbout: 'Updates & About',
     updatesAboutBody: 'Review the installed version, release notes, license, support, and project credits.',
+    installedVersion: 'Installed version',
+    installedVersionBody: 'The version currently running on this device.',
     releaseBody: 'Desktop update packages and release notes are published through the project releases page.',
     releases: 'Releases',
+    viewReleases: 'View releases',
+    manualUpdates: (appName: string) => `${appName} uses manually installed releases; automatic updates are not enabled.`,
     openAbout: 'Open About',
   },
   about: {
