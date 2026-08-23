@@ -28,9 +28,9 @@ Real release screenshots will be captured from verified release-candidate builds
 
 | View | What it provides |
 | --- | --- |
-| Dice Studio | Quick d4/d6/d8/d10/d12/d20/d100 choices, custom expressions, presets, and result details |
+| Dice Studio | Quick d4/d6/d8/d10/d12/d20/d100 choices, custom expressions, reusable presets, shareable local preset files, and result details |
 | History | Searchable local roll log, statistics, histogram, progressive large-list rendering, CSV/JSON export |
-| Probability | Exact common-expression distributions and expected values with explicit complexity/precision limits |
+| Probability | Exact distributions, expected values, quartiles, standard deviation, threshold probabilities, and pairwise expression comparison with explicit complexity/precision limits |
 | Settings | Theme, English/Hindi language, reduced motion, secure/seeded mode, history retention, backup, release/version, and About access |
 | About | Privacy, license, project links, support contacts, funding, version, and credits |
 
