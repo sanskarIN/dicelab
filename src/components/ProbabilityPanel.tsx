@@ -1,6 +1,10 @@
 import { Calculator, Sigma } from 'lucide-react';
 import { useMemo, useState, type FormEvent } from 'react';
-import { getQuantileTotal, summarizeProbabilityDistribution } from '../domain/probability-insights';
+import {
+  getQuantileTotal,
+  getThresholdProbabilities,
+  summarizeProbabilityDistribution,
+} from '../domain/probability-insights';
 import { calculateProbability } from '../domain/probability';
 import type { ProbabilityDistribution } from '../domain/types';
 import { messages } from '../i18n';
@@ -13,6 +17,7 @@ const MAX_VISIBLE_POINTS = 180;
 export function ProbabilityPanel() {
   const [expression, setExpression] = useState('2d6');
   const [distribution, setDistribution] = useState<ProbabilityDistribution>(() => calculateProbability('2d6'));
+  const [threshold, setThreshold] = useState(7);
   const [error, setError] = useState<string | null>(null);
   const visiblePoints = distribution.points.slice(0, MAX_VISIBLE_POINTS);
   const insights = useMemo(() => summarizeProbabilityDistribution(distribution), [distribution]);
@@ -24,6 +29,10 @@ export function ProbabilityPanel() {
     }),
     [distribution],
   );
+  const thresholdProbabilities = useMemo(
+    () => getThresholdProbabilities(distribution, threshold),
+    [distribution, threshold],
+  );
   const maxProbability = useMemo(
     () => Math.max(...visiblePoints.map((point) => point.probability), Number.EPSILON),
     [visiblePoints],
@@ -32,11 +41,19 @@ export function ProbabilityPanel() {
   const calculate = (event?: FormEvent) => {
     event?.preventDefault();
     try {
-      setDistribution(calculateProbability(expression));
+      const nextDistribution = calculateProbability(expression);
+      setDistribution(nextDistribution);
+      setThreshold(Math.round(nextDistribution.expectedValue));
       setError(null);
     } catch (cause) {
       setError(formatDomainError(cause, messages.probability.genericError));
     }
+  };
+
+  const changeThreshold = (rawValue: string) => {
+    const next = Number(rawValue);
+    if (!Number.isFinite(next)) return;
+    setThreshold(Math.min(distribution.maximum, Math.max(distribution.minimum, Math.trunc(next))));
   };
 
   return (
@@ -82,6 +99,44 @@ export function ProbabilityPanel() {
         <ProbabilityStat label={messages.probability.outcomes} value={formatOutcomes(distribution.totalOutcomes)} />
       </div>
 
+      <section className="panel probability-insights-panel" aria-labelledby="probability-threshold-heading">
+        <div className="panel-heading probability-insights-heading">
+          <div>
+            <p className="eyebrow">P(X ≤ n) · P(X = n) · P(X ≥ n)</p>
+            <h2 id="probability-threshold-heading">{distribution.expression}</h2>
+          </div>
+          <label className="threshold-control" htmlFor="probability-threshold">
+            <span>n</span>
+            <input
+              id="probability-threshold"
+              className="number-input"
+              type="number"
+              inputMode="numeric"
+              min={distribution.minimum}
+              max={distribution.maximum}
+              step={1}
+              value={threshold}
+              onChange={(event) => changeThreshold(event.target.value)}
+            />
+          </label>
+        </div>
+        <div className="stats-grid probability-threshold-grid">
+          <ProbabilityStat
+            label={`P(X = ${formatInteger(threshold)})`}
+            value={formatProbability(thresholdProbabilities.exactly)}
+          />
+          <ProbabilityStat
+            label={`P(X ≤ ${formatInteger(threshold)})`}
+            value={formatProbability(thresholdProbabilities.atMost)}
+          />
+          <ProbabilityStat
+            label={`P(X ≥ ${formatInteger(threshold)})`}
+            value={formatProbability(thresholdProbabilities.atLeast)}
+          />
+          <ProbabilityStat label="n" value={formatInteger(threshold)} />
+        </div>
+      </section>
+
       <section className="panel probability-chart" aria-labelledby="probability-chart-heading">
         <div className="panel-heading">
           <div>
@@ -124,4 +179,9 @@ function formatOutcomes(value: number): string {
   if (!Number.isFinite(value)) return messages.probability.veryLarge;
   if (value >= 1_000_000_000) return value.toExponential(3);
   return formatInteger(value);
+}
+
+function formatProbability(value: number): string {
+  const percent = value * 100;
+  return `${formatDecimal(percent, percent > 0 && percent < 0.01 ? 4 : 2)}%`;
 }
