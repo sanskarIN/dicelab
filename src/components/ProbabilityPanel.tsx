@@ -1,5 +1,6 @@
 import { Calculator, Sigma } from 'lucide-react';
 import { useMemo, useState, type FormEvent } from 'react';
+import { compareProbabilityDistributions } from '../domain/probability-comparison';
 import {
   getQuantileTotal,
   getThresholdProbabilities,
@@ -18,7 +19,12 @@ export function ProbabilityPanel() {
   const [expression, setExpression] = useState('2d6');
   const [distribution, setDistribution] = useState<ProbabilityDistribution>(() => calculateProbability('2d6'));
   const [threshold, setThreshold] = useState(7);
+  const [comparisonExpression, setComparisonExpression] = useState('1d20');
+  const [comparisonDistribution, setComparisonDistribution] = useState<ProbabilityDistribution>(() =>
+    calculateProbability('1d20'),
+  );
   const [error, setError] = useState<string | null>(null);
+  const [comparisonError, setComparisonError] = useState<string | null>(null);
   const visiblePoints = distribution.points.slice(0, MAX_VISIBLE_POINTS);
   const insights = useMemo(() => summarizeProbabilityDistribution(distribution), [distribution]);
   const quartiles = useMemo(
@@ -32,6 +38,10 @@ export function ProbabilityPanel() {
   const thresholdProbabilities = useMemo(
     () => getThresholdProbabilities(distribution, threshold),
     [distribution, threshold],
+  );
+  const comparison = useMemo(
+    () => compareProbabilityDistributions(distribution, comparisonDistribution),
+    [distribution, comparisonDistribution],
   );
   const maxProbability = useMemo(
     () => Math.max(...visiblePoints.map((point) => point.probability), Number.EPSILON),
@@ -47,6 +57,16 @@ export function ProbabilityPanel() {
       setError(null);
     } catch (cause) {
       setError(formatDomainError(cause, messages.probability.genericError));
+    }
+  };
+
+  const calculateComparison = (event?: FormEvent) => {
+    event?.preventDefault();
+    try {
+      setComparisonDistribution(calculateProbability(comparisonExpression));
+      setComparisonError(null);
+    } catch (cause) {
+      setComparisonError(formatDomainError(cause, messages.probability.genericError));
     }
   };
 
@@ -137,6 +157,35 @@ export function ProbabilityPanel() {
         </div>
       </section>
 
+      <section className="panel probability-insights-panel" aria-labelledby="probability-comparison-heading">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">A: {distribution.expression} · B: {comparisonDistribution.expression}</p>
+            <h2 id="probability-comparison-heading">P(A &gt; B) · P(A = B) · P(A &lt; B)</h2>
+          </div>
+        </div>
+        <form onSubmit={calculateComparison} className="probability-form">
+          <label htmlFor="probability-comparison-expression">B</label>
+          <div className="expression-control">
+            <Calculator size={20} aria-hidden="true" />
+            <input
+              id="probability-comparison-expression"
+              value={comparisonExpression}
+              onChange={(event) => setComparisonExpression(event.target.value)}
+              spellCheck={false}
+            />
+            <button type="submit" className="primary-button" aria-label="A ↔ B">A ↔ B</button>
+          </div>
+          {comparisonError ? <p className="field-error" role="alert">{comparisonError}</p> : null}
+        </form>
+        <div className="stats-grid probability-threshold-grid">
+          <ProbabilityStat label="P(A > B)" value={formatProbability(comparison.leftHigher)} />
+          <ProbabilityStat label="P(A = B)" value={formatProbability(comparison.tie)} />
+          <ProbabilityStat label="P(A < B)" value={formatProbability(comparison.rightHigher)} />
+          <ProbabilityStat label="ΔE(A − B)" value={formatSignedDecimal(comparison.expectedDelta)} />
+        </div>
+      </section>
+
       <section className="panel probability-chart" aria-labelledby="probability-chart-heading">
         <div className="panel-heading">
           <div>
@@ -184,4 +233,9 @@ function formatOutcomes(value: number): string {
 function formatProbability(value: number): string {
   const percent = value * 100;
   return `${formatDecimal(percent, percent > 0 && percent < 0.01 ? 4 : 2)}%`;
+}
+
+function formatSignedDecimal(value: number): string {
+  const formatted = formatFixedDecimal(value, 3);
+  return value > 0 ? `+${formatted}` : formatted;
 }
