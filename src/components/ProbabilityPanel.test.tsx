@@ -10,6 +10,11 @@ function calculate(expression: string) {
   fireEvent.click(screen.getByRole('button', { name: /Calculate|गणना करें/ }));
 }
 
+function statValue(label: string): string | null {
+  const card = screen.getByText(label).closest('.stat-card');
+  return card?.querySelector('strong')?.textContent ?? null;
+}
+
 describe('ProbabilityPanel localization', () => {
   it('formats large finite outcome counts with English grouping', () => {
     setLocale('en');
@@ -25,5 +30,40 @@ describe('ProbabilityPanel localization', () => {
     calculate('6d10');
     expect(screen.getByText('10,00,000')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'प्रायिकता कैलकुलेटर' })).toBeInTheDocument();
+  });
+});
+
+describe('ProbabilityPanel exact insights', () => {
+  it('shows quartiles and standard deviation for the default 2d6 distribution', () => {
+    render(<ProbabilityPanel />);
+
+    expect(statValue('P25')).toBe('5');
+    expect(statValue('P50')).toBe('7');
+    expect(statValue('P75')).toBe('9');
+    expect(statValue('σ')).toBe('2.415');
+  });
+
+  it('shows exact threshold probabilities and updates them when n changes', () => {
+    render(<ProbabilityPanel />);
+
+    expect(statValue('P(X = 7)')).toBe('16.67%');
+    expect(statValue('P(X ≤ 7)')).toBe('58.33%');
+    expect(statValue('P(X ≥ 7)')).toBe('58.33%');
+
+    fireEvent.change(screen.getByLabelText('n'), { target: { value: '8' } });
+
+    expect(statValue('P(X = 8)')).toBe('13.89%');
+    expect(statValue('P(X ≤ 8)')).toBe('72.22%');
+    expect(statValue('P(X ≥ 8)')).toBe('41.67%');
+  });
+
+  it('resets the threshold to the rounded expected value after a new calculation', () => {
+    render(<ProbabilityPanel />);
+    fireEvent.change(screen.getByLabelText('n'), { target: { value: '12' } });
+
+    calculate('1d20');
+
+    expect(screen.getByLabelText('n')).toHaveValue(11);
+    expect(statValue('P50')).toBe('10');
   });
 });
