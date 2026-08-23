@@ -1,5 +1,5 @@
-import { BookmarkPlus, Dices, Play, RotateCcw, Sparkles, Trash2 } from 'lucide-react';
-import { useMemo, useState, type FormEvent } from 'react';
+import { BookmarkPlus, Dices, Download, Play, RotateCcw, Sparkles, Trash2, Upload } from 'lucide-react';
+import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
 import { parseDiceExpression } from '../domain/parser';
 import type { DicePreset, RandomMode, RollResult } from '../domain/types';
 import { messages } from '../i18n';
@@ -14,6 +14,8 @@ interface RollWorkspaceProps {
   presets: DicePreset[];
   onSavePreset: (name: string) => void;
   onDeletePreset: (id: string) => void;
+  onExportPresets?: () => Promise<boolean>;
+  onImportPresets?: (file: File) => Promise<number>;
   randomMode: RandomMode;
   busy: boolean;
   error: string | null;
@@ -29,11 +31,14 @@ export function RollWorkspace({
   presets,
   onSavePreset,
   onDeletePreset,
+  onExportPresets,
+  onImportPresets,
   randomMode,
   busy,
   error,
 }: RollWorkspaceProps) {
   const [presetName, setPresetName] = useState('');
+  const [presetTransferStatus, setPresetTransferStatus] = useState<string | null>(null);
   const validation = useMemo(() => {
     try {
       return { parsed: parseDiceExpression(expression), error: null };
@@ -52,6 +57,30 @@ export function RollWorkspace({
     if (!name || validation.error) return;
     onSavePreset(name);
     setPresetName('');
+  };
+
+  const exportPresets = async () => {
+    if (!onExportPresets) return;
+    setPresetTransferStatus(null);
+    try {
+      const saved = await onExportPresets();
+      if (saved) setPresetTransferStatus(messages.roll.presetExportSuccess);
+    } catch {
+      setPresetTransferStatus(messages.roll.presetExportFailed);
+    }
+  };
+
+  const importPresets = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !onImportPresets) return;
+    setPresetTransferStatus(null);
+    try {
+      const count = await onImportPresets(file);
+      setPresetTransferStatus(messages.roll.presetImportSuccess(count));
+    } catch {
+      setPresetTransferStatus(messages.roll.presetImportFailed);
+    }
   };
 
   return (
@@ -161,10 +190,34 @@ export function RollWorkspace({
             <p className="eyebrow">{messages.roll.presetsEyebrow}</p>
             <h2 id="presets-heading">{messages.roll.presetsHeading}</h2>
           </div>
-          <button className="icon-text-button" type="button" onClick={() => onExpressionChange('1d20')}>
-            <RotateCcw size={16} aria-hidden="true" /> {messages.roll.reset}
-          </button>
+          <div className="header-actions">
+            {onExportPresets ? (
+              <button className="icon-text-button" type="button" onClick={() => void exportPresets()}>
+                <Download size={16} aria-hidden="true" /> {messages.roll.exportPresets}
+              </button>
+            ) : null}
+            {onImportPresets ? (
+              <label className="icon-text-button file-button">
+                <Upload size={16} aria-hidden="true" /> {messages.roll.importPresets}
+                <input
+                  className="sr-only"
+                  type="file"
+                  accept="application/json,.json"
+                  aria-label={messages.roll.importPresets}
+                  onChange={(event) => void importPresets(event)}
+                />
+              </label>
+            ) : null}
+            <button className="icon-text-button" type="button" onClick={() => onExpressionChange('1d20')}>
+              <RotateCcw size={16} aria-hidden="true" /> {messages.roll.reset}
+            </button>
+          </div>
         </div>
+        {presetTransferStatus ? (
+          <p className="panel-note" role="status">
+            {presetTransferStatus}
+          </p>
+        ) : null}
         <div className="preset-grid">
           {presets.map((preset) => (
             <article className="preset-card" key={preset.id}>
