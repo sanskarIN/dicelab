@@ -25,9 +25,11 @@ The next publication target is **2.0.12**. The section below records the prepare
 - Dice notation parser supporting custom sides, modifiers, `kh`, `kl`, `dh`, and `dl`.
 - Quick d4, d6, d8, d10, d12, d20, and d100 controls.
 - Saved tabletop presets and custom presets.
+- Versioned shareable preset JSON files with custom-preset-only export, parser normalization, 1 MB/500-entry bounds, pre-read selected-file size rejection, validated import, fresh local IDs, and localized English/Hindi transfer feedback.
 - Offline-first local history and settings persistence.
 - History search, statistics, histogram, CSV export, and JSON export.
 - Exact probability calculator for ordinary sums and manageable keep/drop expressions.
+- Exact probability quartiles, median/mode/variance/standard-deviation helpers, configurable exact/at-most/at-least threshold probabilities, and pairwise independent distribution comparison with expected-value delta.
 - Backup export and validated restore for history, custom presets, and settings.
 - Native operating-system save/document dialogs for CSV/JSON exports through a dedicated bounded Rust command, while browser builds retain their ordinary download path.
 - Light, dark, and system themes.
@@ -43,8 +45,9 @@ The next publication target is **2.0.12**. The section below records the prepare
 - Localization contributor guide and locale/error-contract tests.
 - Structured local application logger with recursive sensitive-key redaction, bounded context, and raw-error omission.
 - Safe operational events for storage degradation and root UI recovery.
-- Browser integration coverage for roll → history → export, backup restore, Settings → About, and live Hindi switching journeys.
-- Additional localization lifecycle coverage for persisted-locale startup, first-run Hindi onboarding, backup-driven locale restoration, clear-data locale reset, user-preset preservation, Hindi parser validation, Hindi backup/export failure feedback, and live shell/command-palette switching.
+- Browser integration coverage for roll → history → export, backup restore, Settings → About, live Hindi switching, and shared preset import → persistence → use → re-export journeys.
+- Additional localization lifecycle coverage for persisted-locale startup, first-run Hindi onboarding, backup-driven locale restoration, clear-data locale reset, user-preset preservation, Hindi parser validation, Hindi backup/export failure feedback, preset transfer copy, release/version copy, and live shell/command-palette switching.
+- Exact probability insight, threshold, pairwise-comparison, preset-file validation, and preset-transfer component regression coverage.
 - Dependency-free real-browser production-bundle E2E smoke covering onboarding, rolling, history, real CSV download, reload persistence, keyboard command palette, probability, real backup download, clear-data flow, real file-input restore, and restored history.
 - Extracted dependency-free CDP transport with Node tests for command routing, protocol errors, event waits/timeouts, and socket closure.
 - Component keyboard/accessibility regression tests for command palette, onboarding, settings, large-history behavior, and root error recovery.
@@ -80,15 +83,16 @@ The next publication target is **2.0.12**. The section below records the prepare
 
 - Authoritative application version metadata in npm, frontend configuration, Cargo, and Tauri configuration is synchronized to `2.0.12` for the current candidate.
 - DiceLab's declared platform scope is now Windows + macOS + Linux + Android + iOS/iPadOS + modern browsers from the shared Rust/Tauri/React codebase.
-- The package description, public README, setup guide, release guide, roadmap, release-blocker ledger, native-export guide, and exhaustive tracked-file reference now describe mobile support and its evidence/signing boundaries.
+- The package description, public README, setup guide, release guide, roadmap, release-blocker ledger, native-export guide, code/data references, and exhaustive tracked-file reference now describe current mobile, exact-probability, preset-sharing, and evidence/signing boundaries.
 - The native capability remains `core:default` while its platform scope now explicitly covers all five native operating-system targets.
+- Native CSV/JSON/backup/preset-file export writes now use the shared runtime-aware save boundary; the preset-file serializer applies its own stricter 1 MB content contract before output.
 - Native CSV/JSON/backup export writes now use Tauri's selected `FilePath` and native filesystem abstraction rather than a desktop-only `std::fs::write` assumption.
 - The tagged release workflow now requires successful web, desktop, Android, and iOS artifact jobs before draft-release packaging.
 - Android/iOS release workflow artifacts are labeled as release-validation outputs rather than being represented as Google Play/App Store-ready packages.
 - The tag-driven release workflow runs documentation link/inventory audits, repository policy self-tests/audits, version/tag consistency, and release-verifier self-tests directly before artifact creation, so separate focused workflows cannot be the only protection on a release tag.
 - Release web/desktop/mobile/draft jobs use explicit timeouts to prevent indefinitely hung candidate pipelines.
 - TypeScript and Rust seeded modes use the same UTF-8 FNV-1a 32-bit seed hash and xorshift32 sequence so identical effective seeds reproduce identical deterministic values across web and native targets.
-- Probability calculations advertised as exact reject raw-outcome counts that exceed JavaScript safe-integer precision.
+- Probability calculations advertised as exact reject raw-outcome counts that exceed JavaScript safe-integer precision; derived quartile/threshold/comparison views consume those guarded distributions rather than introducing alternate approximations.
 - Roll, history, and probability presentation uses the selected DiceLab locale for explicit `Intl` number/date/time formatting instead of inheriting the host browser locale independently from UI language.
 - Persistent shell navigation and command-palette definitions read the active catalog during rendering instead of capturing translated primitive strings when modules first load.
 - Backup import validation rejects internally inconsistent roll totals, duplicate IDs, duplicate/out-of-range die indices, impossible die values, malformed timestamps, missing deterministic seeds, mismatched modifiers, and semantically incorrect keep/drop selections.
@@ -107,7 +111,7 @@ The next publication target is **2.0.12**. The section below records the prepare
 - Generated npm/Cargo lock metadata now reflects application version `2.0.12`; Cargo's DiceLab package graph includes both `tauri-plugin-dialog` and the direct `tauri-plugin-fs` mobile export dependency.
 - Repository-level audit commands are exposed through stable npm scripts for documentation, policy, version, secret, E2E-infrastructure, and release-package verification.
 - Repository audit validates both Markdown links/anchors and exhaustive tracked-file documentation coverage.
-- Contributor, pull-request, CODEOWNERS, README, ADR index, governance, release, roadmap, and handoff documentation reflect the current English/Hindi product, native command/security boundaries, policy gates, generated-lock rules, cross-platform targets, and 2.0.12 evidence-based release process.
+- Contributor, pull-request, CODEOWNERS, README, ADR index, governance, release, roadmap, handoff, and maintainer-contract documentation reflect the current English/Hindi product, native command/security boundaries, probability tools, preset sharing, generated-lock rules, cross-platform targets, and 2.0.12 evidence-based release process.
 - Release tags must match the synchronized declared application version before release dependencies/builds proceed.
 - Release tags produce a draft GitHub release only after all required artifact jobs succeed; publication remains a deliberate maintainer action.
 - Core product metadata is centralized for Settings/About consistency.
@@ -122,6 +126,8 @@ The next publication target is **2.0.12**. The section below records the prepare
 - Backups produced from a maximum-length 120-character user seed can be restored after DiceLab appends the deterministic sequence suffix.
 - Persisted/imported keep/drop rolls verify the exact expected kept indices instead of accepting a forged mask with only the correct kept-die count and self-consistent total.
 - History-limit input emits an integer clamped to 10–5,000 immediately, avoiding fractional live state that would normalize differently after reload.
+- Custom preset IDs use `crypto.randomUUID()` when available and a collision-resistant timestamp/sequence fallback instead of a timestamp-only identifier.
+- Settings release/version UI copy now has matching English/Hindi catalog keys for installed version, installed-version detail, release navigation, and manual-update guidance.
 - The command-palette shortcut hint displays `Ctrl/⌘ K`, matching the implemented Ctrl-or-Command keyboard handler.
 - Live English/Hindi switching refreshes persistent shell navigation and command-palette labels/details immediately without requiring a reload.
 - The shell brand accessible name no longer appends a hardcoded English word during Hindi operation.
@@ -137,11 +143,13 @@ The next publication target is **2.0.12**. The section below records the prepare
 - Contributor documentation no longer incorrectly states that English is the only shipped locale.
 - ADR index includes all currently tracked architecture decisions rather than stopping after ADR-0003.
 - Repository-audit command references for documentation/release self-tests have matching package scripts.
+- Roadmap release engineering no longer marks the synchronized `src-tauri/Cargo.lock` regeneration as unfinished.
 
 ### Security
 
 - Secure mode uses OS-backed native randomness on Tauri targets and Web Crypto in the browser companion.
 - Untrusted dice expressions are bounded and validated.
+- Shareable preset files are schema/kind/timestamp/count/text/expression bounded, reject oversized selected files before reading text, exclude application-owned built-ins and local identifiers, and do not modify unrelated application state.
 - CSV exports neutralize formula-like untrusted `id`/`seed` cells even when formula markers follow leading whitespace, while generated negative numeric totals/modifiers remain numeric fields.
 - Imported backups are schema-bounded and validated before replacing local state, with oversized selected files rejected before their text is read.
 - Duplicate restored identifiers are rejected to avoid ambiguous application state.
@@ -164,4 +172,4 @@ The next publication target is **2.0.12**. The section below records the prepare
 
 ### Candidate status
 
-The 2.0.12 source/configuration now contains build paths for **Windows, macOS, Linux, Android, iOS/iPadOS, and modern browsers**, and generated npm/Cargo locks are synchronized to 2.0.12 including the mobile filesystem dependency. The candidate is **not yet publishable** until the exact final commit has observed green CI/web E2E/Rust/Android/iOS build evidence plus fuzz/benchmark/physical-device/accessibility/security/screenshot/signing-status/checksum/provenance review. See [`docs/release-blockers-current.md`](docs/release-blockers-current.md).
+The 2.0.12 source/configuration now contains build paths for **Windows, macOS, Linux, Android, iOS/iPadOS, and modern browsers**, generated npm/Cargo locks synchronized to 2.0.12 including the mobile filesystem dependency, exact threshold/comparison probability tools, and versioned local preset sharing. The candidate is **not yet publishable** until the exact final commit has observed green CI/web E2E/Rust/Android/iOS build evidence plus fuzz/benchmark/physical-device/accessibility/security/screenshot/signing-status/checksum/provenance review. See [`docs/release-blockers-current.md`](docs/release-blockers-current.md).
