@@ -191,6 +191,55 @@ Custom persistence and backup restoration remove/reject the idea that external d
 
 Built-in names/descriptions may change when locale changes. User-created name/expression/description data is not automatically translated.
 
+### Shareable preset-file contract
+
+Preset sharing is deliberately narrower than full backup/restore. The versioned file shape is:
+
+```ts
+interface SharedDicePreset {
+  name: string;
+  expression: string;
+  description?: string;
+}
+
+interface DiceLabPresetFile {
+  kind: 'dicelab-presets';
+  schemaVersion: 1;
+  exportedAt: string;
+  presets: SharedDicePreset[];
+}
+```
+
+Rules:
+
+- only custom presets are exported; built-ins are excluded;
+- local preset IDs and `createdAt` timestamps are never shared;
+- expressions are parser-normalized before export and again during import validation;
+- `exportedAt` must be a canonical ISO timestamp;
+- selected files larger than 1,000,000 bytes are rejected from `File.size` before `File.text()` is called;
+- decoded/serialized UTF-8 content is also capped at 1,000,000 bytes;
+- at most 500 shared presets are accepted;
+- each imported name is trimmed and must remain 1–80 characters;
+- optional imported descriptions are trimmed and must be no longer than 240 characters;
+- invalid dice expressions reject the file instead of being silently skipped;
+- imported entries receive fresh collision-safe local IDs and a new local creation timestamp before entering storage;
+- imported preset files do not modify history, settings, locale, or onboarding state.
+
+Current preset-file validation codes are local to the preset-file service:
+
+```text
+preset-file-too-large
+invalid-json
+invalid-root
+invalid-kind
+unsupported-schema
+invalid-export-timestamp
+invalid-presets-shape
+invalid-preset
+```
+
+UI presentation intentionally uses localized safe transfer status rather than exposing parser/file exception detail.
+
 ## 7. Probability contracts
 
 ### `ProbabilityPoint`
@@ -218,6 +267,63 @@ interface ProbabilityDistribution {
 ```
 
 Current calculator outputs are advertised as exact only when the implementation can preserve the required count precision and stay within interactive complexity budgets.
+
+### Derived insight contract
+
+`src/domain/probability-insights.ts` consumes an already constructed exact distribution and derives:
+
+```ts
+interface ProbabilityInsights {
+  median: number;
+  modes: number[];
+  variance: number;
+  standardDeviation: number;
+}
+
+interface ThresholdProbabilities {
+  exactly: number;
+  atMost: number;
+  atLeast: number;
+}
+```
+
+Quantiles use the first ordered total whose cumulative probability reaches the requested quantile. Quantile input must be finite and in `[0, 1]`; `0` maps to the minimum and `1` maps to the maximum. Median is therefore the 0.5 lower exact quantile used by this distribution convention.
+
+Modes are selected from the highest exact `ways` count, preserving all tied totals. Variance is the probability-weighted squared distance from the distribution's expected value, and standard deviation is its square root.
+
+For integer threshold `n`:
+
+```text
+exactly = P(X = n)
+atMost  = P(X ≤ n)
+atLeast = P(X ≥ n)
+```
+
+Thresholds outside the distribution range naturally produce zero/one boundary probabilities at the domain layer; the UI constrains its interactive threshold input to the active distribution range.
+
+### Pairwise comparison contract
+
+`src/domain/probability-comparison.ts` compares two independent exact distributions without enumerating every raw dice-pair outcome:
+
+```ts
+interface ProbabilityComparison {
+  leftHigher: number;
+  tie: number;
+  rightHigher: number;
+  expectedDelta: number;
+}
+```
+
+Semantics:
+
+```text
+leftHigher  = P(A > B)
+tie         = P(A = B)
+rightHigher = P(A < B)
+expectedDelta = E[A] - E[B]
+```
+
+The three outcome probabilities must sum to one within floating-point tolerance. Tiny near-zero/near-one artifacts are clamped after combining exact distribution probability masses.
 
 ### Probability safety/performance bounds
 
@@ -436,7 +542,7 @@ Return meaning:
 
 `mimeType` is used by the browser Blob path. Native validation is based on the explicit format allowlist rather than trusting renderer MIME text.
 
-Content-specific serializers may impose stricter limits before this generic output boundary is reached. In particular, backup JSON is capped at 5,000,000 UTF-8 bytes so a saved backup remains acceptable to DiceLab's own restore boundary, while the native generic text command accepts at most 6,000,000 bytes.
+Content-specific serializers may impose stricter limits before this generic output boundary is reached. In particular, backup JSON is capped at 5,000,000 UTF-8 bytes so a saved backup remains acceptable to DiceLab's own restore boundary, while shareable preset JSON is capped at 1,000,000 bytes and the native generic text command accepts at most 6,000,000 bytes.
 
 ## 14. Native roll command contract
 
@@ -578,7 +684,7 @@ src-tauri/Cargo.toml    -> src-tauri/Cargo.lock
 
 Manifest, dependency, or application-version changes are not considered reproducibly verified until generated lockfiles are committed and locked package-manager checks succeed.
 
-The npm lock must carry the same application version in both its top-level `version` and `packages[""]` root package metadata. The Cargo lock must contain the DiceLab package entry at the same application version and must include every direct crate dependency resolved from the current manifest, including `tauri-plugin-dialog` for the 2.0.12 candidate.
+The npm lock must carry the same application version in both its top-level `version` and `packages[""]` root package metadata. The Cargo lock must contain the DiceLab package entry at the same application version and must include every direct crate dependency resolved from the current manifest, including both `tauri-plugin-dialog` and the direct `tauri-plugin-fs` mobile export dependency for the 2.0.12 candidate.
 
 `npm run policy:lockfiles` performs an early structural direct-dependency consistency check. `npm run version:check` performs the cross-file package-version agreement check. Neither command replaces normal package-manager lockfile generation/resolution or locked Rust/npm installation/testing.
 
@@ -592,7 +698,7 @@ When changing a contract above, review all relevant layers:
 - parser/engine/probability behavior;
 - persisted-data validation;
 - storage normalization/versioning;
-- backup schema/import/export compatibility;
+- backup and shareable-preset schema/import/export compatibility;
 - English/Hindi catalogs and stable error mapping;
 - browser/native service adapters;
 - Rust command input/output/validation;
