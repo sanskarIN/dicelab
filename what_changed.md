@@ -1,10 +1,10 @@
 # DiceLab — Current Work Handoff
 
-Last updated: **2026-08-20**
+Last updated: **2026-08-23**
 
 Current release-preparation target: **2.0.12** (`v2.0.12`)
 
-This file is the current continuation entry point. It records what is implemented, what changed during the cross-platform expansion and subsequent PWA hardening, what was directly observed from repository state, and what still requires candidate execution/device/signing evidence.
+This file is the current continuation entry point. It records what is implemented, what changed during the cross-platform expansion, PWA hardening, exact-probability expansion, and local preset-sharing work, what was directly observed from repository state, and what still requires candidate execution/device/signing evidence.
 
 ## Historical handoffs
 
@@ -16,6 +16,163 @@ Detailed earlier work remains preserved in:
 4. [`docs/handoffs/2026-08-19-documentation-completion.md`](docs/handoffs/2026-08-19-documentation-completion.md)
 
 The handoff index is [`docs/handoffs/README.md`](docs/handoffs/README.md).
+
+---
+
+## 2026-08-23 exact probability + portable preset continuation
+
+This continuation moved beyond release-only paperwork and completed additional product-level offline features while preserving DiceLab's current privacy/security boundaries.
+
+### Exact probability insights
+
+New domain module `src/domain/probability-insights.ts` derives additional statistics from an already guarded exact `ProbabilityDistribution`:
+
+- P25/P50/P75 lower exact quantiles;
+- median;
+- all tied modes using exact `ways` counts;
+- probability-weighted variance;
+- standard deviation;
+- exact `P(X = n)`;
+- at-most `P(X ≤ n)`;
+- at-least `P(X ≥ n)`;
+- validated arbitrary quantile lookup in `[0, 1]`.
+
+The probability UI now presents quartiles and standard deviation and includes a bounded integer threshold explorer. Changing the main expression resets the interactive threshold to the rounded expected value of the newly accepted distribution.
+
+These features do not bypass the exactness/complexity guards in `src/domain/probability.ts`; they operate only on distributions that the existing exact calculator successfully constructs.
+
+### Exact distribution comparison
+
+New domain module `src/domain/probability-comparison.ts` compares two independently generated exact distributions and returns:
+
+- `P(A > B)`;
+- `P(A = B)`;
+- `P(A < B)`;
+- `E[A] - E[B]`.
+
+The comparison uses ordered distribution points rather than enumerating every raw cross-product pair. Tiny floating-point artifacts at zero/one boundaries are normalized without changing the source distribution exactness policy.
+
+`ProbabilityPanel` now exposes a second expression field for this comparison and preserves the previous valid comparison when a newly entered comparison expression is rejected.
+
+### Shareable preset files
+
+New service module `src/services/preset-file.ts` adds a narrow, versioned local preset-sharing format distinct from full backup/restore:
+
+```ts
+interface DiceLabPresetFile {
+  kind: 'dicelab-presets';
+  schemaVersion: 1;
+  exportedAt: string;
+  presets: Array<{
+    name: string;
+    expression: string;
+    description?: string;
+  }>;
+}
+```
+
+The sharing boundary now:
+
+- exports only custom presets;
+- excludes application-owned built-ins;
+- excludes local preset IDs and local creation timestamps;
+- parser-normalizes shared dice expressions;
+- caps files at 1,000,000 UTF-8 bytes;
+- caps files at 500 preset entries;
+- checks selected `File.size` before reading oversized files;
+- validates root kind/schema/export timestamp/text bounds/expression validity;
+- trims imported name/description text;
+- gives imported presets fresh collision-safe local IDs and a new local creation timestamp;
+- modifies presets only, not history/settings/locale/onboarding.
+
+`RollWorkspace` now exposes localized preset export/import controls and safe success/failure status. `App.tsx` routes preset-file output through the existing runtime-aware `saveTextExport` boundary, so browser builds use the normal download path and Tauri builds continue to use the existing bounded OS-dialog native command.
+
+### Preset ID hardening
+
+Custom preset creation/import now uses one centralized ID helper:
+
+- `crypto.randomUUID()` when available;
+- timestamp + monotonic local sequence fallback otherwise.
+
+This replaces timestamp-only custom preset identifiers and reduces same-millisecond collision risk.
+
+### English/Hindi catalog repair and expansion
+
+Preset transfer controls/status are available in both reviewed catalogs.
+
+During integration, a pre-existing catalog mismatch was found: `SettingsPanel` referenced installed-version/release-navigation/manual-update message keys that were absent from the catalogs. Matching English and Hindi keys were restored, and catalog regression tests now guard both the preset-transfer and release/version message surfaces.
+
+### Test coverage added
+
+New/expanded tests cover:
+
+- 2d6 median/mode/variance/standard deviation;
+- tied modes for uniform dice;
+- threshold probabilities and out-of-range threshold boundaries;
+- quantile boundaries and invalid quantile rejection;
+- symmetric and asymmetric pairwise distribution comparison;
+- non-overlapping comparison distributions;
+- normalized comparison mass;
+- ProbabilityPanel quartiles/standard deviation/threshold interaction;
+- ProbabilityPanel A/B comparison and invalid-comparison recovery;
+- preset-file built-in exclusion;
+- preset-file round-trip normalization;
+- invalid kind/schema/timestamp/expression rejection;
+- pre-read oversized preset-file rejection;
+- localized preset transfer controls/status;
+- privacy-safe transfer failure feedback;
+- application-level shared preset import → local persistence → use → re-export journey;
+- English/Hindi release/preset catalog keys.
+
+### Documentation synchronized
+
+The continuation updated:
+
+- [`ROADMAP.md`](ROADMAP.md) — records completed probability/preset-sharing work and fixes the stale Cargo-lock regeneration checkbox;
+- [`README.md`](README.md) — describes expanded probability workspace and portable presets in the user-facing view matrix;
+- [`CHANGELOG.md`](CHANGELOG.md) — records new 2.0.12 candidate features/fixes without claiming publication;
+- [`docs/repository-file-reference.md`](docs/repository-file-reference.md) — registers every newly tracked production/test module so the exhaustive inventory gate remains synchronized;
+- [`docs/code-reference.md`](docs/code-reference.md) — documents new module ownership/dependency routing;
+- [`docs/data-contracts.md`](docs/data-contracts.md) — defines the preset-file schema/bounds and derived/comparison probability semantics, and corrects the Cargo direct-dependency description to include both dialog and filesystem plugins;
+- this handoff.
+
+### Representative commits from this continuation
+
+Probability implementation/testing:
+
+- `d5535261` — `feat(probability): add distribution insight helpers`
+- `4bf4c0f9` — `test(probability): cover distribution insight helpers`
+- `e7f5d2ab` — `feat(probability): surface exact distribution insights`
+- `80c7a42b` — `feat(probability): add exact threshold explorer`
+- `43d122af` — `ui(probability): refine responsive insight layout`
+- `44cf0265` — `test(probability): cover insight and threshold UI`
+- `3976ae7d` — `feat(probability): add exact distribution comparison`
+- `642c48b9` — `test(probability): cover exact distribution comparison`
+- `afe81ec8` — `feat(probability): add distribution comparison workspace`
+- `5ac0c992` — `test(probability): cover comparison workspace`
+
+Preset sharing/localization/testing:
+
+- `11ad3a9e` — `feat(presets): add shareable preset file format`
+- `9946078c` — `test(presets): cover shared preset file validation`
+- `8700d9f9` — `refactor(presets): centralize collision-safe preset ids`
+- `608ddc22` — `i18n(presets): localize preset file transfer`
+- `79091dae` — `fix(i18n): restore settings release messages`
+- `c2722875` — `fix(i18n): restore Hindi release messages`
+- `ad3b92dc` — `feat(presets): add preset transfer controls`
+- `33c06a78` — `feat(presets): wire preset file import and export`
+- `81b67c81` — `test(presets): cover preset transfer controls`
+- `ac5074cf` — `test(i18n): guard transfer and release catalog entries`
+
+Repository/documentation synchronization includes additional focused commits for roadmap, tracked-file inventory, README, maintainer code reference, data contracts, changelog, and this handoff rather than collapsing documentation into one commit.
+
+### Verification truth for this continuation
+
+Source changes and committed regression tests are directly observable in the repository.
+
+This execution environment could not clone/install the repository locally because its container could not resolve `github.com`. Therefore this continuation does **not** claim a locally observed green `npm ci`/format/lint/test/build/Rust suite.
+
+Likewise, committed CI configuration or the existence of tests is not proof that the exact latest candidate has passed. Final-candidate green CI/browser/native/fuzz/benchmark/device evidence remains part of the release gate below.
 
 ---
 
@@ -463,7 +620,7 @@ Do not change docs to call unsigned CI outputs “store ready.”
 
 ## What is directly observed in this continuation
 
-Observed from the repository after the changes:
+Observed from repository source/state after the combined cross-platform/PWA/probability/preset work:
 
 - `package.json` exposes web, desktop, Android, and iOS command surfaces;
 - `package.json` exposes PWA audit/self-test commands and includes the PWA auditor in aggregate policy self-tests;
@@ -479,7 +636,13 @@ Observed from the repository after the changes:
 - focused repository-policy and dependency-free repository-audit workflows include PWA boundaries;
 - the release-policy workflow uses canonical `policy:test` + `policy:all` commands;
 - tagged release includes Android and iOS artifact jobs and requires them before draft packaging;
-- README/setup/release/native-export/roadmap/release-blocker/file-reference/PWA/evidence documentation describes the cross-platform design;
+- exact probability insight/threshold/comparison domain modules and tests are tracked;
+- the probability workspace presents quantiles, standard deviation, threshold probabilities, and pairwise comparison;
+- the versioned bounded preset-file service and its tests are tracked;
+- preset import/export is wired through the roll workspace and existing runtime-aware save boundary;
+- English/Hindi catalogs contain the preset-transfer and Settings release/version keys referenced by UI;
+- application integration coverage contains the preset import/persist/use/re-export journey;
+- README/changelog/roadmap/code/data/file-reference documentation describes the new probability and preset behavior;
 - `package-lock.json` application versions are 2.0.12;
 - DiceLab's generated Cargo lock package is 2.0.12;
 - DiceLab's generated Cargo dependency list contains `tauri-plugin-dialog` and `tauri-plugin-fs`.
@@ -515,7 +678,7 @@ Not yet claimed as observed final-candidate evidence:
 
 Generated dependency locks are no longer the first blocker. Continue release verification in this order:
 
-1. observe the final normal CI web/Rust/Android/iOS jobs green on the exact candidate commit;
+1. observe the final normal CI web/Rust/Android/iOS jobs green on the exact candidate commit, including the newly added probability/preset tests and documentation inventory;
 2. observe production browser/PWA E2E green, including the generated-runtime cache check and server-offline reopen;
 3. verify the actual production HTTPS PWA install path on representative desktop/ChromeOS plus Android/iOS browser/home-screen flows where supported;
 4. observe locked Rust fmt/test/Clippy green after all cross-platform/PWA changes;
@@ -524,7 +687,7 @@ Generated dependency locks are no longer the first blocker. Continue release ver
 7. build and smoke Windows/macOS/Linux artifacts;
 8. run physical Android smoke including `content://` document-provider export;
 9. run physical iPhone/iPad smoke including safe areas, orientation, persistence, Files-picker export, and security-scoped access return;
-10. complete English/Hindi/accessibility/security review across native and installed-browser layouts;
+10. complete English/Hindi/accessibility/security review across native and installed-browser layouts, including new preset transfer and probability controls;
 11. capture real candidate screenshots, including representative installed/standalone PWA evidence;
 12. record actual signing/notarization/store/deployment status without overstating unsigned artifacts or unobserved browser behavior;
 13. trigger the tagged draft release only from the verified commit;
@@ -546,12 +709,16 @@ Generated dependency locks are no longer the first blocker. Continue release ver
 - Keep generated build-asset precaching restricted to the production `/assets/` namespace.
 - Increment the service-worker cache generation when the precached shell changes materially.
 - Preserve the real-browser server-offline reopen step when modifying E2E lifecycle/process control.
+- Keep probability insight/comparison modules pure and consume only distributions produced by the guarded exact calculator rather than adding unreviewed approximate paths.
+- Keep the shareable preset schema separate from full backup state; do not add local IDs/history/settings/seeds to preset files without an explicit compatibility/privacy review and schema version change.
+- Preserve pre-read size rejection for imported backup and preset files.
+- Keep preset import/export user errors localized and avoid exposing raw selected path/URI/exception details.
 - Keep canonical `policy:test` and `policy:all` scripts synchronized with any new executable policy and let focused/release workflows call those canonical scripts rather than duplicating command lists.
 - When `Cargo.toml` or `package.json` dependency declarations change, regenerate lockfiles using package-manager automation.
-- Treat CI configuration as implementation, not as proof of a passing candidate.
+- Treat CI configuration and committed tests as implementation, not as proof of a passing candidate.
 - Never commit Android/iOS/store signing credentials.
 - Do not call unsigned Android/iOS workflow artifacts store-ready.
-- Keep README, setup, release, release blockers, changelog, roadmap, PWA guide, release-evidence template, and exhaustive file inventory synchronized when platform behavior changes.
+- Keep README, setup, release, release blockers, changelog, roadmap, PWA guide, code/data references, release-evidence template, and exhaustive file inventory synchronized when platform/product behavior changes.
 
 ---
 
@@ -569,6 +736,8 @@ Generated dependency locks are no longer the first blocker. Continue release ver
 - [`docs/release-candidate-evidence-template.md`](docs/release-candidate-evidence-template.md)
 - [`docs/automation-reference.md`](docs/automation-reference.md)
 - [`docs/repository-file-reference.md`](docs/repository-file-reference.md)
+- [`docs/code-reference.md`](docs/code-reference.md)
+- [`docs/data-contracts.md`](docs/data-contracts.md)
 - [`docs/capability-policy.md`](docs/capability-policy.md)
 - [`docs/testing.md`](docs/testing.md)
 - [`docs/lockfile-policy.md`](docs/lockfile-policy.md)
