@@ -110,7 +110,7 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 
 - [x] Synchronize executable/configuration version metadata to 2.0.12.
 - [x] Commit npm and Cargo lockfiles for the previous dependency graph.
-- [ ] Regenerate and commit `src-tauri/Cargo.lock` for the direct `tauri-plugin-fs` mobile export dependency, then observe locked Rust checks.
+- [x] Regenerate and commit `src-tauri/Cargo.lock` for the direct `tauri-plugin-fs` mobile export dependency.
 - [x] Enforce locked dependencies in main CI and tagged release verification.
 - [x] Configure tagged Windows/macOS/Linux/web artifact builds.
 - [x] Configure tagged Android and unsigned iOS release-validation artifact builds.
