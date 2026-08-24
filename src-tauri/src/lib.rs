@@ -166,7 +166,11 @@ async fn save_text_export(
     Ok(true)
 }
 
-fn validate_export_request(filename: &str, contents: &str, format: &str) -> Result<ExportSpec, String> {
+fn validate_export_request(
+    filename: &str,
+    contents: &str,
+    format: &str,
+) -> Result<ExportSpec, String> {
     if filename.is_empty()
         || filename.len() > MAX_EXPORT_FILENAME_BYTES
         || filename
@@ -195,9 +199,7 @@ fn validate_export_request(filename: &str, contents: &str, format: &str) -> Resu
 
     let expected_suffix = format!(".{}", spec.extension);
     if !filename.to_ascii_lowercase().ends_with(&expected_suffix) {
-        return Err(format!(
-            "Export filename must end with {expected_suffix}."
-        ));
+        return Err(format!("Export filename must end with {expected_suffix}."));
     }
 
     Ok(spec)
@@ -310,7 +312,8 @@ fn parse_expression(input: &str) -> Result<Expression, String> {
 pub fn fuzz_parse_expression(input: &str) {
     if let Ok(first) = parse_expression(input) {
         let normalized = first.normalized.clone();
-        let second = parse_expression(&normalized).expect("normalized parser output must parse again");
+        let second =
+            parse_expression(&normalized).expect("normalized parser output must parse again");
         assert_eq!(second.normalized, normalized);
         assert_eq!(second.count, first.count);
         assert_eq!(second.sides, first.sides);
@@ -325,10 +328,7 @@ fn roll_with_rng<R: Rng + ?Sized>(expression: &Expression, rng: &mut R) -> Nativ
     roll_from_values(expression, values)
 }
 
-fn roll_with_seeded_rng(
-    expression: &Expression,
-    rng: &mut SeededRandomSource,
-) -> NativeRollResult {
+fn roll_with_seeded_rng(expression: &Expression, rng: &mut SeededRandomSource) -> NativeRollResult {
     let values: Vec<u32> = (0..expression.count)
         .map(|_| rng.next_int(expression.sides) + 1)
         .collect();
@@ -550,10 +550,7 @@ mod tests {
             let selection_text = if maximum_selection == 0 {
                 String::new()
             } else {
-                format!(
-                    "{selection_code}{}",
-                    (sample % maximum_selection) + 1
-                )
+                format!("{selection_code}{}", (sample % maximum_selection) + 1)
             };
             let modifier_text = match modifier.cmp(&0) {
                 std::cmp::Ordering::Greater => format!("+{modifier}"),
@@ -563,7 +560,8 @@ mod tests {
             let input = format!("{count}d{sides}{selection_text}{modifier_text}");
 
             let first = parse_expression(&input).expect("generated expression should parse");
-            let second = parse_expression(&first.normalized).expect("normalized expression should parse");
+            let second =
+                parse_expression(&first.normalized).expect("normalized expression should parse");
             assert_eq!(second.normalized, first.normalized);
             assert_eq!(second.count, first.count);
             assert_eq!(second.sides, first.sides);
