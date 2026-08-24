@@ -126,6 +126,29 @@ try {
         ),
       '2d6 expected value',
     );
+    await waitFor(
+      async () =>
+        Boolean(
+          await evaluateValue(`(() => [...document.querySelectorAll('.stat-card')].some((card) => {
+            const text = card.textContent?.replace(/\\s+/g, ' ').trim() ?? '';
+            return text === 'P50 7';
+          }))()`),
+        ),
+      '2d6 median quantile',
+    );
+    await setInputValue('#probability-comparison-expression', '1d6');
+    await clickButton('A ↔ B');
+    await waitFor(
+      async () =>
+        Boolean(
+          await evaluateValue(`(() => {
+            const meter = document.querySelector('.comparison-meter');
+            const label = meter?.getAttribute('aria-label') ?? '';
+            return meter?.children.length === 3 && label.includes('P(A > B)') && label.includes('P(A = B)') && label.includes('P(A < B)');
+          })()`),
+        ),
+      'exact pairwise comparison visualization',
+    );
   });
 
   let backupPath;
