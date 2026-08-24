@@ -4,10 +4,10 @@ DiceLab releases should be reproducible, reviewed, and based on a clean commit w
 
 ## Current candidate
 
-The repository is currently preparing **DiceLab 2.0.12**. The intended release tag is:
+The repository is currently preparing **DiceLab 2.18.12**. The intended release tag is:
 
 ```text
-v2.0.12
+v2.18.12
 ```
 
 Do not create or publish that tag until dependency locks and release-candidate evidence are current for the exact source commit.
@@ -21,7 +21,7 @@ The source tree now supports:
 - Linux desktop;
 - Android API 24+;
 - iOS/iPadOS 14.0+;
-- the modern-browser web companion.
+- the modern-browser web companion/PWA.
 
 Desktop and mobile native targets use Tauri 2. The web companion continues to use the Vite production bundle.
 
@@ -34,19 +34,37 @@ Keep the application version aligned in:
 - `src/config/app.ts`;
 - `src-tauri/Cargo.toml`;
 - DiceLab's generated package entry in `src-tauri/Cargo.lock`;
-- `src-tauri/tauri.conf.json`;
-- `CHANGELOG.md` as the human-reviewed release record.
+- `src-tauri/tauri.conf.json`.
+
+Keep current release identity synchronized in:
+
+- `README.md`;
+- `ROADMAP.md`;
+- the current candidate section in `CHANGELOG.md`;
+- `docs/release.md`;
+- `docs/release-blockers-current.md`;
+- `docs/release-candidate-evidence-template.md`;
+- `docs/lockfile-policy.md`;
+- `what_changed.md`.
 
 Use semantic-versioning principles. Compatibility-affecting changes must be documented clearly, especially on the 2.x version line.
 
-The automated repository check verifies the machine-readable sources:
+The automated repository check verifies machine-readable metadata plus the current release-document identity markers:
 
 ```bash
 npm run version:check:test
 npm run version:check
 ```
 
-The version audit intentionally fails when a manifest/config version has been bumped but generated npm/Cargo lock metadata has not yet been regenerated. `CHANGELOG.md` remains a maintainer-reviewed source rather than an executable version input because unreleased/released sections can legitimately mention multiple versions.
+The version audit intentionally fails when a manifest/config version has been bumped but generated npm/Cargo lock metadata is stale, or when the active release-facing documents still advertise a different candidate. Historical changelog/handoff sections may legitimately mention older versions; the audit protects only the current-candidate markers.
+
+The lockfile generator uses the narrower metadata-only mode while it is producing generated files during a multi-commit version bump:
+
+```bash
+node scripts/check-version-sync.mjs --metadata-only
+```
+
+That mode is for generation only. Normal CI/release verification must use the full `npm run version:check` candidate audit.
 
 ## Dependency-lock rule
 
@@ -69,17 +87,17 @@ cargo test --locked
 cargo clippy --all-targets --all-features --locked -- -D warnings
 ```
 
-The repository lockfile workflow can regenerate npm/Cargo lockfiles and supports manual dispatch. If branch protection rejects its direct `main` update, it publishes the exact generated commit to `automation/lockfiles` for review/application. The existence of that workflow is not proof that the lockfile is current: inspect the resulting commit and observe locked checks before release.
+The repository lockfile workflow can regenerate npm/Cargo lockfiles on `main` and `release/**` preparation branches and supports manual dispatch. It runs the metadata-only version audit while generating locks. If branch protection rejects a direct update, it publishes the exact generated commit to `automation/lockfiles` for `main` or a branch-specific `automation/lockfiles-*` fallback for a release branch. The existence of that workflow is not proof that the lockfile is current: inspect the resulting commit and observe locked checks before release.
 
 Do not hand-edit transitive Cargo lock entries to bypass a stale-lock failure.
 
 ## Release prerequisites
 
-Before tagging `v2.0.12`:
+Before tagging `v2.18.12`:
 
 1. Ensure `package-lock.json` and `src-tauri/Cargo.lock` are generated and current for the exact manifests/version.
-2. Verify `npm run version:check` reports all manifest/config/generated-lock version locations as `2.0.12`.
-3. Verify normal CI is green on the exact release commit, including web E2E, locked Rust checks, Android build, and iOS simulator build.
+2. Verify `npm run version:check` reports manifest/config/generated-lock and current release-document identity as `2.18.12`.
+3. Verify normal CI is green on the exact release commit, including web E2E, PWA/accessibility policy, locked Rust checks, Android build, and iOS simulator build.
 4. Observe a bounded Rust parser fuzz campaign green on the intended candidate or record why it is excluded from the release gate.
 5. Run the clean-checkout quality suite.
 6. Run/review the repository secret audit and platform security alerts.
@@ -111,6 +129,10 @@ npm run docs:check:test
 npm run docs:check
 npm run docs:inventory:test
 npm run docs:inventory
+npm run policy:pwa:test
+npm run policy:pwa
+npm run policy:accessibility:test
+npm run policy:accessibility
 npm run policy:test
 npm run policy:all
 npm run test:e2e:infra
@@ -178,7 +200,7 @@ The first compiles the Apple Silicon simulator target. The second uses the locke
 
 The production web build is not release-ready merely because Vitest/jsdom passes. The real-browser smoke must be observed successfully on the release commit.
 
-It verifies onboarding, rolling, history, real CSV download, reload persistence, command-palette keyboard behavior, probability calculation, real backup download, local-data clearing, real file-input restore, and restored history.
+It verifies onboarding, rolling, history, real CSV download, reload persistence, command-palette keyboard behavior, probability calculation, real backup download, local-data clearing, real file-input restore, restored history, production service-worker control, generated runtime precaching, and a server-offline reopen with persisted state.
 
 Do not weaken browser/security policy merely to manufacture local release evidence.
 
@@ -245,7 +267,7 @@ Windows and macOS distribution should use the platform signing/notarization proc
 
 ### Android / Google Play
 
-Google Play distribution requires an Android signing keystore and Play Console application registration. The first Play upload must be handled according to Google/Tauri distribution requirements. The repository release workflow intentionally emits **unsigned release-validation artifacts** unless a future reviewed signing path is explicitly added.
+Google Play distribution requires an Android signing keystore and Play Console application registration. The first Play upload must be handled according to Google/Tauri distribution requirements. The repository release workflow intentionally emits **release-validation artifacts** unless a future reviewed signing path is explicitly added.
 
 ### iOS / App Store
 
@@ -255,20 +277,20 @@ If signing is later configured through CI, use repository/environment secrets an
 
 ## Tagging
 
-Create the annotated version tag only from the verified 2.0.12 release commit:
+Create the annotated version tag only from the verified 2.18.12 release commit:
 
 ```bash
-git tag -a v2.0.12 -m "DiceLab v2.0.12"
-git push origin v2.0.12
+git tag -a v2.18.12 -m "DiceLab v2.18.12"
+git push origin v2.18.12
 ```
 
 The tag-driven release workflow then:
 
 1. runs secret-audit self-tests and the repository secret audit;
 2. runs documentation link and exhaustive tracked-file inventory self-tests/audits;
-3. runs repository policy self-tests and release-relevant policy boundaries, including lockfile consistency;
+3. runs repository policy self-tests and release-relevant policy boundaries, including lockfile, PWA, and accessibility consistency;
 4. runs browser E2E infrastructure, version-audit, and release-verifier self-tests;
-5. verifies the tag agrees with manifest/config/generated-lock version metadata;
+5. verifies the tag agrees with manifest/config/generated-lock version metadata and current release-document identity;
 6. installs locked npm dependencies;
 7. runs format, lint, unit/integration, production-build, and real-browser E2E checks;
 8. builds Windows, macOS, and Linux desktop bundles after locked Rust checks;
@@ -290,7 +312,7 @@ Before publishing the draft:
 - extract and inspect expected platform files;
 - complete the artifact smoke matrix below;
 - verify the exact release commit had green CI/E2E/CodeQL/security/mobile-build evidence;
-- verify both generated lockfiles carry the 2.0.12 application version and the Cargo lock includes all direct Rust dependencies declared by the candidate manifest;
+- verify both generated lockfiles carry the 2.18.12 application version and the Cargo lock includes all direct Rust dependencies declared by the candidate manifest;
 - replace or edit generated notes so they accurately match `CHANGELOG.md`;
 - clearly state whether artifacts are unsigned, signed, notarized, simulator-only, archive-only, or store-ready;
 - attach release screenshots only if they come from the candidate build;
@@ -328,7 +350,7 @@ For each produced native bundle/archive:
 7. Export History CSV/JSON through the native save/document dialog.
 8. Export a backup and restore it.
 9. Verify English/Hindi selection, document language, localized built-ins, and presentation formatting.
-10. Verify About/version/contact information reports `2.0.12`.
+10. Verify About/version/contact information reports `2.18.12`.
 11. Confirm the build contains no development server references.
 12. Verify reduced-motion and keyboard/touch navigation behavior appropriate to the platform.
 13. Confirm local diagnostic logging does not expose user-created content/seeds/raw errors.
