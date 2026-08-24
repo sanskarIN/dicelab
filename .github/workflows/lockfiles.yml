@@ -3,7 +3,9 @@ name: Dependency lockfiles
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'release/**'
     paths:
       - package.json
       - package-lock.json
@@ -15,7 +17,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: dicelab-lockfiles
+  group: dicelab-lockfiles-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -54,6 +56,7 @@ jobs:
         run: git diff --check
 
       - name: Commit lockfiles when changed
+        shell: bash
         run: |
           git config user.name "sanskarIN"
           git config user.email "sanskarin@outlook.in"
@@ -62,11 +65,20 @@ jobs:
             echo "Lockfiles already current."
             exit 0
           fi
+
           git commit -m "build: lock application dependencies"
-          git pull --rebase origin main
-          if git push origin HEAD:main; then
-            echo "Lockfiles committed directly to main."
-          else
-            echo "Direct main push was rejected; publishing generated lockfiles to automation/lockfiles."
-            git push --force origin HEAD:refs/heads/automation/lockfiles
+          branch="${GITHUB_REF_NAME}"
+          git pull --rebase origin "$branch"
+
+          if git push origin "HEAD:$branch"; then
+            echo "Lockfiles committed directly to $branch."
+            exit 0
           fi
+
+          if [[ "$branch" == "main" ]]; then
+            fallback="automation/lockfiles"
+          else
+            fallback="automation/lockfiles-${branch//\//-}"
+          fi
+          echo "Direct push was rejected; publishing generated lockfiles to $fallback."
+          git push --force origin "HEAD:refs/heads/$fallback"
