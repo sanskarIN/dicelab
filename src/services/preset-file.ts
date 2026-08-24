@@ -56,6 +56,24 @@ export function createPresetFile(presets: DicePreset[]): DiceLabPresetFile {
   };
 }
 
+export function selectNewSharedPresets(
+  existingPresets: DicePreset[],
+  incomingPresets: SharedDicePreset[],
+): SharedDicePreset[] {
+  const seen = new Set(existingPresets.map(presetKey));
+  const accepted: SharedDicePreset[] = [];
+
+  for (const incoming of incomingPresets) {
+    const normalized = normalizeSharedPreset(incoming);
+    const key = sharedPresetKey(normalized);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    accepted.push(normalized);
+  }
+
+  return accepted;
+}
+
 export function presetFileToJson(file: DiceLabPresetFile): string {
   const contents = `${JSON.stringify(file, null, 2)}\n`;
   assertPresetFileSize(contents);
@@ -135,6 +153,18 @@ function normalizeSharedPreset(value: unknown): SharedDicePreset {
     expression: normalizedExpression,
     ...(description ? { description } : {}),
   };
+}
+
+function presetKey(preset: DicePreset): string {
+  return sharedPresetKey({
+    name: preset.name.trim(),
+    expression: parseDiceExpression(preset.expression).normalized,
+    ...(preset.description?.trim() ? { description: preset.description.trim() } : {}),
+  });
+}
+
+function sharedPresetKey(preset: SharedDicePreset): string {
+  return JSON.stringify([preset.name, preset.expression, preset.description ?? '']);
 }
 
 function assertPresetFileSize(contents: string): void {
