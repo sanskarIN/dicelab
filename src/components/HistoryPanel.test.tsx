@@ -53,7 +53,7 @@ describe('HistoryPanel performance behavior', () => {
     }));
     render(<HistoryPanel history={history} onClear={vi.fn()} />);
 
-    const analytics = screen.getByRole('heading', { name: 'Distribution' }).closest('.expression-analytics-panel');
+    const analytics = screen.getAllByRole('heading', { name: 'Distribution' })[0].closest('.expression-analytics-panel');
     expect(analytics).not.toBeNull();
     expect(within(analytics as HTMLElement).getByText('1d6')).toBeInTheDocument();
     expect(within(analytics as HTMLElement).getByText('4 · 66.7%')).toBeInTheDocument();
