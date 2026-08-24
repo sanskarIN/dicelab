@@ -92,6 +92,11 @@ export function validateReleaseDocumentIdentity(version, documents) {
       fragments: [`The next publication target is **${version}**.`, `## [${version}]`],
     },
     {
+      source: 'docs/release.md',
+      text: documents.releaseGuide,
+      fragments: [`currently preparing **DiceLab ${version}**`, `v${version}`],
+    },
+    {
       source: 'docs/release-blockers-current.md',
       text: documents.releaseBlockers,
       fragments: [`Current candidate: **${version}** (\`v${version}\`)`],
@@ -106,6 +111,11 @@ export function validateReleaseDocumentIdentity(version, documents) {
         `DICELAB_EXPECT_VERSION=v${version} npm run version:check`,
         `RELEASE-METADATA.json\` reports tag \`v${version}\``,
       ],
+    },
+    {
+      source: 'docs/lockfile-policy.md',
+      text: documents.lockfilePolicy,
+      fragments: [`Current release-preparation target: **${version}**.`],
     },
     {
       source: 'what_changed.md',
@@ -151,16 +161,28 @@ export async function readRepositoryVersions(root = ROOT) {
 }
 
 export async function readReleaseDocuments(root = ROOT) {
-  const [readme, roadmap, changelog, releaseBlockers, releaseEvidence, handoff] = await Promise.all([
-    fs.readFile(path.join(root, 'README.md'), 'utf8'),
-    fs.readFile(path.join(root, 'ROADMAP.md'), 'utf8'),
-    fs.readFile(path.join(root, 'CHANGELOG.md'), 'utf8'),
-    fs.readFile(path.join(root, 'docs/release-blockers-current.md'), 'utf8'),
-    fs.readFile(path.join(root, 'docs/release-candidate-evidence-template.md'), 'utf8'),
-    fs.readFile(path.join(root, 'what_changed.md'), 'utf8'),
-  ]);
+  const [readme, roadmap, changelog, releaseGuide, releaseBlockers, releaseEvidence, lockfilePolicy, handoff] =
+    await Promise.all([
+      fs.readFile(path.join(root, 'README.md'), 'utf8'),
+      fs.readFile(path.join(root, 'ROADMAP.md'), 'utf8'),
+      fs.readFile(path.join(root, 'CHANGELOG.md'), 'utf8'),
+      fs.readFile(path.join(root, 'docs/release.md'), 'utf8'),
+      fs.readFile(path.join(root, 'docs/release-blockers-current.md'), 'utf8'),
+      fs.readFile(path.join(root, 'docs/release-candidate-evidence-template.md'), 'utf8'),
+      fs.readFile(path.join(root, 'docs/lockfile-policy.md'), 'utf8'),
+      fs.readFile(path.join(root, 'what_changed.md'), 'utf8'),
+    ]);
 
-  return { readme, roadmap, changelog, releaseBlockers, releaseEvidence, handoff };
+  return {
+    readme,
+    roadmap,
+    changelog,
+    releaseGuide,
+    releaseBlockers,
+    releaseEvidence,
+    lockfilePolicy,
+    handoff,
+  };
 }
 
 async function main() {
