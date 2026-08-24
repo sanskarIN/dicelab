@@ -6,6 +6,7 @@ import {
   parsePresetFile,
   parsePresetFileJson,
   presetFileToJson,
+  selectNewSharedPresets,
 } from './preset-file';
 
 const customPreset: DicePreset = {
@@ -50,6 +51,28 @@ describe('shareable preset files', () => {
         expression: '2d20kh1+5',
         description: 'Shared table setup',
       },
+    ]);
+  });
+
+  it('skips shared presets that already exist locally', () => {
+    const incoming = [
+      { name: 'Critical check', expression: '2D20KH1+5', description: 'Shared table setup' },
+      { name: 'Fresh preset', expression: ' 2d6 + 1 ' },
+    ];
+
+    expect(selectNewSharedPresets([customPreset], incoming)).toEqual([
+      { name: 'Fresh preset', expression: '2d6+1' },
+    ]);
+  });
+
+  it('deduplicates repeated entries within one shared file', () => {
+    const incoming = [
+      { name: '  Shared  ', expression: '1D20', description: '  Table setup  ' },
+      { name: 'Shared', expression: '1d20', description: 'Table setup' },
+    ];
+
+    expect(selectNewSharedPresets([], incoming)).toEqual([
+      { name: 'Shared', expression: '1d20', description: 'Table setup' },
     ]);
   });
 
