@@ -9,8 +9,10 @@ on:
     paths:
       - package.json
       - package-lock.json
+      - src/config/app.ts
       - src-tauri/Cargo.toml
       - src-tauri/Cargo.lock
+      - src-tauri/tauri.conf.json
       - .github/workflows/lockfiles.yml
 
 permissions:
