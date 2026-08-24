@@ -44,7 +44,13 @@ export function AppShell({ view, onNavigate, onOpenCommands, children }: AppShel
             </button>
           ))}
         </nav>
-        <button className="command-trigger" type="button" onClick={onOpenCommands}>
+        <button
+          className="command-trigger"
+          type="button"
+          aria-haspopup="dialog"
+          aria-keyshortcuts="Control+K Meta+K"
+          onClick={onOpenCommands}
+        >
           <Keyboard size={18} aria-hidden="true" />
           <span>{messages.navigation.quickActions}</span>
           <kbd>Ctrl/⌘ K</kbd>
