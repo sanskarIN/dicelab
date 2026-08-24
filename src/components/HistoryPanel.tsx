@@ -27,6 +27,10 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
   const stats = useMemo(() => summarizeRolls(filtered), [filtered]);
   const expressionSummaries = useMemo(() => summarizeHistoryByExpression(filtered), [filtered]);
   const visibleExpressionSummaries = expressionSummaries.slice(0, MAX_VISIBLE_EXPRESSIONS);
+  const expressionCountLabel =
+    expressionSummaries.length > MAX_VISIBLE_EXPRESSIONS
+      ? `${formatInteger(MAX_VISIBLE_EXPRESSIONS)} / ${formatInteger(expressionSummaries.length)}`
+      : formatInteger(expressionSummaries.length);
   const maxFrequency = Math.max(1, ...stats.frequencies.map((item) => item.count));
   const maxExpressionCount = Math.max(1, ...visibleExpressionSummaries.map((item) => item.count));
 
@@ -133,7 +137,7 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
                 <p className="eyebrow">{messages.probability.expression}</p>
                 <h2 id="expression-analytics-heading">{messages.history.distribution}</h2>
               </div>
-              <span>{formatInteger(expressionSummaries.length)}</span>
+              <span>{expressionCountLabel}</span>
             </div>
             <div className="expression-analytics-list">
               {visibleExpressionSummaries.map((summary) => (
@@ -152,11 +156,6 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
                 </div>
               ))}
             </div>
-            {expressionSummaries.length > MAX_VISIBLE_EXPRESSIONS ? (
-              <p className="panel-note">
-                {messages.history.showingEntries(MAX_VISIBLE_EXPRESSIONS, expressionSummaries.length)}
-              </p>
-            ) : null}
           </section>
 
           <section className="panel histogram-panel" aria-labelledby="histogram-heading">
