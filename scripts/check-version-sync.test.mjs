@@ -6,6 +6,7 @@ import {
   extractFrontendVersion,
   extractPackageLockVersions,
   normalizeExpectedVersion,
+  validateReleaseDocumentIdentity,
   validateVersions,
 } from './check-version-sync.mjs';
 
@@ -114,5 +115,44 @@ test('rejects invalid semantic version strings', () => {
   assert.throws(
     () => validateVersions([{ source: 'package.json', version: 'version-one' }]),
     /Invalid semantic version format/,
+  );
+});
+
+function releaseDocuments(version = '2.18.12') {
+  return {
+    readme: `The repository is preparing **DiceLab ${version}** with intended tag \`v${version}\`.`,
+    roadmap: `Current release-preparation target: **${version}** (\`v${version}\`).`,
+    changelog: `The next publication target is **${version}**.\n\n## [${version}] - candidate`,
+    releaseBlockers: `Current candidate: **${version}** (\`v${version}\`)`,
+    releaseEvidence: [
+      `expected identity is version \`${version}\` / tag \`v${version}\``,
+      `- Version: ${version}`,
+      `- Tag: v${version}`,
+      `DICELAB_EXPECT_VERSION=v${version} npm run version:check`,
+      `\`RELEASE-METADATA.json\` reports tag \`v${version}\``,
+    ].join('\n'),
+    handoff: `Current release-preparation target: **${version}** (\`v${version}\`)`,
+  };
+}
+
+test('accepts synchronized release-document candidate identity', () => {
+  assert.doesNotThrow(() => validateReleaseDocumentIdentity('2.18.12', releaseDocuments()));
+});
+
+test('rejects a stale README release identity', () => {
+  const documents = releaseDocuments();
+  documents.readme = 'The repository is preparing **DiceLab 2.0.12** with intended tag `v2.0.12`.';
+  assert.throws(
+    () => validateReleaseDocumentIdentity('2.18.12', documents),
+    /Release document identity mismatch: README\.md/,
+  );
+});
+
+test('rejects a stale release evidence tag identity', () => {
+  const documents = releaseDocuments();
+  documents.releaseEvidence = documents.releaseEvidence.replace('v2.18.12', 'v2.0.12');
+  assert.throws(
+    () => validateReleaseDocumentIdentity('2.18.12', documents),
+    /Release document identity mismatch: docs\/release-candidate-evidence-template\.md/,
   );
 });
