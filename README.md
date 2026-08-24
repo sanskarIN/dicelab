@@ -18,7 +18,7 @@ DiceLab goes beyond a one-button dice demo. It combines expressive dice notation
 
 ## Current release status
 
-The repository is preparing **DiceLab 2.0.12** with intended tag `v2.0.12`. Application manifests/configuration and generated npm/Cargo lock metadata are synchronized to 2.0.12, including the direct mobile filesystem dependency. The source contains Windows, macOS, Linux, Android, iOS/iPadOS, and installable browser/PWA build paths. The candidate is **not yet publishable** until the required CI, browser/PWA, mobile, fuzz, platform, accessibility, security, screenshot, signing-status, checksum, and provenance evidence are observed for the same final candidate commit.
+The repository is preparing **DiceLab 2.18.12** with intended tag `v2.18.12`. Application manifests/configuration and generated npm/Cargo lock metadata are synchronized to 2.18.12, including the direct mobile filesystem dependency. The source contains Windows, macOS, Linux, Android, iOS/iPadOS, and installable browser/PWA build paths. The candidate is **not yet publishable** until the required CI, browser/PWA, mobile, fuzz, platform, accessibility, security, screenshot, signing-status, checksum, and provenance evidence are observed for the same final candidate commit.
 
 `npm run version:check` verifies application-version agreement across npm/frontend/Cargo/Tauri metadata and generated lockfile package versions. `npm run policy:lockfiles` independently checks direct manifest/lock consistency. Current evidence blockers are maintained in [`docs/release-blockers-current.md`](docs/release-blockers-current.md).
 
@@ -54,18 +54,19 @@ Real release screenshots will be captured from verified release-candidate builds
 - Reviewed English and Hindi interface catalogs with a persisted language preference, localized built-in presets, backup compatibility, document-language metadata, and explicit locale-aware number/date/time formatting.
 - Light, dark, and system themes.
 - Reduced-motion and non-animation modes with normalized persisted settings.
-- Keyboard command palette (`Ctrl/⌘ K`) with modal focus trapping/restoration and keyboard-first navigation.
+- Keyboard command palette (`Ctrl/⌘ K`) with modal focus trapping/restoration, exposed dialog/shortcut semantics, and keyboard-first navigation.
 - Responsive desktop/tablet/phone/web UI with safe-area insets, dynamic viewport handling, touch-sized coarse-pointer targets, accessible labels, focus styles, scalable layouts, and non-color-only states.
+- Dependency-free accessibility policy checks that protect high-value skip-link, landmark, navigation, dialog, focus, live-region, validation, Settings, and focus-visible source invariants.
 - Structured local diagnostic logging with sensitive-key redaction, bounded context, and raw-error omission.
 - Coverage-guided Rust parser fuzz target with a bounded scheduled/manual GitHub Actions campaign.
 - Dependency-free high-confidence secret audit in normal CI and tagged release verification.
 - Dependency-free PWA integrity audit covering install metadata, local icon assets, cache boundaries, production-only registration, and Tauri exclusion.
 - Dependency-free Node 22 + Chromium CDP real-browser E2E smoke for the production web bundle.
 - Executable benchmark suites for parser, RNG, probability, history filtering, and statistics.
-- Automated architecture/security policy gates for Tauri capabilities, CSP/offline network sources, localized formatting, runtime boundaries, native command contracts, PWA boundaries, and direct dependency-lock consistency.
+- Automated architecture/security policy gates for Tauri capabilities, CSP/offline network sources, localized formatting, runtime boundaries, native command contracts, accessibility semantics, PWA boundaries, and direct dependency-lock consistency.
 - Exhaustive tracked-file documentation inventory checked against `git ls-files` so new repository files cannot be silently omitted from the file reference.
 - Automated version synchronization checks across npm/frontend/Cargo/Tauri metadata **and generated npm/Cargo lock package versions**, plus tag/version agreement on releases.
-- Main CI validates web quality/PWA integrity, locked Rust quality, Android ARM64 native compilation, and an Apple Silicon iOS simulator build.
+- Main CI validates web quality/PWA/accessibility integrity, locked Rust quality, Android ARM64 native compilation, and an Apple Silicon iOS simulator build.
 - Tag-driven releases gate artifact creation on documentation inventory, repository policy, lock/version consistency, tests, real-browser E2E, locked Rust checks, Windows/macOS/Linux bundles, Android APK/AAB validation artifacts, and an unsigned iOS device archive.
 - Release provenance metadata and SHA-256 checksums for draft artifact review.
 - No required sign-in, analytics service, advertising SDK, remote telemetry, or donation gate.
@@ -93,7 +94,7 @@ The repository therefore has a single product codebase for **Windows + macOS + L
 - **Localization:** typed in-repository English/Hindi catalogs with stable error-code mappings, persisted locale state, and explicit `en-US`/`hi-IN` presentation formatting
 - **Tests:** Vitest, Testing Library, Node built-in quality/security/CDP/PWA/policy tests, dependency-free real-browser CDP E2E, Rust unit/generated/adversarial parser tests, cargo-fuzz parser target, Android/iOS compile jobs
 - **Benchmarks:** Vitest benchmark suites using the existing locked toolchain
-- **Quality:** ESLint, Prettier, rustfmt, Clippy, Markdown link audit, exhaustive file-reference audit, secret audit, PWA integrity audit, lock-aware version audit, repository policy audits, GitHub Actions
+- **Quality:** ESLint, Prettier, rustfmt, Clippy, Markdown link audit, exhaustive file-reference audit, secret audit, PWA integrity audit, accessibility contract audit, lock-aware version audit, repository policy audits, GitHub Actions
 - **Security:** restrictive/offline Tauri CSP, minimal cross-platform capability scope, static native command allowlist, bounded native export command, same-origin/GET-only PWA cache handling, CodeQL/dependency update configuration, validated persistence/import boundaries, redacted local logging
 - **Persistence:** browser/webview local storage; no remote database is required
 
@@ -201,6 +202,8 @@ npm run docs:inventory:test
 npm run docs:inventory
 npm run policy:pwa:test
 npm run policy:pwa
+npm run policy:accessibility:test
+npm run policy:accessibility
 npm run policy:test
 npm run policy:all
 npm run test:e2e:infra
@@ -228,7 +231,7 @@ cargo test --locked
 cargo clippy --all-targets --all-features --locked -- -D warnings
 ```
 
-The local secret audit reports only file/line/rule metadata and intentionally does not print matched credential values. The repository policy audits protect documented architecture/security boundaries; `policy:lockfiles` is an early structural dependency check and does not replace package-manager lock generation. `policy:pwa` syntax-checks the service worker and enforces the committed web install/offline boundary. `version:check` separately verifies that generated npm/Cargo package versions agree with manifests/configuration. GitHub CodeQL runs separately, and repository-level secret scanning/push protection should be enabled where available.
+The local secret audit reports only file/line/rule metadata and intentionally does not print matched credential values. The repository policy audits protect documented architecture/security/accessibility boundaries; `policy:lockfiles` is an early structural dependency check and does not replace package-manager lock generation. `policy:pwa` syntax-checks the service worker and enforces the committed web install/offline boundary. `policy:accessibility` protects the committed high-value accessibility semantics described in [`docs/accessibility.md`](docs/accessibility.md). `version:check` separately verifies that generated npm/Cargo package versions agree with manifests/configuration. GitHub CodeQL runs separately, and repository-level secret scanning/push protection should be enabled where available.
 
 The real-browser E2E test requires the production build and a Chromium-compatible browser; set `CHROME_BIN` if auto-discovery cannot find one. It covers onboarding, roll/history, actual browser downloads, reload persistence, keyboard command navigation, probability, clear-data, and actual backup file restore. See [`docs/e2e.md`](docs/e2e.md).
 
@@ -286,7 +289,7 @@ npm run tauri:ios:init
 npm run tauri:ios:build
 ```
 
-The intended next tag is `v2.0.12`, but it should be created only after candidate checks have been observed on the exact final commit. Version tags run the release workflow, require the tag to match manifest/configuration/generated-lock application versions, directly run documentation inventory and repository policy gates, verify web quality/security/browser checks, build web plus Windows/macOS/Linux desktop artifacts, build universal Android APK/AAB validation artifacts, build an unsigned iOS ARM64 device archive, package successful artifacts into ZIP files, generate `RELEASE-METADATA.json` plus `SHA256SUMS.txt`, and create/update a **draft** GitHub release for manual artifact verification.
+The intended next tag is `v2.18.12`, but it should be created only after candidate checks have been observed on the exact final commit. Version tags run the release workflow, require the tag to match manifest/configuration/generated-lock application versions, directly run documentation inventory and repository policy gates, verify web quality/security/browser checks, build web plus Windows/macOS/Linux desktop artifacts, build universal Android APK/AAB validation artifacts, build an unsigned iOS ARM64 device archive, package successful artifacts into ZIP files, generate `RELEASE-METADATA.json` plus `SHA256SUMS.txt`, and create/update a **draft** GitHub release for manual artifact verification.
 
 Unsigned mobile workflow artifacts are build-validation evidence, not Google Play/App Store publication packages. Android Play distribution requires a private signing keystore/Play Console setup, while iOS end-user distribution requires Apple Developer/App Store Connect signing/provisioning. Platform-specific prerequisites, signing expectations, versioning, physical-device evidence, and release verification are documented in [`docs/release.md`](docs/release.md).
 
@@ -322,7 +325,7 @@ scripts/
 ├── check-pwa*                   # PWA install/cache/runtime boundary audit + self-tests
 ├── check-secrets*               # high-confidence credential audit + self-test
 ├── check-version-sync*          # manifest/config/generated-lock/tag version audit + self-test
-├── check-*-policy/boundary*     # executable security/architecture invariants
+├── check-*-policy/boundary*     # executable security/architecture/accessibility invariants
 └── verify-release-packages*     # release checksum/provenance verification
 
 src-tauri/
@@ -375,7 +378,7 @@ The production PWA service worker handles only same-origin GET navigation/static
 
 Native exports are initiated explicitly and limited to the user-selected operating-system destination through a bounded Rust command. The filesystem plugin is used as a native implementation detail for selected desktop/mobile files; the webview capability remains `core:default` and does not receive broad filesystem, shell, HTTP, or process permission families.
 
-Repository audits additionally protect capability scope, CSP/offline-network policy, Tauri runtime access, native command names/routing, PWA install/cache boundaries, localized formatter use, and lockfile consistency. Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), [`docs/web-pwa.md`](docs/web-pwa.md), and the [`docs/repository-policy-gates.md`](docs/repository-policy-gates.md) index before changing a trust boundary. Please report vulnerabilities privately rather than opening a public exploit issue.
+Repository audits additionally protect capability scope, CSP/offline-network policy, Tauri runtime access, native command names/routing, PWA install/cache boundaries, accessibility semantics/focus invariants, localized formatter use, and lockfile consistency. Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), [`docs/web-pwa.md`](docs/web-pwa.md), [`docs/accessibility.md`](docs/accessibility.md), and the [`docs/repository-policy-gates.md`](docs/repository-policy-gates.md) index before changing a trust boundary. Please report vulnerabilities privately rather than opening a public exploit issue.
 
 ## Contributing
 
