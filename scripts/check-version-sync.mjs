@@ -164,14 +164,21 @@ export async function readReleaseDocuments(root = ROOT) {
 }
 
 async function main() {
-  const [entries, documents] = await Promise.all([readRepositoryVersions(), readReleaseDocuments()]);
+  const entries = await readRepositoryVersions();
   const expectedVersion = process.env.DICELAB_EXPECT_VERSION || undefined;
   const version = validateVersions(entries, expectedVersion);
-  validateReleaseDocumentIdentity(version, documents);
+  const metadataOnly = process.argv.includes('--metadata-only');
+
+  if (!metadataOnly) {
+    const documents = await readReleaseDocuments();
+    validateReleaseDocumentIdentity(version, documents);
+  }
+
+  const scope = metadataOnly ? 'generated lock metadata' : 'generated lock and release-document metadata';
   console.log(
     expectedVersion
-      ? `Version sync passed: ${version} matches ${expectedVersion}, including generated lock and release-document metadata.`
-      : `Version sync passed: ${version}, including generated lock and release-document metadata.`,
+      ? `Version sync passed: ${version} matches ${expectedVersion}, including ${scope}.`
+      : `Version sync passed: ${version}, including ${scope}.`,
   );
 }
 
