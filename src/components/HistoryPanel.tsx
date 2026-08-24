@@ -137,7 +137,7 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
             </div>
             <div className="expression-analytics-list">
               {visibleExpressionSummaries.map((summary) => (
-                <article className="expression-analytics-row" key={summary.expression}>
+                <div className="expression-analytics-row" key={summary.expression}>
                   <div className="expression-analytics-title">
                     <code>{summary.expression}</code>
                     <span>{formatInteger(summary.count)} · {formatDecimal(summary.percentage, 1)}%</span>
@@ -149,7 +149,7 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
                     <span>{messages.history.average} {formatFixedDecimal(summary.mean, 2)}</span>
                     <span>{messages.history.range} {formatInteger(summary.minimum)}–{formatInteger(summary.maximum)}</span>
                   </div>
-                </article>
+                </div>
               ))}
             </div>
             {expressionSummaries.length > MAX_VISIBLE_EXPRESSIONS ? (
