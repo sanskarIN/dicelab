@@ -149,6 +149,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .search-control { flex: 1; display: flex; align-items: center; gap: 8px; }
 .search-control svg { margin-left: 4px; color: var(--subtle); }
 .search-control input { width: min(440px, 100%); background: var(--bg); }
+.expression-analytics-panel { padding: 24px; overflow: hidden; }
+.expression-analytics-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 20px; }
+.expression-analytics-row { min-width: 0; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg); }
+.expression-analytics-title, .expression-analytics-metrics { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.expression-analytics-title code { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--primary-strong); font-weight: 800; }
+.expression-analytics-title span, .expression-analytics-metrics { color: var(--muted); font-size: 0.7rem; }
+.expression-analytics-track { height: 7px; margin: 10px 0 8px; overflow: hidden; border-radius: 999px; background: var(--surface-strong); }
+.expression-analytics-track span { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
 .histogram-panel { padding: 24px; overflow: hidden; }
 .histogram { height: 220px; display: flex; align-items: end; gap: 5px; margin-top: 22px; padding: 24px 4px 0; overflow-x: auto; border-bottom: 1px solid var(--border); }
 .histogram-column { height: 100%; min-width: 26px; display: grid; grid-template-rows: 18px 1fr 22px; align-items: end; justify-items: center; gap: 3px; }
@@ -172,6 +180,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .threshold-control { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.78rem; font-weight: 750; }
 .threshold-control input { border: 1px solid var(--border); border-radius: 9px; background: var(--bg); color: var(--text); padding: 8px 10px; text-align: right; }
 .probability-threshold-grid .stat-card { background: var(--bg); }
+.comparison-meter { min-height: 18px; display: flex; overflow: hidden; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-strong); }
+.comparison-meter > span { min-width: 0; }
+.comparison-meter-higher { background: var(--primary); }
+.comparison-meter-tie { background: var(--border-strong); }
+.comparison-meter-lower { background: color-mix(in srgb, var(--primary) 34%, var(--surface-strong)); }
+.comparison-legend { display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: 0.7rem; }
+.comparison-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.comparison-dot { width: 8px; height: 8px; border-radius: 50%; }
+.comparison-dot.higher { background: var(--primary); }
+.comparison-dot.tie { background: var(--border-strong); }
+.comparison-dot.lower { background: color-mix(in srgb, var(--primary) 34%, var(--surface-strong)); }
 .probability-chart { padding: 24px; }
 .probability-rows { display: grid; gap: 8px; margin-top: 20px; max-height: 560px; overflow: auto; padding-right: 6px; }
 .probability-row { display: grid; grid-template-columns: 58px minmax(80px, 1fr) 84px; gap: 12px; align-items: center; min-height: 28px; font-size: 0.75rem; }
@@ -264,6 +283,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   .status-pill { width: fit-content; }
   .header-actions { width: 100%; }
   .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .expression-analytics-list { grid-template-columns: 1fr; }
   .probability-controls { grid-template-columns: 1fr; align-items: stretch; }
   .probability-insights-heading { align-items: flex-start; flex-direction: column; }
   .history-row { grid-template-columns: 54px minmax(0, 1fr); }
@@ -274,7 +294,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 @media (max-width: 520px) {
   .main-content { padding-inline: 12px; }
   .panel { border-radius: 18px; }
-  .roll-panel, .result-panel, .presets-panel, .histogram-panel, .probability-insights-panel, .probability-chart, .settings-section { padding: 18px; }
+  .roll-panel, .result-panel, .presets-panel, .expression-analytics-panel, .histogram-panel, .probability-insights-panel, .probability-chart, .settings-section { padding: 18px; }
   .expression-control { align-items: stretch; flex-wrap: wrap; padding: 10px; }
   .expression-control > svg { margin: 8px 0 0 3px; }
   .expression-control input { min-height: 38px; }
@@ -284,6 +304,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   .history-toolbar-panel { flex-direction: column; }
   .search-control input { width: 100%; }
   .history-toolbar-panel .danger-button { width: 100%; }
+  .expression-analytics-title, .expression-analytics-metrics { align-items: flex-start; flex-direction: column; gap: 4px; }
   .threshold-control { width: 100%; }
   .threshold-control .number-input { width: 100%; }
   .probability-row { grid-template-columns: 42px minmax(60px, 1fr) 70px; gap: 8px; }
