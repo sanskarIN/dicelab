@@ -45,6 +45,26 @@ describe('HistoryPanel performance behavior', () => {
     expect(screen.queryByRole('button', { name: 'Show more rolls' })).not.toBeInTheDocument();
   });
 
+  it('summarizes expression usage and follows the active filter', () => {
+    const history = makeHistory(6).map((roll, index) => ({
+      ...roll,
+      expression: index < 4 ? '1d6' : '1d20',
+      total: index < 4 ? index + 1 : 10 + index,
+    }));
+    render(<HistoryPanel history={history} onClear={vi.fn()} />);
+
+    const analytics = screen.getByRole('heading', { name: 'Distribution' }).closest('.expression-analytics-panel');
+    expect(analytics).not.toBeNull();
+    expect(within(analytics as HTMLElement).getByText('1d6')).toBeInTheDocument();
+    expect(within(analytics as HTMLElement).getByText('4 · 66.7%')).toBeInTheDocument();
+    expect(within(analytics as HTMLElement).getByText('1d20')).toBeInTheDocument();
+    expect(within(analytics as HTMLElement).getByText('2 · 33.3%')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Filter roll history'), { target: { value: '1d20' } });
+    expect(within(analytics as HTMLElement).queryByText('1d6')).not.toBeInTheDocument();
+    expect(within(analytics as HTMLElement).getByText('2 · 100%')).toBeInTheDocument();
+  });
+
   it('reports a successful browser history export', async () => {
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:history-panel');
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
