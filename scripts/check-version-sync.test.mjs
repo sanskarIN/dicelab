@@ -123,6 +123,7 @@ function releaseDocuments(version = '2.18.12') {
     readme: `The repository is preparing **DiceLab ${version}** with intended tag \`v${version}\`.`,
     roadmap: `Current release-preparation target: **${version}** (\`v${version}\`).`,
     changelog: `The next publication target is **${version}**.\n\n## [${version}] - candidate`,
+    releaseGuide: `The repository is currently preparing **DiceLab ${version}**. Tag: v${version}`,
     releaseBlockers: `Current candidate: **${version}** (\`v${version}\`)`,
     releaseEvidence: [
       `expected identity is version \`${version}\` / tag \`v${version}\``,
@@ -131,6 +132,7 @@ function releaseDocuments(version = '2.18.12') {
       `DICELAB_EXPECT_VERSION=v${version} npm run version:check`,
       `\`RELEASE-METADATA.json\` reports tag \`v${version}\``,
     ].join('\n'),
+    lockfilePolicy: `Current release-preparation target: **${version}**.`,
     handoff: `Current release-preparation target: **${version}** (\`v${version}\`)`,
   };
 }
@@ -154,5 +156,14 @@ test('rejects a stale release evidence tag identity', () => {
   assert.throws(
     () => validateReleaseDocumentIdentity('2.18.12', documents),
     /Release document identity mismatch: docs\/release-candidate-evidence-template\.md/,
+  );
+});
+
+test('rejects a stale lockfile policy candidate identity', () => {
+  const documents = releaseDocuments();
+  documents.lockfilePolicy = 'Current release-preparation target: **2.0.12**.';
+  assert.throws(
+    () => validateReleaseDocumentIdentity('2.18.12', documents),
+    /Release document identity mismatch: docs\/lockfile-policy\.md/,
   );
 });
