@@ -117,7 +117,7 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 ## Phase 6 — Release engineering
 
 - [x] Set executable/configuration source version metadata to 2.18.12.
-- [ ] Observe generated npm and Cargo lock metadata synchronized to 2.18.12.
+- [x] Generate and commit npm/Cargo lock metadata synchronized to 2.18.12.
 - [x] Expand lockfile generation to release-preparation branches and every application-version source.
 - [x] Regenerate and commit `src-tauri/Cargo.lock` for the direct `tauri-plugin-fs` mobile export dependency in the previous candidate baseline.
 - [x] Enforce locked dependencies in main CI and tagged release verification.
