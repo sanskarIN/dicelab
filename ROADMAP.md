@@ -1,8 +1,8 @@
 # DiceLab Roadmap
 
-Current release-preparation target: **2.0.12** (`v2.0.12`).
+Current release-preparation target: **2.0.13** (`v2.0.13`).
 
-This roadmap tracks engineering milestones rather than promises of fixed dates. Priorities may change when testing reveals correctness, accessibility, security, or platform issues.
+The earlier 2.0.12 candidate was not published; its implementation is carried forward and superseded by the 2.0.13 candidate. This roadmap tracks engineering milestones rather than promises of fixed dates.
 
 ## Phase 0 — Foundation
 
@@ -53,16 +53,18 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Progressive rendering for very large retained histories.
 - [x] Native save dialog integration through a dedicated bounded Rust command with browser fallback.
 - [x] Android `content://` and iOS security-scoped native export support through Tauri's filesystem abstraction.
-- [x] Add a reviewed second locale before exposing language selection.
-- [x] Expose a persisted English/Hindi language preference with backup compatibility and document-language metadata.
-- [x] Apply active-locale number/date/time formatting to roll, history, and probability presentation.
-- [x] Enforce exact persisted keep/drop selection semantics.
-- [x] Reject oversized backup files before reading their text into memory.
-- [x] Keep CSV formula protection scoped to untrusted text while preserving numeric columns.
-- [x] Normalize live history-limit input to the persisted integer contract.
-- [x] Add exact probability quartiles, standard deviation, and configurable threshold probabilities.
-- [x] Add exact pairwise comparison for independent dice-expression distributions.
-- [x] Add versioned, bounded, validated local preset-file import/export with English/Hindi UI states.
+- [x] Reviewed English/Hindi language selection with persistence and backup compatibility.
+- [x] Active-locale number/date/time formatting for roll, history, and probability presentation.
+- [x] Exact persisted keep/drop selection semantics.
+- [x] Oversized backup rejection before reading selected file text.
+- [x] CSV formula protection scoped to untrusted text while preserving numeric columns.
+- [x] Integer-normalized live history-limit input.
+- [x] Exact probability quartiles, standard deviation, and configurable threshold probabilities.
+- [x] Exact pairwise comparison for independent dice-expression distributions.
+- [x] Accessible stacked A/B comparison visualization.
+- [x] Versioned, bounded, validated local preset-file import/export with English/Hindi UI states.
+- [x] Idempotent shared-preset imports that skip normalized duplicate content.
+- [x] Expression-level history analytics with usage share, average, range, and activity ranking.
 
 ## Phase 4 — Cross-platform native targets
 
@@ -78,8 +80,8 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] iOS Apple-Silicon simulator build job in normal CI.
 - [x] Tagged universal Android APK/AAB release-validation build.
 - [x] Tagged unsigned iOS device archive release-validation build.
-- [ ] Observe Android CI green on the exact 2.0.12 candidate commit.
-- [ ] Observe iOS simulator CI green on the exact 2.0.12 candidate commit.
+- [ ] Observe Android CI green on the exact 2.0.13 candidate commit.
+- [ ] Observe iOS simulator CI green on the exact 2.0.13 candidate commit.
 - [ ] Record Android physical-device smoke evidence, including native export through the system document provider.
 - [ ] Record iPhone physical-device smoke evidence, including safe areas, orientation, persistence, and native export.
 - [ ] Record iPad smoke evidence for tablet layout/orientation and native export.
@@ -91,31 +93,31 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] TypeScript parser tests.
 - [x] Dice-engine tests.
 - [x] Exact probability tests and safe-integer precision guards.
-- [x] Exact probability insight, threshold, and pairwise-comparison regression tests.
+- [x] Exact probability insight, threshold, pairwise-comparison, and comparison-visualization regression tests.
 - [x] Export/backup serialization and hostile-input tests.
-- [x] Versioned preset-file validation, normalization, size-limit, and transfer-control tests.
+- [x] Versioned preset-file validation, normalization, size-limit, duplicate-import, and transfer-control tests.
 - [x] Rust native tests and TypeScript/Rust seeded reference vectors.
 - [x] Roll-statistics and deterministic RNG edge coverage.
+- [x] Expression-level history analytics domain/component tests.
 - [x] Component keyboard/accessibility smoke tests for modal and settings surfaces.
-- [x] Browser-state integration tests for roll/history/export, backup restore, About navigation, and live locale switching.
+- [x] Browser-state integration tests for roll/history/export, backup restore, duplicate-safe preset sharing, About navigation, and live locale switching.
 - [x] Generated parser normalization/case/whitespace invariants.
 - [x] Native Rust generated normalization corpus and adversarial malformed-input regression corpus.
 - [x] Large-history progressive-rendering regression coverage.
 - [x] Domain history-filter regression coverage.
 - [x] Structured logger/storage-degradation security regression coverage.
 - [x] Executable Vitest benchmarks for parser, RNG, probability, 5,000-record filtering, and 5,000-record statistics.
-- [x] Dependency-free real-browser E2E runner for onboarding, roll/history, downloads, reload persistence, keyboard commands, probability, clear-data, and backup restore.
+- [x] Dependency-free real-browser E2E source covers onboarding, roll/history analytics, downloads, reload persistence, keyboard commands, exact probability insights/comparison visualization, clear-data, backup restore, and offline PWA reopen.
 - [x] Dependency-free CDP transport tests and E2E syntax self-check.
-- [ ] Observe the full real-browser E2E journey green on 2.0.12 CI/release-candidate infrastructure.
-- [x] Add a coverage-guided Rust parser fuzz target with a bounded scheduled GitHub Actions campaign.
-- [ ] Observe a parser fuzz campaign green on the 2.0.12 candidate.
-- [ ] Record 2.0.12 release-candidate benchmark evidence on a documented machine/runtime.
+- [ ] Observe the full real-browser E2E journey green on 2.0.13 CI/release-candidate infrastructure.
+- [x] Coverage-guided Rust parser fuzz target with a bounded scheduled GitHub Actions campaign.
+- [ ] Observe a parser fuzz campaign green on the 2.0.13 candidate.
+- [ ] Record 2.0.13 release-candidate benchmark evidence on a documented machine/runtime.
 
 ## Phase 6 — Release engineering
 
-- [x] Synchronize executable/configuration version metadata to 2.0.12.
-- [x] Commit npm and Cargo lockfiles for the previous dependency graph.
-- [x] Regenerate and commit `src-tauri/Cargo.lock` for the direct `tauri-plugin-fs` mobile export dependency.
+- [x] Synchronize package/frontend/Cargo/Tauri source version metadata to 2.0.13.
+- [ ] Regenerate and commit npm/Cargo lockfile application metadata for 2.0.13 through the lockfile workflow.
 - [x] Enforce locked dependencies in main CI and tagged release verification.
 - [x] Configure tagged Windows/macOS/Linux/web artifact builds.
 - [x] Configure tagged Android and unsigned iOS release-validation artifact builds.
@@ -124,12 +126,12 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Add dependency-free repository secret audit and self-tests to CI/tagged verification.
 - [x] Add synchronized application-version audit and release-tag/version agreement gate.
 - [x] Document branch protection, labels, milestones, Discussions, security settings, and release governance.
-- [ ] Verify clean builds on Windows, macOS, Linux, Android, and iOS from the 2.0.12 release candidate.
-- [ ] Capture real screenshots from verified 2.0.12 desktop and mobile candidate builds.
+- [ ] Verify clean builds on Windows, macOS, Linux, Android, and iOS from the 2.0.13 release candidate.
+- [ ] Capture real screenshots from verified 2.0.13 desktop/mobile/PWA candidate builds.
 - [ ] Add signed/notarized/store-ready release artifacts where credentials are available and document unsigned builds accurately otherwise.
-- [ ] Publish `v2.0.12` only after draft artifact smoke checks and the release-evidence gate pass.
+- [ ] Publish `v2.0.13` only after draft artifact smoke checks and the release-evidence gate pass.
 
-## Phase 7 — 2.0.12 final audit
+## Phase 7 — 2.0.13 final audit
 
 - [ ] Clean-checkout setup verification.
 - [ ] Full pre-install/security/version/E2E-infrastructure checks observed green on the release commit.
@@ -142,13 +144,13 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [ ] Network-enabled external-link audit.
 - [ ] Manual keyboard, touch, and screen-reader smoke review on representative targets.
 - [ ] Release-candidate artifact/provenance/checksum verification.
-- [ ] Confirm screenshots and release notes match the actual 2.0.12 candidate build.
+- [ ] Confirm screenshots and release notes match the actual 2.0.13 candidate build.
 
 ## Future candidates
 
-These are intentionally not commitments. They should be implemented only when they improve the product without compromising the offline-first model:
+These are intentionally not commitments:
 
-- additional comparative probability visualizations beyond the exact threshold and pairwise views;
+- overlaid/difference probability distribution visualizations beyond the current exact comparison meter;
 - more built-in tabletop preset packs;
 - optional native updater after signing/release infrastructure is mature;
 - additional localizations after catalog review infrastructure is established;
