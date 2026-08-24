@@ -18,6 +18,7 @@ DiceLab treats accessibility as a product requirement rather than a release poli
 - The mobile root uses dynamic viewport height behavior to better tolerate browser/native system UI changes.
 - Main navigation exposes `aria-current` for the active view.
 - Dice results and important state changes are announced through appropriate live regions.
+- The command-palette trigger exposes dialog intent and the `Ctrl/Cmd + K` keyboard shortcut to assistive technology.
 - The command palette moves focus into the modal, traps Tab/Shift+Tab within it, supports Escape, and restores focus to the invoking control when closed.
 - First-run onboarding exposes modal semantics, an accessible description, and initial focus on the primary action.
 
@@ -49,7 +50,7 @@ Release review must verify at least:
 - Android and iOS system file pickers can be opened/cancelled/returned from without leaving focus or UI state unusable;
 - Android/iPhone/iPad screen-reader navigation exposes meaningful control names and status changes.
 
-The CSS rules are a baseline, not proof that every physical device is correct. Physical-device evidence is part of the 2.0.12 release gate.
+The CSS rules are a baseline, not proof that every physical device is correct. Physical-device evidence is part of the 2.18.12 release gate.
 
 ## Motion
 
@@ -86,9 +87,27 @@ Vitest + Testing Library currently checks:
 - Settings → About navigation through the application integration suite;
 - responsive application behavior exercised by component/integration tests where DOM semantics are platform-independent.
 
-Normal CI also compiles Android and an iOS simulator target so mobile platform integration breakage can be caught at build time.
+The dependency-free repository accessibility contract additionally protects committed source semantics for:
 
-These tests guard DOM semantics, keyboard state, and build integration. They do not replace real-browser accessibility trees, screen-reader testing, touch testing, or physical-device safe-area review.
+- skip-link and main-landmark routing;
+- current-page navigation state;
+- command-palette dialog/shortcut intent;
+- roll-result and validation announcements;
+- command-palette focus containment/restoration;
+- onboarding naming/description/focus;
+- Settings status/toggle/import semantics;
+- focus-visible and skip-link focus styling.
+
+Run the focused checks with:
+
+```bash
+npm run policy:accessibility:test
+npm run policy:accessibility
+```
+
+Normal CI and the dependency-free repository audit run both checks before dependency installation. Normal CI also compiles Android and an iOS simulator target so mobile platform integration breakage can be caught at build time.
+
+These tests guard DOM semantics, keyboard state, source-level accessibility invariants, and build integration. They do not replace real-browser accessibility trees, screen-reader testing, touch testing, contrast review, or physical-device safe-area review.
 
 ## Manual release checklist
 
@@ -115,18 +134,19 @@ For each release candidate:
 
 Record exact device/OS details in [`release-candidate-evidence-template.md`](release-candidate-evidence-template.md).
 
-## 2.0.12 accessibility release gate
+## 2.18.12 accessibility release gate
 
-The cross-platform UI implementation is present, including safe-area and coarse-pointer rules. The following remain evidence-gated before the 2.0.12 candidate can be approved:
+The cross-platform UI implementation and automated accessibility policy baseline are present, including safe-area, coarse-pointer, dialog, focus, and semantic guards. The following remain evidence-gated before the 2.18.12 candidate can be approved:
 
 - observed Android touch/screen-reader/layout review;
 - observed iPhone touch/screen-reader/safe-area review;
 - observed iPad tablet/orientation review;
 - observed desktop keyboard/screen-reader/200% scaling review;
+- representative contrast review in supported themes;
 - real candidate screenshots proving representative layouts;
 - any corrective regression tests required by findings from those reviews.
 
-Future automated accessibility scanning can supplement this matrix, but automated scans do not replace manual screen-reader, keyboard, touch, and physical-device review.
+Future automated accessibility scanning can supplement this matrix, but automated scans do not replace manual screen-reader, keyboard, touch, contrast, and physical-device review.
 
 ## Reporting accessibility issues
 
