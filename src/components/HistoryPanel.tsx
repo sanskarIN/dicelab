@@ -1,5 +1,6 @@
 import { Download, FileJson, Search, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { summarizeHistoryByExpression } from '../domain/history-analytics';
 import { filterRollHistory } from '../domain/history';
 import { summarizeRolls } from '../domain/statistics';
 import type { RollResult } from '../domain/types';
@@ -14,6 +15,7 @@ interface HistoryPanelProps {
 
 const INITIAL_VISIBLE_HISTORY = 200;
 const HISTORY_PAGE_SIZE = 200;
+const MAX_VISIBLE_EXPRESSIONS = 12;
 
 export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
   const [query, setQuery] = useState('');
@@ -23,7 +25,10 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
   const filtered = useMemo(() => filterRollHistory(history, query), [history, query]);
   const visibleHistory = filtered.slice(0, visibleLimit);
   const stats = useMemo(() => summarizeRolls(filtered), [filtered]);
+  const expressionSummaries = useMemo(() => summarizeHistoryByExpression(filtered), [filtered]);
+  const visibleExpressionSummaries = expressionSummaries.slice(0, MAX_VISIBLE_EXPRESSIONS);
   const maxFrequency = Math.max(1, ...stats.frequencies.map((item) => item.count));
+  const maxExpressionCount = Math.max(1, ...visibleExpressionSummaries.map((item) => item.count));
 
   const clear = () => {
     if (!confirmClear) {
@@ -122,6 +127,38 @@ export function HistoryPanel({ history, onClear }: HistoryPanelProps) {
 
       {filtered.length ? (
         <>
+          <section className="panel expression-analytics-panel" aria-labelledby="expression-analytics-heading">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">{messages.probability.expression}</p>
+                <h2 id="expression-analytics-heading">{messages.history.distribution}</h2>
+              </div>
+              <span>{formatInteger(expressionSummaries.length)}</span>
+            </div>
+            <div className="expression-analytics-list">
+              {visibleExpressionSummaries.map((summary) => (
+                <article className="expression-analytics-row" key={summary.expression}>
+                  <div className="expression-analytics-title">
+                    <code>{summary.expression}</code>
+                    <span>{formatInteger(summary.count)} · {formatDecimal(summary.percentage, 1)}%</span>
+                  </div>
+                  <div className="expression-analytics-track" aria-hidden="true">
+                    <span style={{ width: `${(summary.count / maxExpressionCount) * 100}%` }} />
+                  </div>
+                  <div className="expression-analytics-metrics">
+                    <span>{messages.history.average} {formatFixedDecimal(summary.mean, 2)}</span>
+                    <span>{messages.history.range} {formatInteger(summary.minimum)}–{formatInteger(summary.maximum)}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+            {expressionSummaries.length > MAX_VISIBLE_EXPRESSIONS ? (
+              <p className="panel-note">
+                {messages.history.showingEntries(MAX_VISIBLE_EXPRESSIONS, expressionSummaries.length)}
+              </p>
+            ) : null}
+          </section>
+
           <section className="panel histogram-panel" aria-labelledby="histogram-heading">
             <div className="panel-heading">
               <div>
