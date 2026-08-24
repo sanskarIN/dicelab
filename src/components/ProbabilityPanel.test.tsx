@@ -95,9 +95,15 @@ describe('ProbabilityPanel distribution comparison', () => {
     const meter = screen.getByRole('img', {
       name: 'P(A > B) 58.33%; P(A = B) 16.67%; P(A < B) 25%',
     });
-    expect(meter.querySelector('.comparison-meter-higher')).toHaveStyle({ flexBasis: '58.333333333333336%' });
-    expect(meter.querySelector('.comparison-meter-tie')).toHaveStyle({ flexBasis: '16.666666666666664%' });
-    expect(meter.querySelector('.comparison-meter-lower')).toHaveStyle({ flexBasis: '25%' });
+    const higher = meter.querySelector<HTMLElement>('.comparison-meter-higher');
+    const tie = meter.querySelector<HTMLElement>('.comparison-meter-tie');
+    const lower = meter.querySelector<HTMLElement>('.comparison-meter-lower');
+    expect(higher).not.toBeNull();
+    expect(tie).not.toBeNull();
+    expect(lower).not.toBeNull();
+    expect(Number.parseFloat(higher?.style.flexBasis ?? '0')).toBeCloseTo(58.3333, 3);
+    expect(Number.parseFloat(tie?.style.flexBasis ?? '0')).toBeCloseTo(16.6667, 3);
+    expect(Number.parseFloat(lower?.style.flexBasis ?? '0')).toBeCloseTo(25, 3);
   });
 
   it('keeps the last valid comparison when the comparison expression is invalid', () => {
