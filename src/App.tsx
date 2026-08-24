@@ -12,7 +12,12 @@ import { DEFAULT_SETTINGS, type DiceLabSettings, type DicePreset, type RollResul
 import { messages, setLocale } from './i18n';
 import { formatDomainError } from './i18n/errors';
 import { backupToJson, createBackup, parseBackupFile, saveTextExport } from './services/export';
-import { createPresetFile, parsePresetFile, presetFileToJson } from './services/preset-file';
+import {
+  createPresetFile,
+  parsePresetFile,
+  presetFileToJson,
+  selectNewSharedPresets,
+} from './services/preset-file';
 import { rollDice } from './services/roll-service';
 import {
   clearDiceLabData,
@@ -132,13 +137,14 @@ export default function App() {
 
   const importPresets = async (file: File) => {
     const presetFile = await parsePresetFile(file);
+    const accepted = selectNewSharedPresets(presets, presetFile.presets);
     const createdAt = new Date().toISOString();
-    const imported = presetFile.presets.map<DicePreset>((preset) => ({
+    const imported = accepted.map<DicePreset>((preset) => ({
       ...preset,
       id: createPresetId(),
       createdAt,
     }));
-    setPresets((current) => limitPresetCollection([...current, ...imported]));
+    if (imported.length) setPresets((current) => limitPresetCollection([...current, ...imported]));
     return imported.length;
   };
 
