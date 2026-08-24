@@ -178,6 +178,20 @@ export function ProbabilityPanel() {
           </div>
           {comparisonError ? <p className="field-error" role="alert">{comparisonError}</p> : null}
         </form>
+        <div
+          className="comparison-meter"
+          role="img"
+          aria-label={`P(A > B) ${formatProbability(comparison.leftHigher)}; P(A = B) ${formatProbability(comparison.tie)}; P(A < B) ${formatProbability(comparison.rightHigher)}`}
+        >
+          <span className="comparison-meter-higher" style={{ flexBasis: `${comparison.leftHigher * 100}%` }} />
+          <span className="comparison-meter-tie" style={{ flexBasis: `${comparison.tie * 100}%` }} />
+          <span className="comparison-meter-lower" style={{ flexBasis: `${comparison.rightHigher * 100}%` }} />
+        </div>
+        <div className="comparison-legend" aria-hidden="true">
+          <span><i className="comparison-dot higher" />A &gt; B</span>
+          <span><i className="comparison-dot tie" />A = B</span>
+          <span><i className="comparison-dot lower" />A &lt; B</span>
+        </div>
         <div className="stats-grid probability-threshold-grid">
           <ProbabilityStat label="P(A > B)" value={formatProbability(comparison.leftHigher)} />
           <ProbabilityStat label="P(A = B)" value={formatProbability(comparison.tie)} />
