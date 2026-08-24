@@ -6,6 +6,8 @@ const MAX_BACKUP_BYTES = 5_000_000;
 const MAX_BACKUP_HISTORY = 5_000;
 const MAX_BACKUP_PRESETS = 500;
 
+type BackupFileSource = Pick<File, 'size'> & Partial<Pick<File, 'text'>>;
+
 export type TextExportFormat = 'csv' | 'json';
 
 export interface DiceLabBackup {
@@ -146,11 +148,11 @@ export function parseBackupJson(contents: string): DiceLabBackup {
   };
 }
 
-export async function parseBackupFile(file: Pick<File, 'size' | 'text'>): Promise<DiceLabBackup> {
+export async function parseBackupFile(file: BackupFileSource): Promise<DiceLabBackup> {
   if (file.size > MAX_BACKUP_BYTES) {
     throwBackupTooLarge();
   }
-  return parseBackupJson(await file.text());
+  return parseBackupJson(await readBackupFileText(file));
 }
 
 export async function saveTextExport(
@@ -178,6 +180,28 @@ export function downloadText(filename: string, contents: string, mimeType: strin
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+async function readBackupFileText(file: BackupFileSource): Promise<string> {
+  if (typeof file.text === 'function') {
+    return file.text();
+  }
+  if (typeof FileReader !== 'function') {
+    throw new Error('Backup file reading is not available in this runtime.');
+  }
+
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+        return;
+      }
+      reject(new Error('Backup file could not be read as text.'));
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('Backup file could not be read.'));
+    reader.readAsText(file as Blob);
+  });
 }
 
 function normalizeSettings(value: unknown): DiceLabSettings {
@@ -228,17 +252,12 @@ function throwBackupTooLarge(): never {
   );
 }
 
-function hasDuplicateIds(items: Array<{ id: string }>): boolean {
-  const ids = new Set<string>();
-  for (const item of items) {
-    if (ids.has(item.id)) return true;
-    ids.add(item.id);
-  }
-  return false;
+function hasDuplicateIds(entries: Array<{ id: string }>): boolean {
+  return new Set(entries.map((entry) => entry.id)).size !== entries.length;
 }
 
 function csvCell(value: string, neutralizeFormula = false): string {
-  const safeValue = neutralizeFormula && /^\s*[=+\-@]/u.test(value) ? `'${value}` : value;
-  if (!/[",\r\n]/.test(safeValue)) return safeValue;
+  const safeValue = neutralizeFormula && /^[\t ]*[=+\-@]/.test(value) ? `'${value}` : value;
+  if (!/[",\n]/.test(safeValue)) return safeValue;
   return `"${safeValue.replaceAll('"', '""')}"`;
 }
