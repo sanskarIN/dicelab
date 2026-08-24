@@ -2,7 +2,7 @@
 
 DiceLab commits npm and Cargo lockfiles so CI/release builds use a reviewed dependency graph instead of resolving a different graph at each run.
 
-Current release-preparation target: **2.0.12**.
+Current release-preparation target: **2.18.12**.
 
 ## Required lockfiles
 
@@ -46,7 +46,7 @@ It then verifies that each direct crate/package name exists in `Cargo.lock`. Man
 
 This deliberately does **not** attempt to regenerate or hand-construct Cargo's transitive graph.
 
-### 2. Generated application-version consistency audit
+### 2. Generated application-version and candidate-document consistency audit
 
 Run:
 
@@ -57,7 +57,7 @@ node scripts/check-version-sync.mjs
 For a release candidate/tag check:
 
 ```bash
-DICELAB_EXPECT_VERSION=v2.0.12 node scripts/check-version-sync.mjs
+DICELAB_EXPECT_VERSION=v2.18.12 node scripts/check-version-sync.mjs
 ```
 
 The audit requires exact semantic-version agreement across:
@@ -71,7 +71,17 @@ The audit requires exact semantic-version agreement across:
 - `src-tauri/tauri.conf.json`;
 - the optional expected tag/version when supplied.
 
-This closes a different class of stale-lock problem: a manifest can have unchanged dependency ranges yet still require a generated lock update because the application package version changed.
+The normal audit also requires the active candidate identity to appear consistently in the current release-facing markers in README, roadmap, changelog, release guide, release blockers, release evidence, lockfile policy, and handoff. Historical release sections can continue to mention older versions.
+
+This closes two stale-candidate classes: a manifest can have unchanged dependency ranges yet still require a generated lock update because the application package version changed, and release-facing documents can otherwise keep advertising an older candidate after machine metadata is updated.
+
+During lockfile generation only, the workflow uses:
+
+```bash
+node scripts/check-version-sync.mjs --metadata-only
+```
+
+That mode verifies machine/generated metadata without requiring every release document to have been updated in the same intermediate commit. Normal CI and release verification must use the full audit.
 
 ## Self-tests
 
@@ -96,13 +106,13 @@ Run version-agreement self-tests with:
 node --test scripts/check-version-sync.test.mjs
 ```
 
-These cover npm lock top/root versions, Cargo manifest/package-lock extraction, Cargo package blocks at normal boundaries/end-of-file, SemVer agreement, and tag mismatch behavior.
+These cover npm lock top/root versions, Cargo manifest/package-lock extraction, Cargo package blocks at normal boundaries/end-of-file, SemVer agreement, tag mismatch behavior, synchronized release-document identity, and stale release-document rejection.
 
 ## Release gates
 
-`.github/workflows/release-lockfile-consistency.yml` runs the direct dependency-lock auditor for version tags/manual dispatches. The main tag-driven `.github/workflows/release.yml` also runs repository policy gates and the lock-aware version checker before dependency installation/artifact production.
+`.github/workflows/release-lockfile-consistency.yml` runs the direct dependency-lock auditor for version tags/manual dispatches. The main tag-driven `.github/workflows/release.yml` also runs repository policy gates and the full lock-aware version checker before dependency installation/artifact production.
 
-These workflows are intentionally evidence-oriented. They do not silently regenerate an invalid candidate during release verification. If a lock is stale, the candidate must be fixed first.
+These workflows are intentionally evidence-oriented. They do not silently regenerate an invalid candidate during release verification. If a lock or current release identity is stale, the candidate must be fixed first.
 
 ## Generating lockfiles
 
@@ -132,7 +142,7 @@ npm run version:check
 For the current candidate:
 
 ```bash
-DICELAB_EXPECT_VERSION=v2.0.12 npm run version:check
+DICELAB_EXPECT_VERSION=v2.18.12 npm run version:check
 ```
 
 Use a network-enabled environment with the normal package managers. Do not hand-edit transitive lockfile entries simply to satisfy an audit.
@@ -141,54 +151,63 @@ Use a network-enabled environment with the normal package managers. Do not hand-
 
 `.github/workflows/lockfiles.yml` is the package-manager generation path. It currently:
 
-1. regenerates `package-lock.json` with npm;
-2. regenerates `src-tauri/Cargo.lock` with Cargo;
-3. validates Cargo's generated graph using locked `cargo metadata`;
-4. runs the lock-aware application-version audit against the newly generated files;
-5. runs `git diff --check`;
-6. commits only changed lockfiles;
-7. rebases against current `main`;
-8. pushes to `main`, or publishes the exact generated commit to `automation/lockfiles` if protected `main` rejects the direct update.
+1. runs on `main`, `release/**`, and manual dispatch;
+2. watches npm manifests/locks plus frontend, Cargo, and Tauri application-version sources;
+3. regenerates `package-lock.json` with npm;
+4. regenerates `src-tauri/Cargo.lock` with Cargo;
+5. validates Cargo's generated graph using locked `cargo metadata`;
+6. runs the metadata-only application-version audit against the newly generated files;
+7. runs `git diff --check`;
+8. commits only changed lockfiles;
+9. rebases against the active branch;
+10. pushes to that branch, or publishes the exact generated commit to `automation/lockfiles` for `main` / a branch-specific `automation/lockfiles-*` fallback when direct push is rejected.
 
-The generator therefore cannot publish locks that still carry an older DiceLab package version while the manifests/configuration say 2.0.12.
+The generator therefore cannot publish locks that still carry an older DiceLab package version than the current manifests/configuration, while normal CI separately requires release-facing candidate identity to be synchronized.
 
-## Current 2.0.12 lock state
+## Current 2.18.12 lock state
 
-At the latest direct audit, generation has **not** completed successfully yet.
+Generation has completed for the active 2.18.12 preparation branch.
 
 Observed npm state:
 
 ```text
-package.json                         2.0.12
-package-lock.json top-level          0.1.0
-package-lock.json packages[""]       0.1.0
+package.json                         2.18.12
+package-lock.json top-level          2.18.12
+package-lock.json packages[""]       2.18.12
 ```
 
 Observed Rust state:
 
 ```text
-src-tauri/Cargo.toml package         2.0.12
-src-tauri/Cargo.lock dicelab package 0.1.0
+src-tauri/Cargo.toml package         2.18.12
+src-tauri/Cargo.lock dicelab package 2.18.12
 ```
 
-The Cargo manifest additionally declares:
+The generated DiceLab Cargo package block includes the direct dependencies:
 
-```toml
-tauri-plugin-dialog = "2.7.2"
+```text
+rand
+regex
+serde
+serde_json
+tauri
+tauri-build
+tauri-plugin-dialog
+tauri-plugin-fs
 ```
 
-but the currently observed DiceLab `Cargo.lock` package block does not list that dependency. This is a real blocker, not documentation-only drift.
+This closes the previously documented stale generated-lock blocker. It does **not** replace observed `npm ci`, locked Rust test/Clippy, dependency audit, or release-candidate CI evidence.
 
 ## Current release rule
 
-A configured generation workflow is not proof that the lockfiles are current. Release readiness requires all of the following:
+A configured generation workflow is not proof that the candidate is reproducible. Release readiness requires all of the following:
 
 - generated npm/Cargo locks are visibly committed on the exact candidate commit;
 - npm top/root package versions match the candidate version;
 - the DiceLab Cargo-lock package version matches the candidate version;
-- all current direct dependencies, including `tauri-plugin-dialog`, are represented in the generated Cargo graph;
+- all current direct dependencies, including `tauri-plugin-dialog` and `tauri-plugin-fs`, are represented in the generated Cargo graph;
 - the dependency-free structural audit passes;
-- the lock-aware version audit passes;
+- the full lock/version/release-document audit passes;
 - `npm ci` passes;
 - locked Rust tests/Clippy pass;
 - dependency/security review is performed on the resulting graph.
