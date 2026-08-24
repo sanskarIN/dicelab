@@ -1,6 +1,6 @@
 # DiceLab Roadmap
 
-Current release-preparation target: **2.0.12** (`v2.0.12`).
+Current release-preparation target: **2.18.12** (`v2.18.12`).
 
 This roadmap tracks engineering milestones rather than promises of fixed dates. Priorities may change when testing reveals correctness, accessibility, security, or platform issues.
 
@@ -63,6 +63,8 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Add exact probability quartiles, standard deviation, and configurable threshold probabilities.
 - [x] Add exact pairwise comparison for independent dice-expression distributions.
 - [x] Add versioned, bounded, validated local preset-file import/export with English/Hindi UI states.
+- [x] Enforce high-value accessibility semantics with a dependency-free repository policy contract.
+- [x] Expose command-palette dialog and keyboard-shortcut semantics on its trigger.
 
 ## Phase 4 — Cross-platform native targets
 
@@ -78,8 +80,8 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] iOS Apple-Silicon simulator build job in normal CI.
 - [x] Tagged universal Android APK/AAB release-validation build.
 - [x] Tagged unsigned iOS device archive release-validation build.
-- [ ] Observe Android CI green on the exact 2.0.12 candidate commit.
-- [ ] Observe iOS simulator CI green on the exact 2.0.12 candidate commit.
+- [ ] Observe Android CI green on the exact 2.18.12 candidate commit.
+- [ ] Observe iOS simulator CI green on the exact 2.18.12 candidate commit.
 - [ ] Record Android physical-device smoke evidence, including native export through the system document provider.
 - [ ] Record iPhone physical-device smoke evidence, including safe areas, orientation, persistence, and native export.
 - [ ] Record iPad smoke evidence for tablet layout/orientation and native export.
@@ -106,16 +108,18 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Executable Vitest benchmarks for parser, RNG, probability, 5,000-record filtering, and 5,000-record statistics.
 - [x] Dependency-free real-browser E2E runner for onboarding, roll/history, downloads, reload persistence, keyboard commands, probability, clear-data, and backup restore.
 - [x] Dependency-free CDP transport tests and E2E syntax self-check.
-- [ ] Observe the full real-browser E2E journey green on 2.0.12 CI/release-candidate infrastructure.
+- [x] Accessibility policy self-tests wired into normal CI and dependency-free repository audit.
+- [ ] Observe the full real-browser E2E journey green on 2.18.12 CI/release-candidate infrastructure.
 - [x] Add a coverage-guided Rust parser fuzz target with a bounded scheduled GitHub Actions campaign.
-- [ ] Observe a parser fuzz campaign green on the 2.0.12 candidate.
-- [ ] Record 2.0.12 release-candidate benchmark evidence on a documented machine/runtime.
+- [ ] Observe a parser fuzz campaign green on the 2.18.12 candidate.
+- [ ] Record 2.18.12 release-candidate benchmark evidence on a documented machine/runtime.
 
 ## Phase 6 — Release engineering
 
-- [x] Synchronize executable/configuration version metadata to 2.0.12.
-- [x] Commit npm and Cargo lockfiles for the previous dependency graph.
-- [x] Regenerate and commit `src-tauri/Cargo.lock` for the direct `tauri-plugin-fs` mobile export dependency.
+- [x] Set executable/configuration source version metadata to 2.18.12.
+- [ ] Observe generated npm and Cargo lock metadata synchronized to 2.18.12.
+- [x] Expand lockfile generation to release-preparation branches and every application-version source.
+- [x] Regenerate and commit `src-tauri/Cargo.lock` for the direct `tauri-plugin-fs` mobile export dependency in the previous candidate baseline.
 - [x] Enforce locked dependencies in main CI and tagged release verification.
 - [x] Configure tagged Windows/macOS/Linux/web artifact builds.
 - [x] Configure tagged Android and unsigned iOS release-validation artifact builds.
@@ -124,12 +128,14 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [x] Add dependency-free repository secret audit and self-tests to CI/tagged verification.
 - [x] Add synchronized application-version audit and release-tag/version agreement gate.
 - [x] Document branch protection, labels, milestones, Discussions, security settings, and release governance.
-- [ ] Verify clean builds on Windows, macOS, Linux, Android, and iOS from the 2.0.12 release candidate.
-- [ ] Capture real screenshots from verified 2.0.12 desktop and mobile candidate builds.
+- [x] Run normal CI, repository audit, and policy audit on `release/**` preparation branches.
+- [x] Repair the Rust-formatting regression previously exposed by candidate CI.
+- [ ] Verify clean builds on Windows, macOS, Linux, Android, and iOS from the 2.18.12 release candidate.
+- [ ] Capture real screenshots from verified 2.18.12 desktop and mobile candidate builds.
 - [ ] Add signed/notarized/store-ready release artifacts where credentials are available and document unsigned builds accurately otherwise.
-- [ ] Publish `v2.0.12` only after draft artifact smoke checks and the release-evidence gate pass.
+- [ ] Publish `v2.18.12` only after draft artifact smoke checks and the release-evidence gate pass.
 
-## Phase 7 — 2.0.12 final audit
+## Phase 7 — 2.18.12 final audit
 
 - [ ] Clean-checkout setup verification.
 - [ ] Full pre-install/security/version/E2E-infrastructure checks observed green on the release commit.
@@ -142,7 +148,7 @@ This roadmap tracks engineering milestones rather than promises of fixed dates. 
 - [ ] Network-enabled external-link audit.
 - [ ] Manual keyboard, touch, and screen-reader smoke review on representative targets.
 - [ ] Release-candidate artifact/provenance/checksum verification.
-- [ ] Confirm screenshots and release notes match the actual 2.0.12 candidate build.
+- [ ] Confirm screenshots and release notes match the actual 2.18.12 candidate build.
 
 ## Future candidates
 
