@@ -64,10 +64,22 @@ try {
     );
   });
 
-  await step('verify history and real CSV download', async () => {
+  await step('verify history analytics and real CSV download', async () => {
     await clickButton('History');
     await waitForText('History & statistics');
     await waitForText('2d6+1');
+    await waitFor(
+      async () =>
+        Boolean(
+          await evaluateValue(`(() => {
+            const panel = document.querySelector('.expression-analytics-panel');
+            if (!panel) return false;
+            const text = panel.textContent?.replace(/\\s+/g, ' ').trim() ?? '';
+            return text.includes('2d6+1') && text.includes('1 · 100%');
+          })()`),
+        ),
+      'history expression analytics',
+    );
     await clickButton('CSV');
     const csvPath = await waitForDownloadedFile(downloadsDir, 'dicelab-rolls.csv');
     const csv = await fs.readFile(csvPath, 'utf8');
