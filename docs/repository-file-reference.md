@@ -160,7 +160,7 @@ For deeper behavioral context, also read:
 | --- | --- |
 | `scripts/cdp-session.mjs` | Dependency-free Chrome DevTools Protocol session abstraction for command routing, pending promises, event waiting, timeouts, and socket/session lifecycle. |
 | `scripts/cdp-session.test.mjs` | Node self-tests for CDP command/event/error/timeout/socket behavior independent of browser availability. |
-| `scripts/e2e-browser.mjs` | Drives the built production web app through real Chromium: onboarding, roll/history, downloads, reload persistence, command palette, probability, clear-data, file-input backup restore. |
+| `scripts/e2e-browser.mjs` | Drives the built production web app through real Chromium: onboarding, roll/history expression analytics, downloads, reload persistence, command palette, exact probability insights/comparison visualization, clear-data, file-input backup restore, PWA cache inspection, and server-offline reopen. |
 
 ## Repository automation scripts — documentation
 
@@ -237,8 +237,8 @@ For deeper behavioral context, also read:
 
 | Path | Purpose and relationships |
 | --- | --- |
-| `src/App.tsx` | Cross-surface application coordinator: views, expression/history/settings/presets, locale/theme/motion, keyboard palette, roll service, backup and shareable preset import/export, clear-data, onboarding. |
-| `src/App.integration.test.tsx` | Main application integration journeys covering roll/history/export, backup restore, shareable preset import/use/persistence/re-export, and About navigation. |
+| `src/App.tsx` | Cross-surface application coordinator: views, expression/history/settings/presets, locale/theme/motion, keyboard palette, roll service, backup and duplicate-safe shareable preset import/export, clear-data, onboarding. |
+| `src/App.integration.test.tsx` | Main application integration journeys covering roll/history/export, backup restore, duplicate-safe shareable preset import/use/persistence/re-export, and About navigation. |
 | `src/App.locale-backup.integration.test.tsx` | Verifies backup restoration switches live locale and preserves restored user-created preset text. |
 | `src/App.locale-clear.integration.test.tsx` | Verifies clear-all-data resets Hindi state/document language/onboarding back to default English behavior. |
 | `src/App.locale-onboarding.integration.test.tsx` | Verifies persisted Hindi preference applies to first-run onboarding before completion. |
@@ -246,7 +246,7 @@ For deeper behavioral context, also read:
 | `src/App.localization.integration.test.tsx` | Verifies live English→Hindi switching localizes built-ins while preserving user-created preset name/description exactly. |
 | `src/main.tsx` | React renderer bootstrap mounting `App` under the root error boundary, loading shared/mobile styles, then requesting guarded production-browser PWA registration. |
 | `src/mobile.css` | Mobile Tauri/web ergonomics layered over shared styling: safe-area insets, dynamic viewport height, coarse-pointer 44px targets, mobile modal/bottom-navigation inset handling, and compact landscape behavior. |
-| `src/styles.css` | Global product design system/layout/responsive/component/focus/theme/motion/histogram/probability styling consumed by React surfaces and root data attributes. |
+| `src/styles.css` | Global product design system/layout/responsive/component/focus/theme/motion/histogram/history-analytics/probability-comparison styling consumed by React surfaces and root data attributes. |
 | `src/vite-env.d.ts` | Vite client type declarations enabling typed `import.meta.env` access such as the production-mode PWA registration guard. |
 
 ## React components and component tests
@@ -259,13 +259,13 @@ For deeper behavioral context, also read:
 | `src/components/AppShell.tsx` | Desktop sidebar/mobile bottom-nav application shell, `AppView` contract, active-page semantics, main landmark, quick-actions trigger, and credit. |
 | `src/components/CommandPalette.tsx` | Keyboard modal for navigation/expression quick actions with search, focus trap, Escape close, and focus restoration. |
 | `src/components/CommandPalette.test.tsx` | Keyboard/accessibility regression coverage for command palette focus lifecycle and dismissal. |
-| `src/components/HistoryPanel.tsx` | History filter/statistics/histogram/progressive rows, locale-aware values/timestamps, CSV/JSON export feedback, and clear-history confirmation. |
-| `src/components/HistoryPanel.test.tsx` | History component regressions including progressive rendering/filter behavior and export/clear interactions. |
+| `src/components/HistoryPanel.tsx` | History filter/statistics/expression-activity analytics/histogram/progressive rows, locale-aware values/timestamps, CSV/JSON export feedback, and clear-history confirmation. |
+| `src/components/HistoryPanel.test.tsx` | History component regressions including progressive rendering/filter behavior, expression analytics, and export/clear interactions. |
 | `src/components/HistoryPanel.export.localization.test.tsx` | Hindi success/failure export-status regressions ensuring raw browser error details are not shown. |
 | `src/components/Onboarding.tsx` | First-run modal explaining product concepts and invoking onboarding completion; copy follows active locale. |
 | `src/components/Onboarding.test.tsx` | Dialog semantics/initial-focus accessibility regression for onboarding. |
-| `src/components/ProbabilityPanel.tsx` | Exact probability UI with quartiles, standard deviation, threshold probabilities, pairwise distribution comparison, bounded chart rendering, localized validation, and locale-aware values. |
-| `src/components/ProbabilityPanel.test.tsx` | Probability presentation regression covering localization, exact insight/threshold values, and pairwise comparison behavior. |
+| `src/components/ProbabilityPanel.tsx` | Exact probability UI with quartiles, standard deviation, threshold probabilities, pairwise distribution comparison, accessible stacked comparison visualization, bounded chart rendering, localized validation, and locale-aware values. |
+| `src/components/ProbabilityPanel.test.tsx` | Probability presentation regression covering localization, exact insight/threshold values, pairwise comparison behavior, and accessible comparison visualization proportions. |
 | `src/components/RollWorkspace.tsx` | Main roll expression/quick dice/result/preset surface with immediate parser validation, secure/seeded status, shareable preset-file controls, kept/dropped dice, and locale formatting. |
 | `src/components/RollWorkspace.test.tsx` | Roll-result localization plus preset transfer success/failure and privacy-safe status regressions. |
 | `src/components/RollWorkspace.validation.localization.test.tsx` | Hindi invalid-expression correction and disabled-roll regression. |
@@ -295,6 +295,8 @@ For deeper behavioral context, also read:
 | `src/domain/history.ts` | Pure reusable history filter by normalized query/expression/total semantics. |
 | `src/domain/history.test.ts` | History filtering/order/query regression coverage. |
 | `src/domain/history.bench.ts` | 5,000-record history filtering benchmark. |
+| `src/domain/history-analytics.ts` | Pure expression-level history aggregation computing usage count/share, mean, range, latest activity, and deterministic ranking over the active roll collection. |
+| `src/domain/history-analytics.test.ts` | Expression-analytics regressions for grouping, percentage/mean/range/latest values, ranking ties, and empty history. |
 | `src/domain/statistics.ts` | Pure count/mean/median/min/max/frequency/percentage aggregation over roll history. |
 | `src/domain/statistics.test.ts` | Statistical summary and observed-frequency correctness tests. |
 | `src/domain/statistics.bench.ts` | 5,000-record statistics benchmark. |
@@ -334,8 +336,8 @@ For deeper behavioral context, also read:
 | `src/services/export.ts` | History CSV/JSON serialization, spreadsheet-formula neutralization, backup schema create/parse/validate, browser download, and cross-platform Tauri `save_text_export` routing. |
 | `src/services/export.test.ts` | Browser/native text export routing, cancellation, serialization, and safe export request behavior tests. |
 | `src/services/backup.test.ts` | Backup schema/bounds/duplicates/invariants/settings/locale/legacy compatibility/round-trip and hostile input regression coverage. |
-| `src/services/preset-file.ts` | Versioned shareable preset-file serializer/parser with built-in exclusion, expression normalization, UTF-8 size/count/text bounds, canonical timestamp validation, and no local ids/timestamps in shared payloads. |
-| `src/services/preset-file.test.ts` | Shareable preset-file round-trip, normalization, schema/kind/expression/timestamp rejection, built-in exclusion, and pre-read size-limit regression coverage. |
+| `src/services/preset-file.ts` | Versioned shareable preset-file serializer/parser with built-in exclusion, expression normalization, UTF-8 size/count/text bounds, canonical timestamp validation, no local ids/timestamps in shared payloads, and normalized content-key deduplication for idempotent imports. |
+| `src/services/preset-file.test.ts` | Shareable preset-file round-trip, normalization, schema/kind/expression/timestamp rejection, built-in exclusion, pre-read size-limit, existing-content dedupe, and same-file duplicate regression coverage. |
 | `src/services/logger.ts` | Local structured log record creation, event normalization, recursive redaction/bounds, Error-type-only serialization, and console severity routing. |
 | `src/services/logger.test.ts` | Sensitive-key/raw-error/context-depth/size redaction and structured logger behavior tests. |
 
