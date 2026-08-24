@@ -53,7 +53,7 @@ describe('DiceLab primary journeys', () => {
     expect(revokeObjectUrl).toHaveBeenCalledWith('blob:dicelab-export');
   });
 
-  it('imports, persists, uses, and re-exports a shared preset file', async () => {
+  it('imports, deduplicates, persists, uses, and re-exports a shared preset file', async () => {
     const createObjectUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:dicelab-presets');
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     render(<App />);
@@ -78,15 +78,21 @@ describe('DiceLab primary journeys', () => {
     expect(screen.getByText('Shared advantage')).toBeInTheDocument();
     expect(screen.getByText('2d20kh1+3')).toBeInTheDocument();
 
+    fireEvent.change(screen.getByLabelText('Import presets'), { target: { files: [file] } });
+    expect(await screen.findByRole('status')).toHaveTextContent('Imported 0 presets.');
+    expect(screen.getAllByText('Shared advantage')).toHaveLength(1);
+
     fireEvent.click(screen.getByText('Shared advantage'));
     expect(screen.getByLabelText('Dice expression')).toHaveValue('2d20kh1+3');
-    await waitFor(() =>
-      expect(JSON.parse(localStorage.getItem(PRESETS_KEY) ?? '[]')).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ name: 'Shared advantage', expression: '2d20kh1+3' }),
-        ]),
-      ),
-    );
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem(PRESETS_KEY) ?? '[]') as Array<{
+        name?: string;
+        expression?: string;
+      }>;
+      expect(stored.filter((preset) => preset.name === 'Shared advantage')).toEqual([
+        expect.objectContaining({ name: 'Shared advantage', expression: '2d20kh1+3' }),
+      ]);
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'Export presets' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Preset file ready.');
