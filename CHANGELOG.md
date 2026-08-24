@@ -4,7 +4,32 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 
 ## [Unreleased]
 
-The next publication target is **2.0.12**. The section below records the prepared 2.0.12 candidate content, but the version is not considered published until `v2.0.12` passes the release evidence gate and the draft release is explicitly approved.
+The next publication target is **2.18.12**. The section below records the prepared 2.18.12 candidate content, but the version is not considered published until `v2.18.12` passes the release evidence gate and the draft release is explicitly approved.
+
+## [2.18.12] - 2026-08-24 (release candidate)
+
+### Added
+
+- Dependency-free accessibility policy checks for the localized skip link, main landmark, active navigation, command-palette dialog/shortcut semantics, live validation/result announcements, modal focus containment/restoration, onboarding semantics, Settings status/import semantics, and visible keyboard focus rules.
+- Focused `policy:accessibility` and `policy:accessibility:test` commands wired into normal CI and the dependency-free repository audit before dependency installation.
+- Pull-request release preparation on `release/**` branches so web, Rust, Android, iOS, repository-audit, and policy surfaces can be exercised before a candidate is merged to `main`.
+
+### Changed
+
+- Application version metadata is synchronized to `2.18.12` across `package.json`, `package-lock.json`, `src/config/app.ts`, `src-tauri/Cargo.toml`, the DiceLab package entry in `src-tauri/Cargo.lock`, and `src-tauri/tauri.conf.json`.
+- Lockfile generation now supports `release/**` preparation branches, watches every application-version source, and writes generated npm/Cargo locks back to the active branch or a branch-specific automation fallback.
+- The command-palette trigger now exposes `aria-haspopup="dialog"` and `aria-keyshortcuts="Control+K Meta+K"` while preserving the existing keyboard handler and visual shortcut hint.
+- `ROADMAP.md`, accessibility guidance, and the current release-blocker ledger now identify `2.18.12` as the active candidate and keep publication/device/signing claims evidence-gated.
+- The useful accessibility hardening from the older diverged accessibility branch is carried forward without adopting its unsynchronized Vitest/Vite dependency jump.
+
+### Fixed
+
+- Rust source formatting exposed by the earlier candidate CI is normalized so `cargo fmt --all -- --check` no longer fails on those known formatting differences.
+- Candidate lock generation no longer depends only on manifest/lock path changes; frontend and Tauri version-source changes also trigger synchronization.
+
+### Candidate status
+
+The 2.18.12 source/configuration and generated npm/Cargo lock metadata are synchronized, and the candidate branch contains the accessibility/Rust/CI hardening above. The candidate is **not yet publishable** until the exact final commit has observed green CI/browser-PWA/Rust/Android/iOS evidence plus fuzz, benchmark, packaged desktop, physical-device, accessibility/localization, security, screenshot, signing-status, checksum, provenance, and explicit approval evidence. See [`docs/release-blockers-current.md`](docs/release-blockers-current.md).
 
 ## [2.0.12] - 2026-08-19 (release candidate)
 
