@@ -86,6 +86,20 @@ describe('ProbabilityPanel distribution comparison', () => {
     expect(statValue('ΔE(A − B)')).toBe('+1.000');
   });
 
+  it('exposes the comparison balance as an accessible visualization', () => {
+    render(<ProbabilityPanel />);
+
+    calculate('1d6');
+    compare('1d4');
+
+    const meter = screen.getByRole('img', {
+      name: 'P(A > B) 58.33%; P(A = B) 16.67%; P(A < B) 25%',
+    });
+    expect(meter.querySelector('.comparison-meter-higher')).toHaveStyle({ flexBasis: '58.333333333333336%' });
+    expect(meter.querySelector('.comparison-meter-tie')).toHaveStyle({ flexBasis: '16.666666666666664%' });
+    expect(meter.querySelector('.comparison-meter-lower')).toHaveStyle({ flexBasis: '25%' });
+  });
+
   it('keeps the last valid comparison when the comparison expression is invalid', () => {
     render(<ProbabilityPanel />);
     const before = statValue('P(A = B)');
