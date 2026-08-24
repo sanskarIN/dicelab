@@ -2,12 +2,12 @@
 
 Copy this file into a versioned release-evidence record when preparing a real candidate. Do not mark an item complete unless the evidence was actually observed for the exact candidate commit/artifact.
 
-For the current release-preparation cycle, the expected identity is version `2.0.12` / tag `v2.0.12`. If this template is reused later, replace those values with the actual candidate rather than carrying them forward blindly.
+For the current release-preparation cycle, the expected identity is version `2.18.12` / tag `v2.18.12`. If this template is reused later, replace those values with the actual candidate rather than carrying them forward blindly.
 
 ## Candidate identity
 
-- Version: 2.0.12
-- Tag: v2.0.12
+- Version: 2.18.12
+- Tag: v2.18.12
 - Source commit:
 - Candidate date:
 - Reviewer(s):
@@ -24,7 +24,7 @@ For the current release-preparation cycle, the expected identity is version `2.0
 - [ ] `src-tauri/Cargo.toml` reports the candidate version.
 - [ ] The `dicelab` package entry in `src-tauri/Cargo.lock` reports the candidate version.
 - [ ] `src-tauri/tauri.conf.json` reports the candidate version.
-- [ ] `DICELAB_EXPECT_VERSION=v2.0.12 npm run version:check` completed successfully for this candidate.
+- [ ] `DICELAB_EXPECT_VERSION=v2.18.12 npm run version:check` completed successfully for this candidate.
 - [ ] `package-lock.json` matches `package.json` dependency metadata.
 - [ ] `src-tauri/Cargo.lock` matches `src-tauri/Cargo.toml` and contains every direct crate, including `tauri-plugin-dialog` and `tauri-plugin-fs` when declared.
 - [ ] `npm run policy:lockfiles` completed successfully.
@@ -80,6 +80,8 @@ Evidence:
 - [ ] Native command-contract audit passed.
 - [ ] PWA auditor self-test passed.
 - [ ] PWA integrity audit passed, including generated Vite `/assets/` precaching and Tauri exclusion.
+- [ ] Accessibility auditor self-test passed.
+- [ ] Accessibility contract audit passed.
 - [ ] Aggregate `npm run policy:test` passed.
 - [ ] Aggregate `npm run policy:all` passed.
 - [ ] Release verifier self-test passed.
@@ -94,6 +96,7 @@ Record workflow names/run IDs or local command output summaries.
 
 - [ ] Web quality job green on the exact candidate commit.
 - [ ] Web job's PWA policy checks are green on the exact candidate commit.
+- [ ] Web job's accessibility policy checks are green on the exact candidate commit.
 - [ ] Web job's production browser/PWA offline-reopen E2E is green on the exact candidate commit.
 - [ ] Locked Rust quality job green on the exact candidate commit.
 - [ ] Android ARM64 build job green on the exact candidate commit.
@@ -117,6 +120,8 @@ Record exact workflow run/job identifiers.
 - [ ] `npm run test:e2e:infra`
 - [ ] `npm run policy:pwa:test`
 - [ ] `npm run policy:pwa`
+- [ ] `npm run policy:accessibility:test`
+- [ ] `npm run policy:accessibility`
 - [ ] `npm run test:e2e` in an unrestricted Chromium-compatible environment
 
 Evidence:
@@ -409,9 +414,12 @@ Evidence/notes:
 
 ## Accessibility review
 
+- [ ] Dependency-free accessibility self-test passed on the exact candidate commit.
+- [ ] Dependency-free accessibility contract audit passed on the exact candidate commit.
 - [ ] Desktop primary journey completed with keyboard only.
 - [ ] Focus is visible and logical.
 - [ ] Command palette traps/restores focus correctly.
+- [ ] Command-palette trigger exposes its dialog and keyboard-shortcut semantics.
 - [ ] Onboarding is usable by keyboard.
 - [ ] Android/iOS touch primary journey completed.
 - [ ] Installed/standalone PWA primary layout reviewed on a representative platform.
@@ -455,7 +463,7 @@ Paths/links:
 - [ ] Expected unsigned iOS device archive package is present.
 - [ ] ZIP files are non-empty and inspect correctly.
 - [ ] `RELEASE-METADATA.json` identifies the expected repository/tag/source commit/workflow run.
-- [ ] For the current candidate, `RELEASE-METADATA.json` reports tag `v2.0.12`.
+- [ ] For the current candidate, `RELEASE-METADATA.json` reports tag `v2.18.12`.
 - [ ] `SHA256SUMS.txt` covers packaged artifact ZIPs and provenance metadata.
 - [ ] Every published checksum was independently verified after download.
 - [ ] Generated release notes were reviewed against `CHANGELOG.md`.
