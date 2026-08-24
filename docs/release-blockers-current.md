@@ -1,21 +1,21 @@
 # DiceLab Current Release Blockers
 
-Current candidate: **2.0.12** (`v2.0.12`)
+Current candidate: **2.18.12** (`v2.18.12`)
 
-Last reviewed: 2026-08-20
+Last reviewed: 2026-08-24
 
 This file separates **implemented product/repository work** from **release evidence that still must be observed**. A configured workflow or compilable-looking source change is not treated as passing evidence until it is actually observed on the intended candidate commit.
 
 ## Resolved — generated dependency lock synchronization
 
-The generated dependency-lock blocker is now closed.
+The generated dependency-lock blocker is closed for the current preparation branch.
 
 Current observed npm state:
 
 ```text
-package.json version                  2.0.12
-package-lock.json top-level version   2.0.12
-package-lock.json packages[""]        2.0.12
+package.json version                  2.18.12
+package-lock.json top-level version   2.18.12
+package-lock.json packages[""]        2.18.12
 ```
 
 Current observed Cargo package block:
@@ -23,7 +23,7 @@ Current observed Cargo package block:
 ```toml
 [[package]]
 name = "dicelab"
-version = "2.0.12"
+version = "2.18.12"
 dependencies = [
  "rand",
  "regex",
@@ -36,25 +36,48 @@ dependencies = [
 ]
 ```
 
-This includes the direct `tauri-plugin-fs` dependency introduced for cross-platform native export handling. The generated Cargo lock must continue to be treated as package-manager output rather than hand-edited dependency metadata.
+This includes the direct `tauri-plugin-fs` dependency introduced for cross-platform native export handling. The generated Cargo lock continues to be treated as package-manager output rather than hand-edited dependency metadata.
 
-The lockfile workflow remains responsible for regenerating npm/Cargo locks after manifest changes, verifying locked Cargo metadata and synchronized application versions, checking generated diff hygiene, and committing the generated locks to `main` or the `automation/lockfiles` fallback branch when required.
+The lockfile workflow now supports `release/**` preparation branches and watches every application-version source (`package.json`, `src/config/app.ts`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`) in addition to both generated locks. It regenerates npm/Cargo locks, verifies locked Cargo metadata and synchronized application versions, checks generated diff hygiene, and commits generated locks back to the active preparation branch or a branch-specific automation fallback when direct push is rejected.
+
+## Resolved — accessibility policy baseline
+
+High-value accessibility semantics are now protected by the dependency-free repository policy auditor instead of relying only on component tests and manual review.
+
+The executable contract guards:
+
+- the localized skip link and main landmark;
+- current-page navigation semantics;
+- command-palette dialog/keyboard-shortcut semantics;
+- roll-result live regions and validation relationships;
+- command-palette modal naming, focus containment, and focus restoration;
+- onboarding modal naming/description/initial focus;
+- Settings status/toggle/file-input semantics;
+- visible keyboard focus and skip-link reveal styles.
+
+Focused accessibility audit/self-test commands are wired into normal CI and the dependency-free repository audit before dependency installation. Manual screen-reader, touch, scaling, contrast, localization, and physical-device evidence remain release-gated below.
+
+## Resolved — previously observed Rust formatting regression
+
+The Rust formatting differences exposed by the earlier accessibility candidate CI have been normalized without changing parser, RNG, or native-export behavior. The current candidate still requires an observed green Rust quality job before release.
 
 ## Blocker 1 — Observed full CI on the cross-platform candidate
 
 The repository now configures normal CI for:
 
-- web quality, PWA integrity, and production real-browser/offline E2E;
+- web quality, PWA integrity, accessibility policy, and production real-browser/offline E2E;
 - locked Rust formatting/tests/Clippy;
 - Android ARM64 native APK/AAB compilation;
 - iOS Apple-Silicon simulator compilation.
 
-The configuration itself is implemented. Release readiness still requires those jobs to be observed green for the exact final 2.0.12 candidate commit after all cross-platform changes and documentation updates are present.
+Normal CI, repository audit, repository policy audit, and lock generation also run for `release/**` preparation branches so candidate work can be verified before merge.
+
+The configuration itself is implemented. Release readiness still requires those jobs to be observed green for the exact final 2.18.12 candidate commit after all cross-platform changes and documentation updates are present.
 
 Required evidence:
 
 - exact candidate source commit;
-- successful web job, including PWA policy checks and offline-reopen E2E;
+- successful web job, including PWA/accessibility policy checks and offline-reopen E2E;
 - successful Rust job;
 - successful Android job;
 - successful iOS simulator job;
@@ -62,7 +85,7 @@ Required evidence:
 
 ## Blocker 2 — Observed full browser/PWA E2E
 
-The production real-browser journey is implemented, including install-time PWA cache verification and an actual offline reopen after the Vite preview server is stopped. However, 2.0.12 release evidence requires an observed successful run on infrastructure that permits the required local preview/browser navigation and service-worker lifecycle.
+The production real-browser journey is implemented, including install-time PWA cache verification and an actual offline reopen after the Vite preview server is stopped. However, 2.18.12 release evidence requires an observed successful run on infrastructure that permits the required local preview/browser navigation and service-worker lifecycle.
 
 The automated journey now verifies:
 
@@ -80,7 +103,7 @@ The automated journey now verifies:
 
 Required evidence:
 
-- exact 2.0.12 source commit;
+- exact 2.18.12 source commit;
 - browser/runtime versions;
 - successful E2E workflow/run identifier or preserved local output;
 - observed successful service-worker controller/cache checks;
@@ -94,11 +117,11 @@ Representative manual browser/ChromeOS/Android/iOS install UI remains a separate
 
 The cargo-fuzz harness and scheduled/manual workflow are implemented.
 
-2.0.12 release evidence still requires an observed bounded campaign on the intended candidate, with no unresolved crash/invariant artifact.
+2.18.12 release evidence still requires an observed bounded campaign on the intended candidate, with no unresolved crash/invariant artifact.
 
 Any discovered reproducible case should become a deterministic Rust regression before release.
 
-## Blocker 4 — 2.0.12 benchmark record
+## Blocker 4 — 2.18.12 benchmark record
 
 `npm run bench` is implemented, but timing values are only meaningful when recorded with:
 
@@ -108,16 +131,16 @@ Any discovered reproducible case should become a deterministic Rust regression b
 - Node/npm versions;
 - complete benchmark output.
 
-The 2.0.12 candidate needs an actual recorded run rather than an assumed performance claim.
+The 2.18.12 candidate needs an actual recorded run rather than an assumed performance claim.
 
 ## Blocker 5 — Desktop candidate builds and smoke evidence
 
-Windows, macOS, and Linux 2.0.12 candidate artifacts must each be built from the intended source commit and smoke-tested.
+Windows, macOS, and Linux 2.18.12 candidate artifacts must each be built from the intended source commit and smoke-tested.
 
 For every supported desktop candidate verify at least:
 
 - application launches;
-- About/Settings show version `2.0.12`;
+- About/Settings show version `2.18.12`;
 - secure roll path works;
 - deterministic seeded reference behavior matches the web companion;
 - settings persist;
@@ -134,7 +157,7 @@ For every supported desktop candidate verify at least:
 
 ## Blocker 6 — Android physical-device evidence
 
-DiceLab now has an Android Tauri target with Android API 24 minimum, Android init/dev/build scripts, safe-area/touch UI behavior, native Rust mobile entry, and CI/release build jobs.
+DiceLab has an Android Tauri target with Android API 24 minimum, Android init/dev/build scripts, safe-area/touch UI behavior, native Rust mobile entry, and CI/release build jobs.
 
 A compiler result alone is not enough for release. On at least one representative physical Android device, record:
 
@@ -157,7 +180,7 @@ For the separate browser/PWA distribution path on Android, also verify a compati
 
 ## Blocker 7 — iPhone/iPad physical-device evidence
 
-DiceLab now has an iOS/iPadOS Tauri target with iOS 14.0 minimum, iOS init/dev/build/simulator/archive scripts, safe-area/touch UI behavior, native Rust mobile entry, and CI/release build jobs.
+DiceLab has an iOS/iPadOS Tauri target with iOS 14.0 minimum, iOS init/dev/build/simulator/archive scripts, safe-area/touch UI behavior, native Rust mobile entry, and CI/release build jobs.
 
 Before release, record physical-device evidence for representative iPhone and iPad form factors:
 
@@ -179,9 +202,9 @@ For the separate browser/PWA distribution path, verify iOS/iPadOS Add to Home Sc
 
 ## Blocker 8 — Accessibility/manual localization review
 
-Automated tests do not replace candidate review.
+Automated accessibility policy and component tests do not replace candidate review.
 
-Still required for the 2.0.12 build across representative desktop/mobile/browser layouts:
+Still required for the 2.18.12 build across representative desktop/mobile/browser layouts:
 
 - keyboard-only desktop primary journey;
 - touch primary journey on Android/iOS;
@@ -206,13 +229,14 @@ The repository contains executable policy audits for:
 - native runtime boundary;
 - native command contract;
 - dependency lock consistency;
+- accessibility semantic/focus boundaries;
 - PWA manifest/install metadata, local icon paths, service-worker same-origin/GET-only boundaries, generated Vite runtime precaching, production-only registration, and Tauri exclusion;
 - generated-lock-aware application version agreement;
 - exhaustive tracked-file documentation inventory.
 
-The main CI, focused repository-policy workflow, dependency-free repository audit, and tag/manual release-policy workflow now all enforce the PWA boundary through the canonical repository scripts. The tag-driven release workflow also runs documentation inventory and repository policy gates directly before artifact production.
+The normal CI, focused repository-policy workflow, dependency-free repository audit, and tag/manual release-policy workflow enforce canonical repository boundaries. The tag-driven release workflow also runs documentation inventory and repository policy gates directly before artifact production.
 
-Release readiness still requires observed successful 2.0.12 candidate runs plus review of:
+Release readiness still requires observed successful 2.18.12 candidate runs plus review of:
 
 - secret scanning;
 - CodeQL/code scanning;
@@ -222,7 +246,7 @@ Release readiness still requires observed successful 2.0.12 candidate runs plus 
 - confirmation that renderer capabilities did not gain broad filesystem/shell/HTTP/process access while adding mobile export support;
 - confirmation that the browser PWA cache remains same-origin/local and does not introduce remote runtime dependencies.
 
-## Blocker 10 — Real 2.0.12 candidate screenshots
+## Blocker 10 — Real 2.18.12 candidate screenshots
 
 README/release screenshots must be captured from verified candidate builds rather than mocked or development-only representations.
 
@@ -231,7 +255,7 @@ Required minimum set:
 - Dice Studio;
 - History;
 - Probability;
-- Settings showing 2.0.12;
+- Settings showing 2.18.12;
 - representative Hindi interface;
 - representative installed/standalone PWA or ChromeOS view;
 - representative Android phone view;
@@ -257,13 +281,13 @@ Never commit signing credentials, Android keystores, Apple certificates/private 
 
 ## Blocker 12 — Artifact/checksum/provenance review
 
-Before publishing the 2.0.12 draft release:
+Before publishing the 2.18.12 draft release:
 
 - download produced web/Windows/macOS/Linux/Android/iOS artifact packages;
 - verify SHA-256 checksums;
 - inspect expected package contents;
 - verify the web artifact includes `manifest.webmanifest`, `sw.js`, required install icons, and generated production `/assets/` files;
-- verify `RELEASE-METADATA.json` reports tag `v2.0.12`, the exact source commit, and workflow identity;
+- verify `RELEASE-METADATA.json` reports tag `v2.18.12`, the exact source commit, and workflow identity;
 - confirm Android/iOS artifact labels accurately state signing/archive status;
 - confirm release notes match `CHANGELOG.md`;
 - confirm signing claims match reality.
@@ -293,11 +317,20 @@ The 2026-08-20 cross-platform implementation wave added or updated:
 - cross-platform setup/release/native-export/README/roadmap/inventory/PWA documentation;
 - generated Cargo lock synchronization including the direct `tauri-plugin-fs` dependency.
 
+The 2026-08-24 2.18.12 preparation wave additionally:
+
+- synchronized package, frontend, Cargo, Tauri, npm-lock, and Cargo-lock versions to 2.18.12;
+- enabled candidate CI/repository/policy checks on `release/**` branches;
+- hardened lock generation for release branches and all version-source changes;
+- added dependency-free accessibility policy enforcement and self-tests;
+- exposed command-palette dialog/shortcut semantics;
+- repaired the previously observed Rust formatting failure.
+
 These are implementation/configuration changes, not substitutes for the execution evidence listed above.
 
 ## Final publication gate
 
-`v2.0.12` should be published only after the candidate evidence is complete enough for a maintainer to choose **APPROVE** in a filled copy of:
+`v2.18.12` should be published only after the candidate evidence is complete enough for a maintainer to choose **APPROVE** in a filled copy of:
 
 - [`release-candidate-evidence-template.md`](release-candidate-evidence-template.md)
 
