@@ -1,101 +1,89 @@
 # Release Guide
 
-DiceLab releases should be reproducible, reviewed, and based on a clean commit with passing required checks.
+DiceLab releases must be reproducible, reviewed, and based on one clean candidate commit with observed required checks.
 
 ## Current candidate
 
-The repository is currently preparing **DiceLab 2.0.12**. The intended release tag is:
+Current preparation target: **DiceLab 2.0.13**
 
 ```text
-v2.0.12
+v2.0.13
 ```
 
-Do not create or publish that tag until dependency locks and release-candidate evidence are current for the exact source commit.
+The earlier 2.0.12 candidate was not published and is superseded. Do not create/publish `v2.0.13` until generated locks and all required candidate evidence are current for the same source commit.
 
 ## Supported release targets
-
-The source tree now supports:
 
 - Windows desktop;
 - macOS desktop;
 - Linux desktop;
 - Android API 24+;
 - iOS/iPadOS 14.0+;
-- the modern-browser web companion.
+- modern-browser/ChromeOS installable PWA.
 
-Desktop and mobile native targets use Tauri 2. The web companion continues to use the Vite production bundle.
+Native targets use Tauri 2; the browser target uses the production Vite bundle plus the guarded service worker.
 
 ## Version locations
 
 Keep the application version aligned in:
 
 - `package.json`;
-- the top-level `version` and `packages[""]` root version in generated `package-lock.json`;
+- `package-lock.json` top-level version;
+- `package-lock.json` `packages[""]` version;
 - `src/config/app.ts`;
 - `src-tauri/Cargo.toml`;
-- DiceLab's generated package entry in `src-tauri/Cargo.lock`;
-- `src-tauri/tauri.conf.json`;
-- `CHANGELOG.md` as the human-reviewed release record.
+- DiceLab's package entry in `src-tauri/Cargo.lock`;
+- `src-tauri/tauri.conf.json`.
 
-Use semantic-versioning principles. Compatibility-affecting changes must be documented clearly, especially on the 2.x version line.
+Human release history belongs in `CHANGELOG.md`.
 
-The automated repository check verifies the machine-readable sources:
+Verification:
 
 ```bash
 npm run version:check:test
 npm run version:check
 ```
 
-The version audit intentionally fails when a manifest/config version has been bumped but generated npm/Cargo lock metadata has not yet been regenerated. `CHANGELOG.md` remains a maintainer-reviewed source rather than an executable version input because unreleased/released sections can legitimately mention multiple versions.
+The audit intentionally fails during a source-version bump until generated npm/Cargo lock metadata is regenerated.
 
 ## Dependency-lock rule
 
-Every dependency-manifest or application-version change must be accompanied by corresponding generated lockfiles before the release commit is considered reproducible.
-
-- `package.json` changes require a current `package-lock.json`.
-- `src-tauri/Cargo.toml` changes require a current `src-tauri/Cargo.lock`.
-
-Regenerate npm metadata from the repository root:
+Every dependency-manifest or application-version change requires package-manager-generated lockfiles before the release commit is reproducible.
 
 ```bash
 npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-```
-
-For Rust, regenerate from `src-tauri`:
-
-```bash
+cd src-tauri
 cargo generate-lockfile
-cargo test --locked
-cargo clippy --all-targets --all-features --locked -- -D warnings
+cargo metadata --locked --format-version 1
+cd ..
 ```
 
-The repository lockfile workflow can regenerate npm/Cargo lockfiles and supports manual dispatch. If branch protection rejects its direct `main` update, it publishes the exact generated commit to `automation/lockfiles` for review/application. The existence of that workflow is not proof that the lockfile is current: inspect the resulting commit and observe locked checks before release.
+The repository lockfile workflow performs this regeneration automatically after relevant `main` changes and can also be manually dispatched. It commits the generated locks directly to `main` when allowed or publishes them to `automation/lockfiles` for review when branch protection blocks direct push.
 
-Do not hand-edit transitive Cargo lock entries to bypass a stale-lock failure.
+Do not hand-edit Cargo's transitive graph or lock metadata merely to satisfy a version gate.
 
-## Release prerequisites
+## 2.0.13 release prerequisites
 
-Before tagging `v2.0.12`:
+Before tagging:
 
-1. Ensure `package-lock.json` and `src-tauri/Cargo.lock` are generated and current for the exact manifests/version.
-2. Verify `npm run version:check` reports all manifest/config/generated-lock version locations as `2.0.12`.
-3. Verify normal CI is green on the exact release commit, including web E2E, locked Rust checks, Android build, and iOS simulator build.
-4. Observe a bounded Rust parser fuzz campaign green on the intended candidate or record why it is excluded from the release gate.
-5. Run the clean-checkout quality suite.
-6. Run/review the repository secret audit and platform security alerts.
-7. Review dependency/CodeQL findings.
-8. Complete the accessibility smoke checklist.
-9. Complete native CSV/JSON/backup save-dialog smoke checks on Windows, macOS, Linux, Android, and iOS candidate builds.
-10. Capture real screenshots from verified desktop and mobile candidate builds.
-11. Update `CHANGELOG.md`, `ROADMAP.md`, and `what_changed.md`.
-12. Confirm the repository contains no credentials or generated signing secrets.
-13. Confirm seeded web/native compatibility reference-vector tests pass.
-14. Confirm English/Hindi locale selection and locale-aware presentation survive restart/backup restore.
-15. Record release-candidate benchmark evidence with the machine/runtime metadata required by `docs/performance.md`.
-16. Review repository settings against `docs/repository-governance.md`.
-17. Record Android physical-device smoke evidence, including an OS document-provider export.
-18. Record iPhone/iPad physical-device smoke evidence, including safe-area layout and an OS document-picker export.
-19. If publishing to Google Play or the App Store, separately verify store signing and store-account configuration.
+1. Confirm npm/Cargo generated lock metadata is 2.0.13 and matches current manifests.
+2. Observe `npm run version:check` green on the exact candidate.
+3. Observe normal web/Rust/Android/iOS CI green on that commit.
+4. Observe the real-browser production E2E journey green.
+5. Observe a bounded Rust parser fuzz campaign or explicitly record why it is excluded.
+6. Record benchmark evidence with machine/runtime metadata.
+7. Run/review secret, CodeQL, dependency, repository-policy, documentation-link, and exhaustive file-inventory checks.
+8. Complete accessibility and English/Hindi review.
+9. Build/smoke Windows, macOS, Linux, Android, iPhone, and iPad candidate paths as applicable.
+10. Test native CSV/JSON/backup/preset-file save/cancel/failure paths.
+11. Verify expression-level History analytics on representative large and filtered histories.
+12. Verify exact probability threshold values and the accessible A/B comparison meter.
+13. Verify repeated shared-preset import is idempotent and does not duplicate normalized content.
+14. Verify locale/settings/history persistence and backup restore.
+15. Capture real candidate screenshots.
+16. Record actual signing/notarization/store readiness without overstating unsigned validation artifacts.
+17. Update `CHANGELOG.md`, `ROADMAP.md`, `docs/release-blockers-current.md`, and `what_changed.md`.
+18. Fill a candidate evidence record from [`release-candidate-evidence-template.md`](release-candidate-evidence-template.md).
 
 ## Clean-checkout verification
 
@@ -123,232 +111,175 @@ npm run lint
 npm run test
 npm run build
 npm run test:e2e
+npm run bench
 
 cd src-tauri
 cargo fmt --all -- --check
 cargo test --locked
 cargo clippy --all-targets --all-features --locked -- -D warnings
-cd ..
 ```
 
-The pre-install Node checks intentionally use only built-in Node APIs. `npm run test:e2e` requires the production `dist/` created by `npm run build` and a Chromium-compatible browser. Set `CHROME_BIN` if auto-discovery cannot find Chrome/Chromium. See [`e2e.md`](e2e.md).
+Benchmark output is evidence rather than a hard pass/fail gate; preserve environment details with it.
 
-Run performance measurements separately because timing output is evidence rather than a hard pass/fail gate:
+## Platform packaging
 
-```bash
-npm run bench
-```
-
-## Platform packaging commands
-
-Desktop bundle on the current host:
+Desktop on the current host:
 
 ```bash
 npm run tauri:build
 ```
 
-Repeat desktop packaging on Windows, macOS, and Linux because native bundles are platform-specific.
+Repeat on Windows/macOS/Linux.
 
-Android generation/build:
+Android:
 
 ```bash
 npm run tauri:android:init
 npm run tauri:android:build
 ```
 
-The default repository Android build requests APK and AAB output. The Tauri configuration sets Android API 24 as the minimum supported version.
+The default command requests APK + AAB output. Native minimum is Android API 24.
 
-iOS generation/build on macOS:
+iOS/iPadOS on macOS:
 
 ```bash
 npm run tauri:ios:init
 npm run tauri:ios:build
 ```
 
-CI has two non-store-signing validation modes:
+Unsigned CI validation:
 
 ```bash
 npm run tauri:ios:build:ci
 npm run tauri:ios:archive:ci
 ```
 
-The first compiles the Apple Silicon simulator target. The second uses the locked Tauri CLI's unsigned archive mode for a device-target archive. Neither should be described as an App Store-ready signed IPA.
+Simulator/unsigned archive output is build evidence, not an App Store-ready IPA.
 
-## Browser E2E release evidence
+## Browser/PWA evidence
 
-The production web build is not release-ready merely because Vitest/jsdom passes. The real-browser smoke must be observed successfully on the release commit.
+`npm run test:e2e` operates on the production build and currently exercises:
 
-It verifies onboarding, rolling, history, real CSV download, reload persistence, command-palette keyboard behavior, probability calculation, real backup download, local-data clearing, real file-input restore, and restored history.
+- onboarding;
+- rolling a custom expression;
+- expression-level History analytics;
+- real CSV download;
+- reload persistence;
+- keyboard command palette;
+- exact probability expected value/median;
+- exact A/B comparison and accessible comparison meter;
+- backup download;
+- clear-data flow;
+- real file-input backup restore;
+- service-worker control/cache state;
+- generated Vite asset precaching;
+- preview-server shutdown;
+- cache-bypassing offline reopen with persisted history.
 
-Do not weaken browser/security policy merely to manufacture local release evidence.
+Final browser install/Add to Home Screen behavior still needs representative manual evidence because one Chromium journey cannot prove every browser/platform install UI.
 
-## Native export release evidence
+## Native export evidence
 
-The web companion's browser-download test does not validate Tauri's native save path. Each native candidate must independently prove its native flow.
+The browser download path does not prove the native save path. On each applicable native candidate, test History CSV, History JSON, backup JSON, and preset JSON:
 
-For History CSV, History JSON, and backup export:
+1. trigger output;
+2. verify OS save/document dialog opens;
+3. cancel and confirm no false error/output;
+4. save and inspect content;
+5. test a failure path and confirm generic localized feedback without a private path/URI/raw OS detail;
+6. confirm the renderer still lacks broad filesystem/shell capability.
 
-1. Trigger the export from the packaged/native candidate.
-2. Confirm the operating-system save/document dialog opens.
-3. Cancel once and confirm no file is created and no error is shown.
-4. Save once using the expected extension and verify the resulting content.
-5. Verify a deliberately unavailable destination/provider fails with generic localized UI feedback rather than a private path/raw operating-system error.
-6. Confirm the webview has not gained broad filesystem or shell capability.
-7. Confirm the selected/suggested file format remains consistent with the requested `csv`/`json` format.
+### Android
 
-### Android-specific export evidence
+Verify system document-provider `content://` selections, cancellation, successful writes, and safe failure handling on physical hardware. Do not reintroduce desktop-path assumptions.
 
-Android document providers can return `content://` selections rather than ordinary filesystem paths. The native command uses `tauri-plugin-fs` to open the selected `FilePath`; do not reintroduce `std::fs` assumptions for these URIs.
+### iOS/iPadOS
 
-Test at least:
+Verify Files picker saves/cancellation, security-scoped access release, safe-area/orientation behavior, and persistence after returning from the picker.
 
-- local device Documents/Downloads provider;
-- cancellation;
-- CSV and JSON writes;
-- reopening the saved file outside DiceLab where supported;
-- a provider failure path with user-safe feedback.
+See [`native-exports.md`](native-exports.md).
 
-External/cloud document-provider behavior can differ by vendor and OS build, so physical-device evidence remains required even after compiler CI passes.
+## Feature-specific 2.0.13 smoke
 
-### iOS-specific export evidence
+### History analytics
 
-The iOS file picker can grant security-scoped access. DiceLab releases that access after writing. Test at least:
+- roll at least two expressions multiple times;
+- verify usage count/share reflects the active filtered collection;
+- verify average/range values are plausible for each expression;
+- filter History and confirm the analytics panel follows the filter;
+- confirm the progressive roll-entry count still counts only roll articles;
+- test narrow/mobile layout and a history with more than 12 distinct expressions.
 
-- Files picker save;
-- cancellation;
-- CSV and JSON writes;
-- an iPhone-sized layout with safe-area insets;
-- an iPad-sized layout/orientation;
-- persistence/restart after returning from the picker.
+### Probability comparison
 
-See [`native-exports.md`](native-exports.md) for the implementation trust boundary.
+- calculate representative ordinary and keep/drop expressions;
+- verify P25/P50/P75 and standard deviation;
+- change threshold and verify exact/at-most/at-least values update;
+- compare A and B expressions;
+- verify the three comparison probabilities sum to approximately 100%;
+- verify the visual meter has three segments and its accessible label contains all three outcomes;
+- enter an invalid B expression and confirm the last valid comparison remains visible.
 
-## Localization release evidence
+### Shared presets
 
-For both `en` and `hi` on representative desktop, phone, tablet, and browser candidates:
+- export custom presets and confirm built-ins/local IDs/timestamps are absent;
+- import the file and verify expressions are normalized;
+- import the same file again and verify zero duplicate presets are added;
+- verify differently named/described configurations remain distinct;
+- verify oversized/invalid files fail safely;
+- verify browser and native output paths separately.
 
-- switch locale from Settings and confirm navigation/surface copy changes immediately;
-- confirm document language metadata follows the selection;
-- confirm built-in presets localize while user-created copy remains unchanged;
-- confirm roll/history/probability numbers and dates/times use the selected locale formatting;
-- restart and confirm the preference persists;
-- export/import a backup and confirm the supported locale is restored;
-- check narrow layouts and 200% text scaling for clipping/overlap.
+## Localization/accessibility evidence
 
-## Signing and store distribution
+For both `en` and `hi` on representative desktop/mobile/browser layouts:
 
-Signing credentials are deployment secrets. Never store private keys, certificates, passwords, provisioning profiles, Android keystores, or store API credentials in the repository.
+- switch locale and confirm shell/surface copy updates immediately;
+- confirm document `lang` follows selection;
+- confirm built-ins localize while user preset content remains unchanged;
+- confirm locale-aware numbers/dates/times;
+- restart and confirm preference persists;
+- restore a backup and confirm supported locale restoration;
+- test 200% text scaling, focus order/visibility, reduced motion, screen-reader landmarks/labels;
+- include the new History analytics and A/B comparison meter in review.
 
-### Desktop
+## Signing/store distribution
 
-Windows and macOS distribution should use the platform signing/notarization process when credentials are available. Unsigned artifacts must be labeled accurately.
+Never store signing credentials, private keys, certificates, provisioning profiles, Android keystores, passwords, or store API credentials in the repository.
 
-### Android / Google Play
-
-Google Play distribution requires an Android signing keystore and Play Console application registration. The first Play upload must be handled according to Google/Tauri distribution requirements. The repository release workflow intentionally emits **unsigned release-validation artifacts** unless a future reviewed signing path is explicitly added.
-
-### iOS / App Store
-
-End-user iOS/App Store distribution requires Apple Developer enrollment, the registered `in.sanskar.dicelab` identifier, a suitable distribution certificate/provisioning profile or App Store Connect automatic-signing credentials, and a signed export. The current repository release workflow emits an **unsigned `.xcarchive` validation artifact**, not a store-ready IPA.
-
-If signing is later configured through CI, use repository/environment secrets and least-privilege permissions. A release without configured signing must be described accurately; do not claim artifacts are signed when they are not.
+- Windows/macOS artifacts must state actual signing/notarization status.
+- Google Play requires private Android signing and Play Console setup.
+- App Store distribution requires Apple Developer/App Store Connect signing/provisioning.
+- Current mobile workflow artifacts are release-validation outputs unless a separate reviewed signing flow has actually been configured.
 
 ## Tagging
 
-Create the annotated version tag only from the verified 2.0.12 release commit:
+Create the annotated tag only from the fully verified 2.0.13 commit:
 
 ```bash
-git tag -a v2.0.12 -m "DiceLab v2.0.12"
-git push origin v2.0.12
+git tag -a v2.0.13 -m "DiceLab v2.0.13"
+git push origin v2.0.13
 ```
 
-The tag-driven release workflow then:
+The tag workflow verifies policy/version/tests/E2E, builds web + desktop + Android + unsigned iOS validation artifacts, packages outputs, creates provenance/checksums, and creates/updates a **draft** GitHub release.
 
-1. runs secret-audit self-tests and the repository secret audit;
-2. runs documentation link and exhaustive tracked-file inventory self-tests/audits;
-3. runs repository policy self-tests and release-relevant policy boundaries, including lockfile consistency;
-4. runs browser E2E infrastructure, version-audit, and release-verifier self-tests;
-5. verifies the tag agrees with manifest/config/generated-lock version metadata;
-6. installs locked npm dependencies;
-7. runs format, lint, unit/integration, production-build, and real-browser E2E checks;
-8. builds Windows, macOS, and Linux desktop bundles after locked Rust checks;
-9. initializes/builds universal Android APK/AAB validation artifacts on Ubuntu;
-10. initializes/builds an unsigned iOS ARM64 device archive on macOS;
-11. uploads each successful platform artifact to the workflow run;
-12. downloads only artifacts produced by successful prerequisite jobs;
-13. creates a ZIP per artifact set;
-14. generates `RELEASE-METADATA.json` and `SHA256SUMS.txt` for packages/provenance;
-15. creates or updates a **draft** GitHub release and uploads the packages/checksums.
+It intentionally does not auto-publish.
 
-The workflow deliberately leaves the release as a draft. A human maintainer must still install/smoke-test produced bundles, complete physical Android/iOS evidence, verify signing status, inspect localization/native save dialogs, and review generated notes before publishing.
+## Draft review
 
-## Draft release review
+Before publication:
 
-Before publishing the draft:
-
-- download each uploaded ZIP and compare its SHA-256 digest with `SHA256SUMS.txt`;
-- extract and inspect expected platform files;
-- complete the artifact smoke matrix below;
-- verify the exact release commit had green CI/E2E/CodeQL/security/mobile-build evidence;
-- verify both generated lockfiles carry the 2.0.12 application version and the Cargo lock includes all direct Rust dependencies declared by the candidate manifest;
-- replace or edit generated notes so they accurately match `CHANGELOG.md`;
-- clearly state whether artifacts are unsigned, signed, notarized, simulator-only, archive-only, or store-ready;
-- attach release screenshots only if they come from the candidate build;
+- verify every ZIP against `SHA256SUMS.txt`;
+- inspect expected platform contents;
+- verify `RELEASE-METADATA.json` tag/source/workflow identity;
+- confirm final candidate CI/E2E/security evidence;
+- confirm generated npm/Cargo application versions are 2.0.13;
+- ensure generated notes agree with `CHANGELOG.md`;
+- label unsigned/signed/notarized/archive/store-ready status accurately;
+- attach only real candidate screenshots;
 - keep the release draft if any blocker remains.
-
-## Release notes
-
-Release notes should contain:
-
-- user-visible additions and fixes;
-- security/privacy changes;
-- accessibility changes;
-- localization changes;
-- deterministic RNG compatibility changes;
-- validation/backup compatibility changes;
-- native export behavior or limitations;
-- supported platform/minimum-version information;
-- known limitations;
-- upgrade or backup-schema notes;
-- platform-specific caveats;
-- checksums/signing information when actually produced.
-
-Do not describe planned functionality as shipped functionality.
-
-## Artifact verification
-
-For each produced native bundle/archive:
-
-1. Confirm the expected file exists and is non-empty.
-2. Verify the ZIP digest against `SHA256SUMS.txt`.
-3. Install or launch it on the intended supported platform where the artifact type permits.
-4. Complete a secure roll and a seeded roll.
-5. Compare a documented seeded reference case with the web companion.
-6. Verify settings, including locale, persist after restart.
-7. Export History CSV/JSON through the native save/document dialog.
-8. Export a backup and restore it.
-9. Verify English/Hindi selection, document language, localized built-ins, and presentation formatting.
-10. Verify About/version/contact information reports `2.0.12`.
-11. Confirm the build contains no development server references.
-12. Verify reduced-motion and keyboard/touch navigation behavior appropriate to the platform.
-13. Confirm local diagnostic logging does not expose user-created content/seeds/raw errors.
-14. Confirm native export errors do not expose private selected paths/URIs.
-15. On phones/tablets, verify safe-area and orientation behavior.
-16. Capture screenshots only after the artifact passes this matrix.
 
 ## Rollback
 
-If a release has a serious defect:
+If a candidate fails after tagging but before publication, do not hide the failure. Keep/delete the draft as appropriate, fix on a new commit, bump/version according to release policy if the tag has escaped into public use, regenerate evidence, and only then approve a replacement candidate.
 
-- mark the affected release clearly;
-- publish a fixed patch release from a reviewed commit;
-- document the affected versions and workaround where appropriate;
-- never rewrite a published release tag to hide history.
-
-## Release ownership
-
-Project/business contact: `sanskarin@outlook.in`
-
-Support: `supportramsandesh@gmail.com`
-
-**Made by the Sanskar**
+Canonical active blockers: [`release-blockers-current.md`](release-blockers-current.md).
