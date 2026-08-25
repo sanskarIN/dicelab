@@ -4,13 +4,13 @@ DiceLab releases must be reproducible, reviewed, and based on one clean candidat
 
 ## Current candidate
 
-Current preparation target: **DiceLab 2.0.13**
+Current preparation target: **DiceLab 2.0.14**
 
 ```text
-v2.0.13
+v2.0.14
 ```
 
-The earlier 2.0.12 candidate was not published and is superseded. Do not create/publish `v2.0.13` until generated locks and all required candidate evidence are current for the same source commit.
+The intermediate 2.0.13 candidate was not published and is superseded. Do not create/publish `v2.0.14` until generated locks and all required candidate evidence are current for the same source commit.
 
 ## Supported release targets
 
@@ -62,11 +62,11 @@ The repository lockfile workflow performs this regeneration automatically after 
 
 Do not hand-edit Cargo's transitive graph or lock metadata merely to satisfy a version gate.
 
-## 2.0.13 release prerequisites
+## 2.0.14 release prerequisites
 
 Before tagging:
 
-1. Confirm npm/Cargo generated lock metadata is 2.0.13 and matches current manifests.
+1. Confirm npm/Cargo generated lock metadata is 2.0.14 and matches current manifests.
 2. Observe `npm run version:check` green on the exact candidate.
 3. Observe normal web/Rust/Android/iOS CI green on that commit.
 4. Observe the real-browser production E2E journey green.
@@ -77,7 +77,7 @@ Before tagging:
 9. Build/smoke Windows, macOS, Linux, Android, iPhone, and iPad candidate paths as applicable.
 10. Test native CSV/JSON/backup/preset-file save/cancel/failure paths.
 11. Verify expression-level History analytics on representative large and filtered histories.
-12. Verify exact probability threshold values and the accessible A/B comparison meter.
+12. Verify exact probability threshold values, the accessible aggregate A/B comparison meter, and the exact per-total A/B overlay with signed deltas.
 13. Verify repeated shared-preset import is idempotent and does not duplicate normalized content.
 14. Verify locale/settings/history persistence and backup restore.
 15. Capture real candidate screenshots.
@@ -167,7 +167,7 @@ Simulator/unsigned archive output is build evidence, not an App Store-ready IPA.
 - reload persistence;
 - keyboard command palette;
 - exact probability expected value/median;
-- exact A/B comparison and accessible comparison meter;
+- exact aggregate A/B comparison and accessible comparison meter;
 - backup download;
 - clear-data flow;
 - real file-input backup restore;
@@ -176,7 +176,7 @@ Simulator/unsigned archive output is build evidence, not an App Store-ready IPA.
 - preview-server shutdown;
 - cache-bypassing offline reopen with persisted history.
 
-Final browser install/Add to Home Screen behavior still needs representative manual evidence because one Chromium journey cannot prove every browser/platform install UI.
+The new 2.0.14 per-total overlay has domain/component accessibility and proportion regressions; candidate manual/browser review should additionally inspect that surface. Final browser install/Add to Home Screen behavior still needs representative manual evidence because one Chromium journey cannot prove every browser/platform install UI.
 
 ## Native export evidence
 
@@ -199,7 +199,7 @@ Verify Files picker saves/cancellation, security-scoped access release, safe-are
 
 See [`native-exports.md`](native-exports.md).
 
-## Feature-specific 2.0.13 smoke
+## Feature-specific 2.0.14 smoke
 
 ### History analytics
 
@@ -216,8 +216,12 @@ See [`native-exports.md`](native-exports.md).
 - verify P25/P50/P75 and standard deviation;
 - change threshold and verify exact/at-most/at-least values update;
 - compare A and B expressions;
-- verify the three comparison probabilities sum to approximately 100%;
-- verify the visual meter has three segments and its accessible label contains all three outcomes;
+- verify the three aggregate comparison probabilities sum to approximately 100%;
+- verify the aggregate visual meter has three segments and its accessible label contains all three outcomes;
+- inspect the exact per-total A/B overlay and confirm totals present on only one side are retained with a zero bar on the other side;
+- verify A/B bars are normalized consistently and signed `pp` deltas match the direction of the difference;
+- verify the overlay's accessible description identifies both expressions;
+- verify English/Hindi overlay copy and narrow-screen layout;
 - enter an invalid B expression and confirm the last valid comparison remains visible.
 
 ### Shared presets
@@ -240,7 +244,7 @@ For both `en` and `hi` on representative desktop/mobile/browser layouts:
 - restart and confirm preference persists;
 - restore a backup and confirm supported locale restoration;
 - test 200% text scaling, focus order/visibility, reduced motion, screen-reader landmarks/labels;
-- include the new History analytics and A/B comparison meter in review.
+- include History analytics, the aggregate A/B comparison meter, and the per-total probability overlay in review.
 
 ## Signing/store distribution
 
@@ -253,11 +257,11 @@ Never store signing credentials, private keys, certificates, provisioning profil
 
 ## Tagging
 
-Create the annotated tag only from the fully verified 2.0.13 commit:
+Create the annotated tag only from the fully verified 2.0.14 commit:
 
 ```bash
-git tag -a v2.0.13 -m "DiceLab v2.0.13"
-git push origin v2.0.13
+git tag -a v2.0.14 -m "DiceLab v2.0.14"
+git push origin v2.0.14
 ```
 
 The tag workflow verifies policy/version/tests/E2E, builds web + desktop + Android + unsigned iOS validation artifacts, packages outputs, creates provenance/checksums, and creates/updates a **draft** GitHub release.
@@ -272,7 +276,7 @@ Before publication:
 - inspect expected platform contents;
 - verify `RELEASE-METADATA.json` tag/source/workflow identity;
 - confirm final candidate CI/E2E/security evidence;
-- confirm generated npm/Cargo application versions are 2.0.13;
+- confirm generated npm/Cargo application versions are 2.0.14;
 - ensure generated notes agree with `CHANGELOG.md`;
 - label unsigned/signed/notarized/archive/store-ready status accurately;
 - attach only real candidate screenshots;
