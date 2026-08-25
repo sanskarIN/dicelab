@@ -6,6 +6,7 @@ import {
   getThresholdProbabilities,
   summarizeProbabilityDistribution,
 } from '../domain/probability-insights';
+import { alignProbabilityDistributions } from '../domain/probability-overlay';
 import { calculateProbability } from '../domain/probability';
 import type { ProbabilityDistribution } from '../domain/types';
 import { messages } from '../i18n';
@@ -14,6 +15,7 @@ import { formatDomainError } from '../i18n/errors';
 
 const examples = ['2d6', '1d20+5', '4d6kh3', '2d20kh1'];
 const MAX_VISIBLE_POINTS = 180;
+const MAX_VISIBLE_COMPARISON_POINTS = 120;
 
 export function ProbabilityPanel() {
   const [expression, setExpression] = useState('2d6');
@@ -43,6 +45,12 @@ export function ProbabilityPanel() {
     () => compareProbabilityDistributions(distribution, comparisonDistribution),
     [distribution, comparisonDistribution],
   );
+  const comparisonOverlay = useMemo(
+    () => alignProbabilityDistributions(distribution, comparisonDistribution),
+    [distribution, comparisonDistribution],
+  );
+  const visibleComparisonPoints = comparisonOverlay.points.slice(0, MAX_VISIBLE_COMPARISON_POINTS);
+  const comparisonMaxProbability = Math.max(comparisonOverlay.maximumProbability, Number.EPSILON);
   const maxProbability = useMemo(
     () => Math.max(...visiblePoints.map((point) => point.probability), Number.EPSILON),
     [visiblePoints],
@@ -198,6 +206,53 @@ export function ProbabilityPanel() {
           <ProbabilityStat label="P(A < B)" value={formatProbability(comparison.rightHigher)} />
           <ProbabilityStat label="ΔE(A − B)" value={formatSignedDecimal(comparison.expectedDelta)} />
         </div>
+
+        <section className="comparison-overlay" aria-labelledby="probability-overlay-heading">
+          <div className="comparison-overlay-heading">
+            <div>
+              <p className="eyebrow">{messages.probability.comparisonOverlay}</p>
+              <h3 id="probability-overlay-heading">A {distribution.expression} ↔ B {comparisonDistribution.expression}</h3>
+            </div>
+            <div className="comparison-overlay-legend" aria-hidden="true">
+              <span><i className="comparison-dot overlay-left" />A</span>
+              <span><i className="comparison-dot overlay-right" />B</span>
+              <span>ΔP</span>
+            </div>
+          </div>
+          <div
+            className="comparison-overlay-rows"
+            role="img"
+            aria-label={messages.probability.comparisonOverlayLabel(
+              distribution.expression,
+              comparisonDistribution.expression,
+            )}
+          >
+            {visibleComparisonPoints.map((point) => (
+              <div className="comparison-overlay-row" data-total={point.total} key={point.total}>
+                <strong>{formatInteger(point.total)}</strong>
+                <div className="comparison-overlay-track" aria-hidden="true">
+                  <span
+                    className="comparison-overlay-left"
+                    style={{ width: `${(point.leftProbability / comparisonMaxProbability) * 100}%` }}
+                  />
+                  <span
+                    className="comparison-overlay-right"
+                    style={{ width: `${(point.rightProbability / comparisonMaxProbability) * 100}%` }}
+                  />
+                </div>
+                <span className="comparison-overlay-delta">{formatProbabilityDelta(point.probabilityDelta)}</span>
+              </div>
+            ))}
+          </div>
+          {comparisonOverlay.points.length > MAX_VISIBLE_COMPARISON_POINTS ? (
+            <p className="panel-note">
+              {messages.probability.comparisonTruncated(
+                MAX_VISIBLE_COMPARISON_POINTS,
+                comparisonOverlay.points.length,
+              )}
+            </p>
+          ) : null}
+        </section>
       </section>
 
       <section className="panel probability-chart" aria-labelledby="probability-chart-heading">
@@ -247,6 +302,12 @@ function formatOutcomes(value: number): string {
 function formatProbability(value: number): string {
   const percent = value * 100;
   return `${formatDecimal(percent, percent > 0 && percent < 0.01 ? 4 : 2)}%`;
+}
+
+function formatProbabilityDelta(value: number): string {
+  const percentagePoints = value * 100;
+  const formatted = formatDecimal(percentagePoints, Math.abs(percentagePoints) < 0.01 && percentagePoints !== 0 ? 4 : 2);
+  return `${percentagePoints > 0 ? '+' : ''}${formatted} pp`;
 }
 
 function formatSignedDecimal(value: number): string {
