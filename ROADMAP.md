@@ -119,7 +119,7 @@ The earlier 2.0.13 candidate was not published; its implementation is carried fo
 ## Phase 6 — Release engineering
 
 - [x] Synchronize package/frontend/Cargo/Tauri source version metadata to 2.0.14.
-- [ ] Regenerate and commit npm/Cargo lockfile application metadata for 2.0.14 through the lockfile workflow.
+- [x] Regenerate and commit npm/Cargo lockfile application metadata for 2.0.14 through the lockfile workflow.
 - [x] Enforce locked dependencies in main CI and tagged release verification.
 - [x] Configure tagged Windows/macOS/Linux/web artifact builds.
 - [x] Configure tagged Android and unsigned iOS release-validation artifact builds.
