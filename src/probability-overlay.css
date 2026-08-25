@@ -1,0 +1,102 @@
+.comparison-overlay {
+  display: grid;
+  gap: 14px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.comparison-overlay-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.comparison-overlay-heading h3 {
+  margin: 4px 0 0;
+  font-size: 0.95rem;
+}
+
+.comparison-overlay-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.comparison-overlay-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.comparison-dot.overlay-left {
+  background: var(--primary);
+}
+
+.comparison-dot.overlay-right {
+  background: var(--success);
+}
+
+.comparison-overlay-rows {
+  display: grid;
+  gap: 7px;
+  max-height: 480px;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.comparison-overlay-row {
+  display: grid;
+  grid-template-columns: 58px minmax(100px, 1fr) 86px;
+  align-items: center;
+  gap: 12px;
+  min-height: 34px;
+  font-size: 0.72rem;
+}
+
+.comparison-overlay-row > strong {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.comparison-overlay-track {
+  display: grid;
+  gap: 4px;
+}
+
+.comparison-overlay-track > span {
+  display: block;
+  min-width: 0;
+  height: 6px;
+  border-radius: 999px;
+}
+
+.comparison-overlay-left {
+  background: var(--primary);
+}
+
+.comparison-overlay-right {
+  background: var(--success);
+}
+
+.comparison-overlay-delta {
+  color: var(--muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .comparison-overlay-heading {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 520px) {
+  .comparison-overlay-row {
+    grid-template-columns: 42px minmax(70px, 1fr) 72px;
+    gap: 8px;
+  }
+}
