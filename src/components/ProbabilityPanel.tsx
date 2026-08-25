@@ -9,9 +9,10 @@ import {
 import { alignProbabilityDistributions } from '../domain/probability-overlay';
 import { calculateProbability } from '../domain/probability';
 import type { ProbabilityDistribution } from '../domain/types';
-import { messages } from '../i18n';
+import { getActiveLocale, messages } from '../i18n';
 import { formatDecimal, formatFixedDecimal, formatInteger } from '../i18n/format';
 import { formatDomainError } from '../i18n/errors';
+import { getProbabilityOverlayMessages } from '../i18n/probability-overlay';
 
 const examples = ['2d6', '1d20+5', '4d6kh3', '2d20kh1'];
 const MAX_VISIBLE_POINTS = 180;
@@ -28,6 +29,7 @@ export function ProbabilityPanel() {
   const [error, setError] = useState<string | null>(null);
   const [comparisonError, setComparisonError] = useState<string | null>(null);
   const visiblePoints = distribution.points.slice(0, MAX_VISIBLE_POINTS);
+  const overlayMessages = getProbabilityOverlayMessages(getActiveLocale());
   const insights = useMemo(() => summarizeProbabilityDistribution(distribution), [distribution]);
   const quartiles = useMemo(
     () => ({
@@ -210,7 +212,7 @@ export function ProbabilityPanel() {
         <section className="comparison-overlay" aria-labelledby="probability-overlay-heading">
           <div className="comparison-overlay-heading">
             <div>
-              <p className="eyebrow">{messages.probability.comparisonOverlay}</p>
+              <p className="eyebrow">{overlayMessages.heading}</p>
               <h3 id="probability-overlay-heading">A {distribution.expression} ↔ B {comparisonDistribution.expression}</h3>
             </div>
             <div className="comparison-overlay-legend" aria-hidden="true">
@@ -222,10 +224,7 @@ export function ProbabilityPanel() {
           <div
             className="comparison-overlay-rows"
             role="img"
-            aria-label={messages.probability.comparisonOverlayLabel(
-              distribution.expression,
-              comparisonDistribution.expression,
-            )}
+            aria-label={overlayMessages.label(distribution.expression, comparisonDistribution.expression)}
           >
             {visibleComparisonPoints.map((point) => (
               <div className="comparison-overlay-row" data-total={point.total} key={point.total}>
@@ -246,10 +245,7 @@ export function ProbabilityPanel() {
           </div>
           {comparisonOverlay.points.length > MAX_VISIBLE_COMPARISON_POINTS ? (
             <p className="panel-note">
-              {messages.probability.comparisonTruncated(
-                MAX_VISIBLE_COMPARISON_POINTS,
-                comparisonOverlay.points.length,
-              )}
+              {overlayMessages.truncated(MAX_VISIBLE_COMPARISON_POINTS, comparisonOverlay.points.length)}
             </p>
           ) : null}
         </section>
@@ -306,7 +302,10 @@ function formatProbability(value: number): string {
 
 function formatProbabilityDelta(value: number): string {
   const percentagePoints = value * 100;
-  const formatted = formatDecimal(percentagePoints, Math.abs(percentagePoints) < 0.01 && percentagePoints !== 0 ? 4 : 2);
+  const formatted = formatDecimal(
+    percentagePoints,
+    Math.abs(percentagePoints) < 0.01 && percentagePoints !== 0 ? 4 : 2,
+  );
   return `${percentagePoints > 0 ? '+' : ''}${formatted} pp`;
 }
 
