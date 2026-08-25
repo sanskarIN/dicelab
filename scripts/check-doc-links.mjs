@@ -118,7 +118,7 @@ function githubHeadingSlug(value) {
     .trim()
     .toLowerCase()
     .replace(/<[^>]+>/gu, '')
-    .replace(/[\p{P}\p{S}&&[^-_]]/gu, '')
+    .replace(/[^\p{L}\p{N}\s_-]/gu, '')
     .replace(/\s+/gu, '-');
 }
 
