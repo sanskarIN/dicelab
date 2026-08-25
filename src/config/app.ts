@@ -1,5 +1,5 @@
 export const APP_NAME = 'DiceLab';
-export const APP_VERSION = '2.0.13';
+export const APP_VERSION = '2.0.14';
 export const APP_CREDIT = 'Made by the Sanskar';
 
 export const PROJECT_URL = 'https://github.com/sanskarIN/dicelab';
