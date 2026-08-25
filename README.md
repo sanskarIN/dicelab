@@ -18,9 +18,9 @@ DiceLab combines expressive dice notation, secure and reproducible randomness mo
 
 ## Current release status
 
-The repository is preparing **DiceLab 2.0.13** with intended tag `v2.0.13`.
+The repository is preparing **DiceLab 2.0.14** with intended tag `v2.0.14`.
 
-The earlier 2.0.12 candidate was not published and is superseded by 2.0.13. Package/frontend/Cargo/Tauri source metadata has been bumped to 2.0.13. Generated npm/Cargo lock application metadata is intentionally **not hand-edited** and is currently awaiting the repository lockfile workflow before the version synchronization gate can pass.
+The intermediate 2.0.13 candidate was not published and is superseded by 2.0.14. Package/frontend/Cargo/Tauri source metadata has been bumped to 2.0.14. Generated npm/Cargo lock application metadata is intentionally **not hand-edited** and is currently awaiting the repository lockfile workflow before the version synchronization gate can pass.
 
 The candidate is not publishable until the exact final commit has observed required web/Rust/Android/iOS CI, real-browser/PWA, fuzz, benchmark, physical-device, accessibility/localization, security, screenshot, signing-status, checksum, and provenance evidence.
 
@@ -32,7 +32,7 @@ See [`ROADMAP.md`](ROADMAP.md) and [`docs/release-blockers-current.md`](docs/rel
 | --- | --- |
 | Dice Studio | Quick dice, custom expressions, secure/seeded rolling, reusable presets, versioned shareable preset files |
 | History | Search/filter, overall statistics, per-expression usage analytics, observed-total histogram, progressive rows, CSV/JSON export |
-| Probability | Exact distributions, expected values, P25/P50/P75, standard deviation, threshold probabilities, A/B comparison, accessible stacked comparison meter |
+| Probability | Exact distributions, expected values, P25/P50/P75, standard deviation, threshold probabilities, aggregate A/B comparison, accessible stacked meter, exact per-total A/B overlay with signed deltas |
 | Settings | Theme, English/Hindi language, reduced motion, secure/seeded mode, history retention, backup, release/version, About |
 | About | Privacy, license, project links, support contacts, funding, version, and credits |
 
@@ -47,7 +47,7 @@ See [`ROADMAP.md`](ROADMAP.md) and [`docs/release-blockers-current.md`](docs/rel
 - Progressive large-history rendering while analytics/statistics/exports retain the complete active filtered data set.
 - Exact ordinary-sum and bounded keep/drop probability distributions.
 - Exact quartiles, median/modes, variance/standard deviation, and configurable `P(X=n)`, `P(X≤n)`, `P(X≥n)` analysis.
-- Exact independent A/B expression comparison: `P(A>B)`, tie, `P(A<B)`, expected-value delta, and accessible stacked visualization.
+- Exact independent A/B expression comparison: `P(A>B)`, tie, `P(A<B)`, expected-value delta, accessible stacked visualization, and a per-total dual-bar overlay with signed probability-point deltas.
 - Versioned shareable preset JSON format with 1 MB/500-entry bounds, parser normalization, built-in/local-ID exclusion, pre-read oversized-file rejection, and duplicate-safe idempotent imports.
 - CSV/JSON history export and validated backup/restore.
 - Cross-platform native save/document dialogs through a narrow Rust command; normal browser downloads remain available for the web target.
@@ -59,7 +59,7 @@ See [`ROADMAP.md`](ROADMAP.md) and [`docs/release-blockers-current.md`](docs/rel
 - Light/dark/system themes, reduced-motion mode, keyboard command palette, focus management, safe areas, dynamic viewport handling, and coarse-pointer touch targets.
 - Local-only structured diagnostics with sensitive-key redaction and no remote telemetry requirement.
 - Installable production PWA with same-origin service-worker caching and generated Vite runtime precaching.
-- Dependency-free real-browser Chromium CDP E2E including expression analytics, exact probability comparison, real downloads, backup restore, PWA cache checks, and server-offline reopen.
+- Dependency-free real-browser Chromium CDP E2E including expression analytics, exact aggregate probability comparison, real downloads, backup restore, PWA cache checks, and server-offline reopen.
 - Rust parser fuzz target and executable benchmarks.
 - CI/repository policy gates for CSP/offline networking, Tauri capabilities, runtime/native-command boundaries, localization formatting, PWA integrity, lock consistency, secret scanning, version synchronization, documentation links, and exhaustive tracked-file inventory.
 - Cross-platform draft release packaging with provenance and SHA-256 checksums.
@@ -204,7 +204,7 @@ cargo test --locked
 cargo clippy --all-targets --all-features --locked -- -D warnings
 ```
 
-During the current 2.0.13 source bump, `npm run version:check` is expected to remain blocked until generated lock application metadata is regenerated and committed. Do not manually edit generated locks to make that check appear green.
+During the current 2.0.14 source bump, `npm run version:check` is expected to remain blocked until generated lock application metadata is regenerated and committed. Do not manually edit generated locks to make that check appear green.
 
 ## Dice syntax
 
@@ -240,6 +240,7 @@ src/
 ├── domain/          # parser, engine, RNG, history analytics, probability, statistics, validation
 ├── i18n/            # typed catalogs, locale state, formatting, error mapping
 ├── services/        # runtime/PWA/storage/export/preset sharing/logging adapters
+├── probability-overlay.css # exact A/B distribution comparison presentation
 ├── mobile.css       # mobile/safe-area/touch ergonomics
 └── test/            # shared frontend test setup
 
@@ -262,7 +263,7 @@ Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), [`docs/native-exp
 
 ## Release preparation
 
-The intended next tag is `v2.0.13`, but it must only be created from a fully verified candidate commit.
+The intended next tag is `v2.0.14`, but it must only be created from a fully verified candidate commit.
 
 Release requirements and current blockers:
 
