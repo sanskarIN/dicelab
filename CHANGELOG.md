@@ -4,7 +4,39 @@ All notable DiceLab changes are documented here. The project follows semantic-ve
 
 ## [Unreleased]
 
-The next publication target is **2.0.12**. The section below records the prepared 2.0.12 candidate content, but the version is not considered published until `v2.0.12` passes the release evidence gate and the draft release is explicitly approved.
+The next publication target is **2.0.14**. The section below records the prepared 2.0.14 candidate content, but the version is not considered published until `v2.0.14` passes the release evidence gate and the draft release is explicitly approved.
+
+The intermediate 2.0.13 candidate was not published and is superseded by this candidate.
+
+## [2.0.14] - 2026-08-25 (release candidate)
+
+### Added
+
+- Exact per-total A/B probability distribution overlay derived from two guarded exact `ProbabilityDistribution` values.
+- Linear-time distribution alignment across the union of totals, retaining the exact probability for each side plus the signed per-total probability delta.
+- Dual normalized comparison bars and signed percentage-point (`pp`) deltas so users can inspect where two dice expressions differ rather than seeing only aggregate `P(A > B)`, tie, and `P(A < B)` results.
+- English/Hindi typed overlay heading, accessible description, and truncation copy.
+- Responsive bounded rendering for up to 120 comparison totals, preserving UI responsiveness for wide supported exact distributions.
+- Domain regressions for overlapping, identical, and shifted/non-overlapping exact distributions.
+- Component regressions for overlay accessibility, normalized bar widths, signed deltas, and Hindi presentation.
+
+### Changed
+
+- Application source version metadata in npm, frontend configuration, Cargo, and Tauri configuration now targets `2.0.14`.
+- The roadmap now treats 2.0.14 as the active release-preparation target and carries forward all unpublished 2.0.13 work.
+- The exhaustive tracked-file reference documents the new probability overlay domain, tests, localization boundary, and styles.
+- Rust source has been reformatted for the current stable rustfmt used by CI; no native behavior changed in that formatting-only correction.
+
+### Fixed
+
+- Restored the documentation-link auditor's exported test contract (`extractDocumentationTargets`, anchor recognition, and repository scan entry point) after CI exposed a mismatch between the implementation and its self-tests.
+- Documentation-link checking now validates local Markdown/HTML targets and Markdown heading anchors through the same reusable implementation used by its tests and CLI.
+- Replaced a non-portable regular-expression character-class intersection in the heading slugger with portable Unicode-aware syntax.
+- Registered every newly tracked 2.0.14 overlay file in the exhaustive repository inventory instead of weakening the inventory gate.
+
+### Candidate status
+
+The 2.0.14 source now contains the richer exact probability overlay and the carried-forward 2.0.13 history analytics/preset deduplication work. Repository invariant checks progressed through documentation links, exhaustive file inventory, E2E infrastructure, PWA policy, version auditing, and release-verifier self-tests after the audit repair. Full release approval still requires green CI/browser/Rust/mobile evidence on the exact final candidate commit, synchronized generated lock metadata, fuzz/benchmark/device/accessibility/security/signing-status/screenshot review, and verified draft artifacts. See [`docs/release-blockers-current.md`](docs/release-blockers-current.md).
 
 ## [2.0.12] - 2026-08-19 (release candidate)
 
