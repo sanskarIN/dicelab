@@ -4,6 +4,7 @@ import App from './App';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { registerPwaServiceWorker } from './services/pwa';
 import './styles.css';
+import './probability-overlay.css';
 import './mobile.css';
 
 const root = document.getElementById('root');
