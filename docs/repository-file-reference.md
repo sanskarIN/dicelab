@@ -166,7 +166,7 @@ For deeper behavioral context, also read:
 
 | Path | Purpose and relationships |
 | --- | --- |
-| `scripts/check-doc-links.mjs` | Scans Markdown relative links/anchors and fails missing local targets or malformed percent encoding. External URLs are reviewed separately with network access. |
+| `scripts/check-doc-links.mjs` | Exports Markdown/HTML target extraction, GitHub-style heading-anchor recognition, and repository scanning; its CLI fails missing local files, missing Markdown anchors, or malformed percent encoding. External URLs are reviewed separately with network access. |
 | `scripts/check-doc-links.test.mjs` | Synthetic self-tests for documentation link/anchor parsing and failure behavior. |
 | `scripts/check-file-reference.mjs` | Uses `git ls-files -z` and this document's exact first-column paths to report undocumented tracked files or stale documented paths. |
 | `scripts/check-file-reference.test.mjs` | Unit tests for inventory path parsing plus missing/stale/synchronized set comparison. |
@@ -244,8 +244,9 @@ For deeper behavioral context, also read:
 | `src/App.locale-onboarding.integration.test.tsx` | Verifies persisted Hindi preference applies to first-run onboarding before completion. |
 | `src/App.locale-startup.integration.test.tsx` | Verifies persisted Hindi settings are active on the application's first render with localized built-ins/document language. |
 | `src/App.localization.integration.test.tsx` | Verifies live English→Hindi switching localizes built-ins while preserving user-created preset name/description exactly. |
-| `src/main.tsx` | React renderer bootstrap mounting `App` under the root error boundary, loading shared/mobile styles, then requesting guarded production-browser PWA registration. |
+| `src/main.tsx` | React renderer bootstrap mounting `App` under the root error boundary, loading shared/probability-overlay/mobile styles, then requesting guarded production-browser PWA registration. |
 | `src/mobile.css` | Mobile Tauri/web ergonomics layered over shared styling: safe-area insets, dynamic viewport height, coarse-pointer 44px targets, mobile modal/bottom-navigation inset handling, and compact landscape behavior. |
+| `src/probability-overlay.css` | Responsive A/B exact-distribution overlay styling with dual normalized bars, signed-delta column, accessible legend colors, and bounded scrolling. |
 | `src/styles.css` | Global product design system/layout/responsive/component/focus/theme/motion/histogram/history-analytics/probability-comparison styling consumed by React surfaces and root data attributes. |
 | `src/vite-env.d.ts` | Vite client type declarations enabling typed `import.meta.env` access such as the production-mode PWA registration guard. |
 
@@ -264,8 +265,8 @@ For deeper behavioral context, also read:
 | `src/components/HistoryPanel.export.localization.test.tsx` | Hindi success/failure export-status regressions ensuring raw browser error details are not shown. |
 | `src/components/Onboarding.tsx` | First-run modal explaining product concepts and invoking onboarding completion; copy follows active locale. |
 | `src/components/Onboarding.test.tsx` | Dialog semantics/initial-focus accessibility regression for onboarding. |
-| `src/components/ProbabilityPanel.tsx` | Exact probability UI with quartiles, standard deviation, threshold probabilities, pairwise distribution comparison, accessible stacked comparison visualization, bounded chart rendering, localized validation, and locale-aware values. |
-| `src/components/ProbabilityPanel.test.tsx` | Probability presentation regression covering localization, exact insight/threshold values, pairwise comparison behavior, and accessible comparison visualization proportions. |
+| `src/components/ProbabilityPanel.tsx` | Exact probability UI with quartiles, standard deviation, threshold probabilities, pairwise comparison, stacked outcome balance, per-total A/B overlay with signed deltas, bounded charts, localized validation, and locale-aware values. |
+| `src/components/ProbabilityPanel.test.tsx` | Probability presentation regressions covering localization, exact insight/threshold values, pairwise comparison, stacked balance, and per-total overlay proportions/deltas. |
 | `src/components/RollWorkspace.tsx` | Main roll expression/quick dice/result/preset surface with immediate parser validation, secure/seeded status, shareable preset-file controls, kept/dropped dice, and locale formatting. |
 | `src/components/RollWorkspace.test.tsx` | Roll-result localization plus preset transfer success/failure and privacy-safe status regressions. |
 | `src/components/RollWorkspace.validation.localization.test.tsx` | Hindi invalid-expression correction and disabled-roll regression. |
@@ -307,6 +308,8 @@ For deeper behavioral context, also read:
 | `src/domain/probability-insights.test.ts` | Regression coverage for exact 2d6 moments/quantiles, tied modes, threshold boundaries, and invalid quantiles. |
 | `src/domain/probability-comparison.ts` | Pairwise independent distribution comparison computing exact left-higher/tie/right-higher probability and expected-value delta. |
 | `src/domain/probability-comparison.test.ts` | Pairwise comparison regressions for identical, different-sized, non-overlapping, and normalized exact distributions. |
+| `src/domain/probability-overlay.ts` | Linear-time alignment of two exact distributions across their union of totals, exposing A/B probabilities, signed per-total deltas, and normalization maxima for presentation. |
+| `src/domain/probability-overlay.test.ts` | Overlay alignment regressions for overlapping, identical, and shifted/non-overlapping exact distributions. |
 | `src/domain/persistence.ts` | Runtime persisted roll/preset validators checking structure, expression, timestamps, dice indices/ranges, kept counts, totals, seed/mode, text bounds. |
 
 ## Internationalization implementation and tests
@@ -317,6 +320,7 @@ For deeper behavioral context, also read:
 | `src/i18n/hi.ts` | Complete reviewed Hindi catalog matching `MessageCatalog`, including preset transfer and release/version copy; technical identifiers/dice syntax stay stable where appropriate. |
 | `src/i18n/index.ts` | Supported-catalog registry, active locale state, live exported `messages`, catalog lookup, and `setLocale()`. |
 | `src/i18n/index.test.ts` | English default, Hindi lookup/dynamic helper, preset-transfer/release-message, and live active-catalog/locale switching tests. |
+| `src/i18n/probability-overlay.ts` | Typed English/Hindi copy boundary for the per-total probability overlay heading, accessible description, and truncation message. |
 | `src/i18n/format.ts` | Explicit `en-US` / `hi-IN` Intl mapping and shared integer/decimal/date-time/time presentation helpers. |
 | `src/i18n/format.test.ts` | Locale mapping, English versus Indian grouping, and decimal formatting regressions. |
 | `src/i18n/errors.ts` | Stable parser/probability/backup error code/context to active localized message mapping with safe unknown fallback. |
