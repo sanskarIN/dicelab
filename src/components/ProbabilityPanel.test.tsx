@@ -35,6 +35,7 @@ describe('ProbabilityPanel localization', () => {
     calculate('6d10');
     expect(screen.getByText('10,00,000')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'प्रायिकता कैलकुलेटर' })).toBeInTheDocument();
+    expect(screen.getByText('वितरण ओवरले')).toBeInTheDocument();
   });
 });
 
@@ -104,6 +105,25 @@ describe('ProbabilityPanel distribution comparison', () => {
     expect(Number.parseFloat(higher?.style.flexBasis ?? '0')).toBeCloseTo(58.3333, 3);
     expect(Number.parseFloat(tie?.style.flexBasis ?? '0')).toBeCloseTo(16.6667, 3);
     expect(Number.parseFloat(lower?.style.flexBasis ?? '0')).toBeCloseTo(25, 3);
+  });
+
+  it('renders an aligned exact overlay and signed per-total probability deltas', () => {
+    render(<ProbabilityPanel />);
+
+    calculate('1d6');
+    compare('1d4');
+
+    const overlay = screen.getByRole('img', {
+      name: 'Distribution overlay for A 1d6 and B 1d4; each row compares the exact chance at the same total.',
+    });
+    const totalFive = overlay.querySelector<HTMLElement>('[data-total="5"]');
+    const leftBar = totalFive?.querySelector<HTMLElement>('.comparison-overlay-left');
+    const rightBar = totalFive?.querySelector<HTMLElement>('.comparison-overlay-right');
+
+    expect(totalFive).not.toBeNull();
+    expect(totalFive).toHaveTextContent('+16.67 pp');
+    expect(Number.parseFloat(leftBar?.style.width ?? '0')).toBeCloseTo(66.6667, 3);
+    expect(Number.parseFloat(rightBar?.style.width ?? '0')).toBe(0);
   });
 
   it('keeps the last valid comparison when the comparison expression is invalid', () => {
