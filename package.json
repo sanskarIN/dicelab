@@ -39,6 +39,7 @@
     "policy:all": "npm run policy:boundaries && npm run policy:offline-csp && npm run policy:native-commands && npm run policy:lockfiles && npm run policy:pwa && npm run policy:accessibility",
     "version:check:test": "node --test scripts/check-version-sync.test.mjs",
     "version:check": "node scripts/check-version-sync.mjs",
+    "version:release-docs": "node scripts/check-version-sync.mjs --release-docs",
     "release:verify": "node scripts/verify-release-packages.mjs",
     "release:verify:test": "node --test scripts/verify-release-packages.test.mjs",
     "tauri": "tauri",
