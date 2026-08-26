@@ -38,6 +38,10 @@ jobs:
         env:
           DICELAB_EXPECT_VERSION: ${{ github.ref_name }}
         run: npm run version:check
+      - name: Release document identity
+        env:
+          DICELAB_EXPECT_VERSION: ${{ github.ref_name }}
+        run: npm run version:release-docs
       - name: Release verifier self-test
         run: npm run release:verify:test
       - name: Install dependencies

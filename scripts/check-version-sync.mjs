@@ -74,6 +74,68 @@ export function validateVersions(entries, expectedVersion) {
   return expected;
 }
 
+export function validateReleaseDocumentIdentity(version, documents) {
+  const requirements = [
+    {
+      source: 'README.md',
+      text: documents.readme,
+      fragments: [`preparing **DiceLab ${version}**`, `intended tag \`v${version}\``],
+    },
+    {
+      source: 'ROADMAP.md',
+      text: documents.roadmap,
+      fragments: [`Current release-preparation target: **${version}** (\`v${version}\`).`],
+    },
+    {
+      source: 'CHANGELOG.md',
+      text: documents.changelog,
+      fragments: [`The next publication target is **${version}**.`, `## [${version}]`],
+    },
+    {
+      source: 'docs/release.md',
+      text: documents.releaseGuide,
+      fragments: [`currently preparing **DiceLab ${version}**`, `v${version}`],
+    },
+    {
+      source: 'docs/release-blockers-current.md',
+      text: documents.releaseBlockers,
+      fragments: [`Current candidate: **${version}** (\`v${version}\`)`],
+    },
+    {
+      source: 'docs/release-candidate-evidence-template.md',
+      text: documents.releaseEvidence,
+      fragments: [
+        `expected identity is version \`${version}\` / tag \`v${version}\``,
+        `- Version: ${version}`,
+        `- Tag: v${version}`,
+        `DICELAB_EXPECT_VERSION=v${version} npm run version:check`,
+        `RELEASE-METADATA.json\` reports tag \`v${version}\``,
+      ],
+    },
+    {
+      source: 'docs/lockfile-policy.md',
+      text: documents.lockfilePolicy,
+      fragments: [`Current release-preparation target: **${version}**.`],
+    },
+    {
+      source: 'what_changed.md',
+      text: documents.handoff,
+      fragments: [`Current release-preparation target: **${version}** (\`v${version}\`)`],
+    },
+  ];
+
+  const missing = [];
+  for (const requirement of requirements) {
+    for (const fragment of requirement.fragments) {
+      if (!requirement.text.includes(fragment)) missing.push(`${requirement.source}: ${fragment}`);
+    }
+  }
+
+  if (missing.length) {
+    throw new Error(`Release document identity mismatch: ${missing.join('; ')}`);
+  }
+}
+
 export async function readRepositoryVersions(root = ROOT) {
   const [packageJsonText, packageLockText, frontendText, cargoText, cargoLockText, tauriText] = await Promise.all([
     fs.readFile(path.join(root, 'package.json'), 'utf8'),
@@ -98,14 +160,52 @@ export async function readRepositoryVersions(root = ROOT) {
   ];
 }
 
+export async function readReleaseDocuments(root = ROOT) {
+  const [readme, roadmap, changelog, releaseGuide, releaseBlockers, releaseEvidence, lockfilePolicy, handoff] =
+    await Promise.all([
+      fs.readFile(path.join(root, 'README.md'), 'utf8'),
+      fs.readFile(path.join(root, 'ROADMAP.md'), 'utf8'),
+      fs.readFile(path.join(root, 'CHANGELOG.md'), 'utf8'),
+      fs.readFile(path.join(root, 'docs/release.md'), 'utf8'),
+      fs.readFile(path.join(root, 'docs/release-blockers-current.md'), 'utf8'),
+      fs.readFile(path.join(root, 'docs/release-candidate-evidence-template.md'), 'utf8'),
+      fs.readFile(path.join(root, 'docs/lockfile-policy.md'), 'utf8'),
+      fs.readFile(path.join(root, 'what_changed.md'), 'utf8'),
+    ]);
+
+  return {
+    readme,
+    roadmap,
+    changelog,
+    releaseGuide,
+    releaseBlockers,
+    releaseEvidence,
+    lockfilePolicy,
+    handoff,
+  };
+}
+
 async function main() {
   const entries = await readRepositoryVersions();
   const expectedVersion = process.env.DICELAB_EXPECT_VERSION || undefined;
   const version = validateVersions(entries, expectedVersion);
+  const metadataOnly = process.argv.includes('--metadata-only');
+  const releaseDocs = process.argv.includes('--release-docs');
+
+  if (releaseDocs && metadataOnly) {
+    throw new Error('Choose either --metadata-only or --release-docs, not both.');
+  }
+
+  if (releaseDocs) {
+    const documents = await readReleaseDocuments();
+    validateReleaseDocumentIdentity(version, documents);
+  }
+
+  const scope = metadataOnly ? 'generated lock metadata' : releaseDocs ? 'generated lock and release-document metadata' : 'application and generated lock metadata';
   console.log(
     expectedVersion
-      ? `Version sync passed: ${version} matches ${expectedVersion}, including generated lock metadata.`
-      : `Version sync passed: ${version}, including generated lock metadata.`,
+      ? `Version sync passed: ${version} matches ${expectedVersion}, including ${scope}.`
+      : `Version sync passed: ${version}, including ${scope}.`,
   );
 }
 
