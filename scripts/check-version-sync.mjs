@@ -190,13 +190,18 @@ async function main() {
   const expectedVersion = process.env.DICELAB_EXPECT_VERSION || undefined;
   const version = validateVersions(entries, expectedVersion);
   const metadataOnly = process.argv.includes('--metadata-only');
+  const releaseDocs = process.argv.includes('--release-docs');
 
-  if (!metadataOnly) {
+  if (releaseDocs && metadataOnly) {
+    throw new Error('Choose either --metadata-only or --release-docs, not both.');
+  }
+
+  if (releaseDocs) {
     const documents = await readReleaseDocuments();
     validateReleaseDocumentIdentity(version, documents);
   }
 
-  const scope = metadataOnly ? 'generated lock metadata' : 'generated lock and release-document metadata';
+  const scope = metadataOnly ? 'generated lock metadata' : releaseDocs ? 'generated lock and release-document metadata' : 'application and generated lock metadata';
   console.log(
     expectedVersion
       ? `Version sync passed: ${version} matches ${expectedVersion}, including ${scope}.`
