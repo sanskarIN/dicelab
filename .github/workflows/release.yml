@@ -52,7 +52,7 @@ jobs:
         run: npm run build
       - name: Real browser end-to-end smoke
         run: npm run test:e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dicelab-web-${{ github.ref_name }}
           path: dist/
@@ -102,7 +102,7 @@ jobs:
         run: cargo clippy --all-targets --all-features --locked -- -D warnings
       - name: Build desktop bundle
         run: npm run tauri:build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dicelab-${{ runner.os }}-${{ github.ref_name }}
           path: src-tauri/target/release/bundle/**
@@ -145,7 +145,7 @@ jobs:
         run: npm run tauri:android:init -- --ci --skip-targets-install
       - name: Build universal Android APK and AAB
         run: npm run tauri:android:build -- --ci
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dicelab-Android-unsigned-${{ github.ref_name }}
           path: |
@@ -172,7 +172,7 @@ jobs:
         run: npm run tauri:ios:init -- --ci --skip-targets-install
       - name: Build unsigned iOS device archive
         run: npm run tauri:ios:archive:ci
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dicelab-iOS-unsigned-archive-${{ github.ref_name }}
           path: src-tauri/gen/apple/build/*.xcarchive
